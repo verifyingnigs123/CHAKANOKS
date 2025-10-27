@@ -1,11 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Dashboard | SCMS</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+<?= $this->extend('design/template') ?> 
+<?= $this->section('content') ?>
 
 <div class="container py-5">
   <div class="card shadow p-4">
@@ -42,5 +36,4 @@
   </div>
 </div>
 
-</body>
-</html>
+<?= $this->endSection() ?>
