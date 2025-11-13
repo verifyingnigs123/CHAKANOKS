@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-use App\Models\UserModel; // ✅ ADD THIS LINE
+use App\Models\UserModel; 
 use CodeIgniter\Controller;
 
 class Auth extends Controller
@@ -69,6 +69,6 @@ class Auth extends Controller
     {
         $session = session();
         $session->destroy();
-        return redirect()->to('/auth');
+        return redirect()->to('/login');
     }
 }
