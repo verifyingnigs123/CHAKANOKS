@@ -135,3 +135,32 @@ $routes->group('categories', ['filter' => 'auth'], function($routes) {
     $routes->post('update/(:num)', 'CategoryController::update/$1');
     $routes->get('delete/(:num)', 'CategoryController::delete/$1');
 });
+
+// Barcode Scanner
+$routes->group('barcode', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'BarcodeController::index');
+    $routes->post('scan', 'BarcodeController::scan');
+    $routes->post('update-inventory', 'BarcodeController::updateInventory');
+});
+
+// Inventory Adjustments
+$routes->group('inventory-adjustments', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'InventoryAdjustmentController::index');
+    $routes->get('create', 'InventoryAdjustmentController::create');
+    $routes->post('store', 'InventoryAdjustmentController::store');
+});
+
+// Notifications
+$routes->group('notifications', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'NotificationController::index');
+    $routes->get('get-unread-count', 'NotificationController::getUnreadCount');
+    $routes->get('get-unread', 'NotificationController::getUnread');
+    $routes->post('mark-as-read/(:num)', 'NotificationController::markAsRead/$1');
+    $routes->post('mark-all-read', 'NotificationController::markAllAsRead');
+});
+
+// Settings
+$routes->group('settings', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'SettingController::index');
+    $routes->post('update', 'SettingController::update');
+});

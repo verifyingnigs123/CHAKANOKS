@@ -197,6 +197,54 @@ $title = 'Dashboard';
 </div>
 
 <?php if (in_array($role, ['central_admin', 'system_admin'])): ?>
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Purchase Orders (Last 7 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="purchaseOrdersChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Inventory Value by Branch</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="inventoryValueChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Delivery Status</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="deliveriesChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Supplier Performance</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="supplierChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if (in_array($role, ['central_admin', 'system_admin'])): ?>
     <!-- Branch Inventory Report -->
     <div class="row mb-4">
         <div class="col-12">
@@ -368,5 +416,170 @@ $title = 'Dashboard';
     </div>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+<?php if (in_array($role, ['central_admin', 'system_admin']) && isset($purchase_orders_chart)): ?>
+// Purchase Orders Chart
+const poCtx = document.getElementById('purchaseOrdersChart');
+if (poCtx) {
+    new Chart(poCtx, {
+        type: 'line',
+        data: {
+            labels: <?= json_encode($purchase_orders_chart['labels']) ?>,
+            datasets: [{
+                label: 'Purchase Orders',
+                data: <?= json_encode($purchase_orders_chart['data']) ?>,
+                borderColor: 'rgb(13, 110, 253)',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Inventory Value Chart
+const invCtx = document.getElementById('inventoryValueChart');
+if (invCtx) {
+    new Chart(invCtx, {
+        type: 'bar',
+        data: {
+            labels: <?= json_encode($inventory_value_chart['labels']) ?>,
+            datasets: [{
+                label: 'Inventory Value (₱)',
+                data: <?= json_encode($inventory_value_chart['data']) ?>,
+                backgroundColor: [
+                    'rgba(13, 110, 253, 0.8)',
+                    'rgba(25, 135, 84, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(220, 53, 69, 0.8)',
+                    'rgba(108, 117, 125, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Value: ₱' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₱' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Deliveries Chart
+const delCtx = document.getElementById('deliveriesChart');
+if (delCtx) {
+    new Chart(delCtx, {
+        type: 'doughnut',
+        data: {
+            labels: <?= json_encode($deliveries_chart['labels']) ?>,
+            datasets: [{
+                data: <?= json_encode($deliveries_chart['data']) ?>,
+                backgroundColor: [
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(13, 110, 253, 0.8)',
+                    'rgba(25, 135, 84, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Supplier Performance Chart
+const supCtx = document.getElementById('supplierChart');
+if (supCtx) {
+    const supplierData = <?= json_encode($supplier_performance ?? []) ?>;
+    const supplierLabels = supplierData.map(s => s.supplier_name);
+    const completionRates = supplierData.map(s => s.completion_rate.toFixed(1));
+    
+    new Chart(supCtx, {
+        type: 'bar',
+        data: {
+            labels: supplierLabels,
+            datasets: [{
+                label: 'Completion Rate (%)',
+                data: completionRates,
+                backgroundColor: 'rgba(25, 135, 84, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Completion Rate: ' + context.parsed.y + '%';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+<?php endif; ?>
+</script>
 <?= $this->endSection() ?>
 

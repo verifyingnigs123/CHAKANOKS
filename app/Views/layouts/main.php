@@ -99,6 +99,16 @@
                             <i class="bi bi-arrow-left-right"></i> Transfers
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'barcode') !== false) ? 'active' : '' ?>" href="<?= base_url('barcode') ?>">
+                            <i class="bi bi-upc-scan"></i> Barcode Scanner
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'inventory-adjustments') !== false) ? 'active' : '' ?>" href="<?= base_url('inventory-adjustments') ?>">
+                            <i class="bi bi-arrow-repeat"></i> Adjustments
+                        </a>
+                    </li>
                     <?php if (session()->get('role') == 'system_admin' || session()->get('role') == 'central_admin'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'users') !== false) ? 'active' : '' ?>" href="<?= base_url('users') ?>">
@@ -116,6 +126,13 @@
                             <i class="bi bi-graph-up"></i> Reports
                         </a>
                     </li>
+                    <?php if (session()->get('role') == 'system_admin'): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'settings') !== false) ? 'active' : '' ?>" href="<?= base_url('settings') ?>">
+                            <i class="bi bi-gear"></i> Settings
+                        </a>
+                    </li>
+                    <?php endif; ?>
                     <li class="nav-item mt-3">
                         <a class="nav-link" href="<?= base_url('auth/logout') ?>">
                             <i class="bi bi-box-arrow-right"></i> Logout
@@ -128,9 +145,24 @@
             <main class="col-md-9 col-lg-10 main-content p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2><?= $page_title ?? 'Dashboard' ?></h2>
-                    <div>
-                        <span class="text-muted">Welcome, <strong><?= session()->get('username') ?></strong></span>
-                        <span class="badge bg-secondary ms-2"><?= ucfirst(str_replace('_', ' ', session()->get('role'))) ?></span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary position-relative" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bell"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge" style="display: none;">
+                                    0
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" id="notificationList" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                                <li><h6 class="dropdown-header">Notifications</h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li id="noNotifications"><a class="dropdown-item text-muted">No new notifications</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <span class="text-muted">Welcome, <strong><?= session()->get('username') ?></strong></span>
+                            <span class="badge bg-secondary ms-2"><?= ucfirst(str_replace('_', ' ', session()->get('role'))) ?></span>
+                        </div>
                     </div>
                 </div>
 
@@ -154,6 +186,88 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load notifications
+        function loadNotifications() {
+            fetch('<?= base_url('notifications/get-unread-count') ?>')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('notificationBadge');
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                });
+
+            fetch('<?= base_url('notifications/get-unread') ?>')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('notificationList');
+                    const noNotifications = document.getElementById('noNotifications');
+                    
+                    // Remove existing notification items (keep header and divider)
+                    const items = list.querySelectorAll('.notification-item');
+                    items.forEach(item => item.remove());
+                    
+                    if (data.notifications && data.notifications.length > 0) {
+                        noNotifications.style.display = 'none';
+                        data.notifications.forEach(notif => {
+                            const li = document.createElement('li');
+                            const typeClass = {
+                                'info': 'text-primary',
+                                'success': 'text-success',
+                                'warning': 'text-warning',
+                                'danger': 'text-danger'
+                            }[notif.type] || 'text-info';
+                            
+                            li.className = 'notification-item';
+                            li.innerHTML = `
+                                <a class="dropdown-item ${typeClass}" href="${notif.link || '#'}" onclick="markAsRead(${notif.id})">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>${notif.title}</strong>
+                                        <small class="text-muted">${new Date(notif.created_at).toLocaleTimeString()}</small>
+                                    </div>
+                                    <small>${notif.message}</small>
+                                </a>
+                            `;
+                            list.insertBefore(li, noNotifications);
+                        });
+                        const markAll = document.createElement('li');
+                        markAll.innerHTML = '<hr class="dropdown-divider"><li><a class="dropdown-item text-center" href="#" onclick="markAllAsRead(); return false;">Mark all as read</a></li>';
+                        list.appendChild(markAll);
+                    } else {
+                        noNotifications.style.display = 'block';
+                    }
+                });
+        }
+
+        function markAsRead(id) {
+            fetch(`<?= base_url('notifications/mark-as-read/') ?>${id}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(() => loadNotifications());
+        }
+
+        function markAllAsRead() {
+            fetch('<?= base_url('notifications/mark-all-read') ?>', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(() => loadNotifications());
+        }
+
+        // Load notifications on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+            // Refresh every 30 seconds
+            setInterval(loadNotifications, 30000);
+        });
+    </script>
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>

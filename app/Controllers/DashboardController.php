@@ -52,6 +52,11 @@ class DashboardController extends BaseController
                 // Recent activities
                 $data['recent_orders'] = (new PurchaseOrderModel())->orderBy('created_at', 'DESC')->limit(5)->findAll();
                 $data['recent_deliveries'] = (new DeliveryModel())->orderBy('created_at', 'DESC')->limit(5)->findAll();
+                
+                // Chart data
+                $data['purchase_orders_chart'] = $this->getPurchaseOrdersChartData();
+                $data['inventory_value_chart'] = $this->getInventoryValueChartData();
+                $data['deliveries_chart'] = $this->getDeliveriesChartData();
                 break;
 
             case 'branch_manager':
@@ -150,6 +155,60 @@ class DashboardController extends BaseController
         }
 
         return $performance;
+    }
+
+    private function getPurchaseOrdersChartData()
+    {
+        $purchaseOrderModel = new PurchaseOrderModel();
+        
+        // Get last 7 days of purchase orders
+        $data = [];
+        $labels = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-$i days"));
+            $labels[] = date('M d', strtotime($date));
+            $count = $purchaseOrderModel->where('DATE(created_at)', $date)->countAllResults();
+            $data[] = $count;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $data
+        ];
+    }
+
+    private function getInventoryValueChartData()
+    {
+        $summary = $this->getBranchInventorySummary();
+        $labels = [];
+        $values = [];
+
+        foreach ($summary as $item) {
+            $labels[] = $item['branch_name'];
+            $values[] = $item['total_value'];
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $values
+        ];
+    }
+
+    private function getDeliveriesChartData()
+    {
+        $deliveryModel = new DeliveryModel();
+        
+        $statuses = ['scheduled', 'in_transit', 'delivered'];
+        $data = [];
+        
+        foreach ($statuses as $status) {
+            $data[] = $deliveryModel->where('status', $status)->countAllResults();
+        }
+
+        return [
+            'labels' => ['Scheduled', 'In Transit', 'Delivered'],
+            'data' => $data
+        ];
     }
 }
 

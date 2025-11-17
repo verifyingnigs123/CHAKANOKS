@@ -78,7 +78,7 @@ $title = 'Products';
                                     <a href="<?= base_url('products/edit/' . $product['id']) ?>" class="btn btn-sm btn-primary">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a>
-                                    <a href="<?= base_url('products/delete/' . $product['id']) ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                                    <a href="<?= base_url('products/delete/' . $product['id']) ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete <?= esc($product['name']) ?>? This action cannot be undone.')">
                                         <i class="bi bi-trash"></i> Delete
                                     </a>
                                 </td>
