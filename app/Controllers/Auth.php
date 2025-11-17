@@ -36,11 +36,20 @@ class Auth extends Controller
                     'username'  => $user['username'],
                     'email'     => $user['email'],
                     'role'      => $user['role'],
+                    'branch_id' => $user['branch_id'] ?? null,
+                    'supplier_id' => $user['supplier_id'] ?? null,
                     'isLoggedIn' => true
                 ];
                 $session->set($session_data);
 
-                return redirect()->to('/auth/dashboard');
+                // Update last login
+                $userModel->update($user['id'], ['last_login' => date('Y-m-d H:i:s')]);
+
+                // Log activity
+                $activityLogModel = new \App\Models\ActivityLogModel();
+                $activityLogModel->logActivity($user['id'], 'login', 'auth', 'User logged in');
+
+                return redirect()->to('/dashboard');
             } else {
                 $session->setFlashdata('msg', 'Wrong password.');
                 return redirect()->to('/auth');
@@ -53,21 +62,19 @@ class Auth extends Controller
 
     public function dashboard()
     {
-        $session = session();
-
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to('/auth');
-        }
-
-        $data['role'] = $session->get('role');
-        $data['username'] = $session->get('username');
-
-        return view('auth/dashboard', $data);
+        return redirect()->to('/dashboard');
     }
 
     public function logout()
     {
         $session = session();
+        
+        // Log activity before destroying session
+        if ($session->get('isLoggedIn')) {
+            $activityLogModel = new \App\Models\ActivityLogModel();
+            $activityLogModel->logActivity($session->get('user_id'), 'logout', 'auth', 'User logged out');
+        }
+        
         $session->destroy();
         return redirect()->to('/login');
     }
