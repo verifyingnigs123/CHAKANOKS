@@ -23,7 +23,28 @@ class SupplierController extends BaseController
             return redirect()->to('/login');
         }
 
-        $data['suppliers'] = $this->supplierModel->orderBy('created_at', 'DESC')->findAll();
+        $builder = $this->supplierModel;
+
+        // Search functionality
+        $search = $this->request->getGet('search');
+        if ($search) {
+            $builder->groupStart()
+                ->like('name', $search)
+                ->orLike('code', $search)
+                ->orLike('contact_person', $search)
+                ->orLike('email', $search)
+                ->groupEnd();
+        }
+
+        // Filter by status
+        $status = $this->request->getGet('status');
+        if ($status) {
+            $builder->where('status', $status);
+        }
+
+        $data['suppliers'] = $builder->orderBy('created_at', 'DESC')->findAll();
+        $data['search'] = $search;
+        $data['status'] = $status;
         $data['role'] = $session->get('role');
 
         return view('suppliers/index', $data);

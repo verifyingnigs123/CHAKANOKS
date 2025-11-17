@@ -89,6 +89,33 @@
                             <i class="bi bi-building"></i> Branches
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'categories') !== false) ? 'active' : '' ?>" href="<?= base_url('categories') ?>">
+                            <i class="bi bi-tag"></i> Categories
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'transfers') !== false) ? 'active' : '' ?>" href="<?= base_url('transfers') ?>">
+                            <i class="bi bi-arrow-left-right"></i> Transfers
+                        </a>
+                    </li>
+                    <?php if (session()->get('role') == 'system_admin' || session()->get('role') == 'central_admin'): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'users') !== false) ? 'active' : '' ?>" href="<?= base_url('users') ?>">
+                            <i class="bi bi-people"></i> User Management
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'activity-logs') !== false) ? 'active' : '' ?>" href="<?= base_url('activity-logs') ?>">
+                            <i class="bi bi-clock-history"></i> Activity Logs
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'reports') !== false) ? 'active' : '' ?>" href="<?= base_url('reports') ?>">
+                            <i class="bi bi-graph-up"></i> Reports
+                        </a>
+                    </li>
                     <li class="nav-item mt-3">
                         <a class="nav-link" href="<?= base_url('auth/logout') ?>">
                             <i class="bi bi-box-arrow-right"></i> Logout

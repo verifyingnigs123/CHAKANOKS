@@ -145,6 +145,35 @@ class DeliveryController extends BaseController
         return view('deliveries/view', $data);
     }
 
+    public function print($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $delivery = $this->deliveryModel->select('deliveries.*, purchase_orders.po_number, suppliers.name as supplier_name, branches.name as branch_name, users.full_name as received_by_name')
+            ->join('purchase_orders', 'purchase_orders.id = deliveries.purchase_order_id')
+            ->join('suppliers', 'suppliers.id = deliveries.supplier_id')
+            ->join('branches', 'branches.id = deliveries.branch_id')
+            ->join('users', 'users.id = deliveries.received_by', 'left')
+            ->find($id);
+
+        if (!$delivery) {
+            return redirect()->to('/deliveries')->with('error', 'Delivery not found');
+        }
+
+        $poItems = $this->purchaseOrderItemModel->select('purchase_order_items.*, products.name as product_name, products.sku, products.unit')
+            ->join('products', 'products.id = purchase_order_items.product_id')
+            ->where('purchase_order_items.purchase_order_id', $delivery['purchase_order_id'])
+            ->findAll();
+
+        $data['delivery'] = $delivery;
+        $data['po_items'] = $poItems;
+
+        return view('deliveries/print', $data);
+    }
+
     public function updateStatus($id)
     {
         $session = session();

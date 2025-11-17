@@ -15,6 +15,26 @@ $title = 'Branches';
     <?php endif; ?>
 </div>
 
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" action="<?= base_url('branches') ?>" class="row g-3">
+            <div class="col-md-8">
+                <input type="text" name="search" class="form-control" placeholder="Search by name, code, city..." value="<?= esc($search ?? '') ?>">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active" <?= ($status == 'active') ? 'selected' : '' ?>>Active</option>
+                    <option value="inactive" <?= ($status == 'inactive') ? 'selected' : '' ?>>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">

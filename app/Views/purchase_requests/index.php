@@ -13,6 +13,36 @@ $title = 'Purchase Requests';
     </a>
 </div>
 
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" action="<?= base_url('purchase-requests') ?>" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Search by request number, branch, requester..." value="<?= esc($search ?? '') ?>">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="pending" <?= ($status == 'pending') ? 'selected' : '' ?>>Pending</option>
+                    <option value="approved" <?= ($status == 'approved') ? 'selected' : '' ?>>Approved</option>
+                    <option value="rejected" <?= ($status == 'rejected') ? 'selected' : '' ?>>Rejected</option>
+                    <option value="converted" <?= ($status == 'converted') ? 'selected' : '' ?>>Converted</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="priority" class="form-select">
+                    <option value="">All Priorities</option>
+                    <option value="urgent" <?= ($priority == 'urgent') ? 'selected' : '' ?>>Urgent</option>
+                    <option value="high" <?= ($priority == 'high') ? 'selected' : '' ?>>High</option>
+                    <option value="normal" <?= ($priority == 'normal') ? 'selected' : '' ?>>Normal</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">

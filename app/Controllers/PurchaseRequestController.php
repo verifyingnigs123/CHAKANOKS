@@ -37,14 +37,38 @@ class PurchaseRequestController extends BaseController
 
         $builder = $this->purchaseRequestModel->select('purchase_requests.*, branches.name as branch_name, users.full_name as requested_by_name')
             ->join('branches', 'branches.id = purchase_requests.branch_id')
-            ->join('users', 'users.id = purchase_requests.requested_by')
-            ->orderBy('purchase_requests.created_at', 'DESC');
+            ->join('users', 'users.id = purchase_requests.requested_by');
 
         if ($branchId && $role !== 'central_admin' && $role !== 'system_admin') {
             $builder->where('purchase_requests.branch_id', $branchId);
         }
 
-        $data['requests'] = $builder->findAll();
+        // Search functionality
+        $search = $this->request->getGet('search');
+        if ($search) {
+            $builder->groupStart()
+                ->like('purchase_requests.request_number', $search)
+                ->orLike('branches.name', $search)
+                ->orLike('users.full_name', $search)
+                ->groupEnd();
+        }
+
+        // Filter by status
+        $status = $this->request->getGet('status');
+        if ($status) {
+            $builder->where('purchase_requests.status', $status);
+        }
+
+        // Filter by priority
+        $priority = $this->request->getGet('priority');
+        if ($priority) {
+            $builder->where('purchase_requests.priority', $priority);
+        }
+
+        $data['requests'] = $builder->orderBy('purchase_requests.created_at', 'DESC')->findAll();
+        $data['search'] = $search;
+        $data['status'] = $status;
+        $data['priority'] = $priority;
         $data['role'] = $role;
 
         return view('purchase_requests/index', $data);
@@ -187,6 +211,33 @@ class PurchaseRequestController extends BaseController
         $data['role'] = $session->get('role');
 
         return view('purchase_requests/view', $data);
+    }
+
+    public function print($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $request = $this->purchaseRequestModel->select('purchase_requests.*, branches.name as branch_name, users.full_name as requested_by_name')
+            ->join('branches', 'branches.id = purchase_requests.branch_id')
+            ->join('users', 'users.id = purchase_requests.requested_by')
+            ->find($id);
+
+        if (!$request) {
+            return redirect()->to('/purchase-requests')->with('error', 'Request not found');
+        }
+
+        $items = $this->purchaseRequestItemModel->select('purchase_request_items.*, products.name as product_name, products.sku, products.unit')
+            ->join('products', 'products.id = purchase_request_items.product_id')
+            ->where('purchase_request_items.purchase_request_id', $id)
+            ->findAll();
+
+        $data['request'] = $request;
+        $data['items'] = $items;
+
+        return view('purchase_requests/print', $data);
     }
 }
 

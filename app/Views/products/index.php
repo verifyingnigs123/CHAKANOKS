@@ -13,6 +13,36 @@ $title = 'Products';
     </a>
 </div>
 
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" action="<?= base_url('products') ?>" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Search by name, SKU, barcode..." value="<?= esc($search ?? '') ?>">
+            </div>
+            <div class="col-md-3">
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?= esc($cat['category']) ?>" <?= ($category == $cat['category']) ? 'selected' : '' ?>>
+                            <?= esc($cat['category']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active" <?= ($status == 'active') ? 'selected' : '' ?>>Active</option>
+                    <option value="inactive" <?= ($status == 'inactive') ? 'selected' : '' ?>>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">

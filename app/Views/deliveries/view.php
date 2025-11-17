@@ -157,6 +157,9 @@ $title = 'Delivery Details';
 
 <div class="mt-3">
     <a href="<?= base_url('deliveries') ?>" class="btn btn-secondary">Back to List</a>
+    <a href="<?= base_url('deliveries/print/' . $delivery['id']) ?>" target="_blank" class="btn btn-primary">
+        <i class="bi bi-printer"></i> Print
+    </a>
 </div>
 
 <?= $this->endSection() ?>

@@ -23,7 +23,36 @@ class ProductController extends BaseController
             return redirect()->to('/login');
         }
 
-        $data['products'] = $this->productModel->orderBy('created_at', 'DESC')->findAll();
+        $builder = $this->productModel;
+
+        // Search functionality
+        $search = $this->request->getGet('search');
+        if ($search) {
+            $builder->groupStart()
+                ->like('name', $search)
+                ->orLike('sku', $search)
+                ->orLike('barcode', $search)
+                ->orLike('category', $search)
+                ->groupEnd();
+        }
+
+        // Filter by category
+        $category = $this->request->getGet('category');
+        if ($category) {
+            $builder->where('category', $category);
+        }
+
+        // Filter by status
+        $status = $this->request->getGet('status');
+        if ($status) {
+            $builder->where('status', $status);
+        }
+
+        $data['products'] = $builder->orderBy('created_at', 'DESC')->findAll();
+        $data['categories'] = $this->productModel->select('category')->distinct()->where('category IS NOT NULL')->where('category !=', '')->findAll();
+        $data['search'] = $search;
+        $data['category'] = $category;
+        $data['status'] = $status;
         $data['role'] = $session->get('role');
 
         return view('products/index', $data);

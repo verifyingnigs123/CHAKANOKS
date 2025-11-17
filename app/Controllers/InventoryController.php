@@ -211,5 +211,28 @@ class InventoryController extends BaseController
 
         return redirect()->back()->with('success', 'Alert acknowledged');
     }
+
+    public function getQuantity()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $branchId = $this->request->getGet('branch_id');
+        $productId = $this->request->getGet('product_id');
+
+        if (!$branchId || !$productId) {
+            return $this->response->setJSON(['error' => 'Missing parameters'])->setStatusCode(400);
+        }
+
+        $inventory = $this->inventoryModel->where('branch_id', $branchId)
+            ->where('product_id', $productId)
+            ->first();
+
+        return $this->response->setJSON([
+            'quantity' => $inventory ? $inventory['quantity'] : 0
+        ]);
+    }
 }
 

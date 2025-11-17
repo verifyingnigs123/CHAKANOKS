@@ -94,7 +94,12 @@ $title = 'Purchase Order Details';
 </div>
 
 <div class="d-flex justify-content-between">
-    <a href="<?= base_url('purchase-orders') ?>" class="btn btn-secondary">Back to List</a>
+    <div>
+        <a href="<?= base_url('purchase-orders') ?>" class="btn btn-secondary">Back to List</a>
+        <a href="<?= base_url('purchase-orders/print/' . $po['id']) ?>" target="_blank" class="btn btn-primary">
+            <i class="bi bi-printer"></i> Print
+        </a>
+    </div>
     <div>
         <?php if ($po['status'] == 'draft'): ?>
             <form method="post" action="<?= base_url('purchase-orders/' . $po['id'] . '/send') ?>" class="d-inline">

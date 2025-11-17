@@ -98,6 +98,9 @@ $title = 'Purchase Request Details';
 
 <div class="mt-3">
     <a href="<?= base_url('purchase-requests') ?>" class="btn btn-secondary">Back to List</a>
+    <a href="<?= base_url('purchase-requests/print/' . $request['id']) ?>" target="_blank" class="btn btn-primary">
+        <i class="bi bi-printer"></i> Print
+    </a>
     <?php if (($role == 'central_admin' || $role == 'system_admin') && $request['status'] == 'pending'): ?>
         <form method="post" action="<?= base_url('purchase-requests/' . $request['id'] . '/approve') ?>" class="d-inline">
             <button type="submit" class="btn btn-success">

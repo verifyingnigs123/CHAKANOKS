@@ -288,5 +288,33 @@ class PurchaseOrderController extends BaseController
 
         return redirect()->back()->with('success', 'Purchase order confirmed');
     }
+
+    public function print($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $po = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, suppliers.email as supplier_email, suppliers.phone as supplier_phone, branches.name as branch_name, users.full_name as created_by_name')
+            ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+            ->join('branches', 'branches.id = purchase_orders.branch_id')
+            ->join('users', 'users.id = purchase_orders.created_by')
+            ->find($id);
+
+        if (!$po) {
+            return redirect()->to('/purchase-orders')->with('error', 'Purchase order not found');
+        }
+
+        $items = $this->purchaseOrderItemModel->select('purchase_order_items.*, products.name as product_name, products.sku, products.unit')
+            ->join('products', 'products.id = purchase_order_items.product_id')
+            ->where('purchase_order_items.purchase_order_id', $id)
+            ->findAll();
+
+        $data['po'] = $po;
+        $data['items'] = $items;
+
+        return view('purchase_orders/print', $data);
+    }
 }
 

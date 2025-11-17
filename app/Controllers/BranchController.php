@@ -26,10 +26,28 @@ class BranchController extends BaseController
             return redirect()->to('/login');
         }
 
-        $data['branches'] = $this->branchModel->select('branches.*, users.full_name as manager_name')
-            ->join('users', 'users.id = branches.manager_id', 'left')
-            ->orderBy('branches.created_at', 'DESC')
-            ->findAll();
+        $builder = $this->branchModel->select('branches.*, users.full_name as manager_name')
+            ->join('users', 'users.id = branches.manager_id', 'left');
+
+        // Search functionality
+        $search = $this->request->getGet('search');
+        if ($search) {
+            $builder->groupStart()
+                ->like('branches.name', $search)
+                ->orLike('branches.code', $search)
+                ->orLike('branches.city', $search)
+                ->groupEnd();
+        }
+
+        // Filter by status
+        $status = $this->request->getGet('status');
+        if ($status) {
+            $builder->where('branches.status', $status);
+        }
+
+        $data['branches'] = $builder->orderBy('branches.created_at', 'DESC')->findAll();
+        $data['search'] = $search;
+        $data['status'] = $status;
         $data['role'] = $session->get('role');
 
         return view('branches/index', $data);

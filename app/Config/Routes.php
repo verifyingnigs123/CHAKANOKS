@@ -22,6 +22,7 @@ $routes->group('inventory', ['filter' => 'auth'], function($routes) {
     $routes->post('scan', 'InventoryController::scan');
     $routes->get('alerts', 'InventoryController::alerts');
     $routes->post('alerts/(:num)/acknowledge', 'InventoryController::acknowledgeAlert/$1');
+    $routes->get('get-quantity', 'InventoryController::getQuantity');
 });
 
 // Purchase Requests
@@ -30,6 +31,7 @@ $routes->group('purchase-requests', ['filter' => 'auth'], function($routes) {
     $routes->get('create', 'PurchaseRequestController::create');
     $routes->post('store', 'PurchaseRequestController::store');
     $routes->get('view/(:num)', 'PurchaseRequestController::view/$1');
+    $routes->get('print/(:num)', 'PurchaseRequestController::print/$1');
     $routes->post('(:num)/approve', 'PurchaseRequestController::approve/$1');
     $routes->post('(:num)/reject', 'PurchaseRequestController::reject/$1');
 });
@@ -70,6 +72,7 @@ $routes->group('purchase-orders', ['filter' => 'auth'], function($routes) {
     $routes->get('get-request-items/(:num)', 'PurchaseOrderController::getRequestItems/$1');
     $routes->post('store', 'PurchaseOrderController::store');
     $routes->get('view/(:num)', 'PurchaseOrderController::view/$1');
+    $routes->get('print/(:num)', 'PurchaseOrderController::print/$1');
     $routes->post('(:num)/send', 'PurchaseOrderController::send/$1');
     $routes->post('(:num)/confirm', 'PurchaseOrderController::confirm/$1');
 });
@@ -80,6 +83,55 @@ $routes->group('deliveries', ['filter' => 'auth'], function($routes) {
     $routes->get('create', 'DeliveryController::create');
     $routes->post('store', 'DeliveryController::store');
     $routes->get('view/(:num)', 'DeliveryController::view/$1');
+    $routes->get('print/(:num)', 'DeliveryController::print/$1');
     $routes->post('(:num)/update-status', 'DeliveryController::updateStatus/$1');
     $routes->post('(:num)/receive', 'DeliveryController::receive/$1');
+});
+
+// Transfers
+$routes->group('transfers', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'TransferController::index');
+    $routes->get('create', 'TransferController::create');
+    $routes->post('store', 'TransferController::store');
+    $routes->get('view/(:num)', 'TransferController::view/$1');
+    $routes->post('(:num)/approve', 'TransferController::approve/$1');
+    $routes->post('(:num)/reject', 'TransferController::reject/$1');
+    $routes->post('(:num)/complete', 'TransferController::complete/$1');
+});
+
+// Users
+$routes->group('users', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'UserController::index');
+    $routes->get('create', 'UserController::create');
+    $routes->post('store', 'UserController::store');
+    $routes->get('edit/(:num)', 'UserController::edit/$1');
+    $routes->post('update/(:num)', 'UserController::update/$1');
+    $routes->get('delete/(:num)', 'UserController::delete/$1');
+});
+
+// Activity Logs
+$routes->group('activity-logs', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'ActivityLogController::index');
+    $routes->get('export', 'ActivityLogController::export');
+});
+
+// Reports
+$routes->group('reports', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'ReportController::index');
+    $routes->get('inventory', 'ReportController::inventory');
+    $routes->get('inventory/export', 'ReportController::exportInventory');
+    $routes->get('purchase-orders', 'ReportController::purchaseOrders');
+    $routes->get('deliveries', 'ReportController::deliveries');
+    $routes->get('supplier-performance', 'ReportController::supplierPerformance');
+    $routes->get('wastage', 'ReportController::wastage');
+});
+
+// Categories
+$routes->group('categories', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'CategoryController::index');
+    $routes->get('create', 'CategoryController::create');
+    $routes->post('store', 'CategoryController::store');
+    $routes->get('edit/(:num)', 'CategoryController::edit/$1');
+    $routes->post('update/(:num)', 'CategoryController::update/$1');
+    $routes->get('delete/(:num)', 'CategoryController::delete/$1');
 });
