@@ -90,23 +90,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?= (strpos(uri_string(), 'categories') !== false) ? 'active' : '' ?>" href="<?= base_url('categories') ?>">
-                            <i class="bi bi-tag"></i> Categories
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'transfers') !== false) ? 'active' : '' ?>" href="<?= base_url('transfers') ?>">
                             <i class="bi bi-arrow-left-right"></i> Transfers
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link <?= (strpos(uri_string(), 'barcode') !== false) ? 'active' : '' ?>" href="<?= base_url('barcode') ?>">
-                            <i class="bi bi-upc-scan"></i> Barcode Scanner
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link <?= (strpos(uri_string(), 'inventory-adjustments') !== false) ? 'active' : '' ?>" href="<?= base_url('inventory-adjustments') ?>">
-                            <i class="bi bi-arrow-repeat"></i> Adjustments
                         </a>
                     </li>
                     <?php if (session()->get('role') == 'system_admin' || session()->get('role') == 'central_admin'): ?>

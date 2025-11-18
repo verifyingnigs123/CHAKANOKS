@@ -53,6 +53,7 @@ $routes->group('branches', ['filter' => 'auth'], function($routes) {
     $routes->post('store', 'BranchController::store');
     $routes->get('edit/(:num)', 'BranchController::edit/$1');
     $routes->post('update/(:num)', 'BranchController::update/$1');
+    $routes->get('delete/(:num)', 'BranchController::delete/$1');
 });
 
 // Suppliers

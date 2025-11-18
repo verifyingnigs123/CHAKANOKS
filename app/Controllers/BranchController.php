@@ -135,5 +135,32 @@ class BranchController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Failed to update branch');
         }
     }
+
+    public function delete($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $branch = $this->branchModel->find($id);
+        if (!$branch) {
+            return redirect()->to('/branches')->with('error', 'Branch not found');
+        }
+
+        // Check if there are users assigned to this branch
+        $usersWithBranch = $this->userModel->where('branch_id', $id)->countAllResults();
+        if ($usersWithBranch > 0) {
+            return redirect()->to('/branches')->with('error', 'Cannot delete branch. There are ' . $usersWithBranch . ' user(s) assigned to this branch. Please reassign or remove users first.');
+        }
+
+        // Delete the branch (related inventory and purchase orders will be deleted automatically due to CASCADE)
+        if ($this->branchModel->delete($id)) {
+            $this->activityLogModel->logActivity($session->get('user_id'), 'delete', 'branch', 'Deleted branch: ' . $branch['name']);
+            return redirect()->to('/branches')->with('success', 'Branch deleted successfully');
+        } else {
+            return redirect()->to('/branches')->with('error', 'Failed to delete branch');
+        }
+    }
 }
 

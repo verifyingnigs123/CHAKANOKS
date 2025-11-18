@@ -125,32 +125,122 @@ $title = 'Inventory';
     </div>
 </div>
 
-<!-- Scan Barcode Modal -->
+<!-- Scan Barcode Modal with Camera Support -->
 <div class="modal fade" id="scanModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Scan Barcode</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">Barcode Scanner</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopCameraOnClose()"></button>
             </div>
-            <form id="scanForm" method="post" action="<?= base_url('inventory/scan') ?>">
-                <?= csrf_field() ?>
-                <div class="modal-body">
-                    <input type="hidden" name="branch_id" value="<?= $current_branch_id ?? session()->get('branch_id') ?>">
-                    <div class="mb-3">
-                        <label>Barcode</label>
-                        <input type="text" name="barcode" class="form-control" autofocus required>
-                    </div>
-                    <div class="mb-3">
-                        <label>Quantity</label>
-                        <input type="number" name="quantity" class="form-control" value="1" min="1" required>
+            <div class="modal-body">
+                <style>
+                    .scanner-video-container {
+                        position: relative;
+                        width: 100%;
+                        max-width: 640px;
+                        margin: 0 auto 20px;
+                        background: #000;
+                        border-radius: 8px;
+                        overflow: hidden;
+                    }
+                    #scannerVideo {
+                        width: 100%;
+                        height: auto;
+                        display: block;
+                    }
+                    .scanner-overlay {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 250px;
+                        height: 250px;
+                        border: 2px solid #0d6efd;
+                        border-radius: 8px;
+                        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+                    }
+                    .scanner-overlay::before,
+                    .scanner-overlay::after {
+                        content: '';
+                        position: absolute;
+                        width: 20px;
+                        height: 20px;
+                        border: 3px solid #0d6efd;
+                    }
+                    .scanner-overlay::before {
+                        top: -3px;
+                        left: -3px;
+                        border-right: none;
+                        border-bottom: none;
+                    }
+                    .scanner-overlay::after {
+                        bottom: -3px;
+                        right: -3px;
+                        border-left: none;
+                        border-top: none;
+                    }
+                </style>
+                
+                <div class="text-center mb-3">
+                    <button id="toggleCameraBtn" class="btn btn-primary">
+                        <i class="bi bi-camera"></i> <span id="cameraStatus">Start Camera</span>
+                    </button>
+                </div>
+
+                <div class="scanner-video-container" id="videoContainer" style="display: none;">
+                    <video id="scannerVideo" autoplay playsinline></video>
+                    <div class="scanner-overlay"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Or Enter Barcode Manually</label>
+                    <div class="input-group">
+                        <input type="text" id="manualBarcodeInput" class="form-control" placeholder="Enter barcode number" autofocus>
+                        <button class="btn btn-primary" onclick="scanManualBarcode()">
+                            <i class="bi bi-search"></i> Scan
+                        </button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Scan & Update</button>
+
+                <div id="scanResultCard" style="display: none;">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h5 id="scannedProductName" class="card-title"></h5>
+                            <p class="mb-1"><strong>SKU:</strong> <span id="scannedProductSku"></span></p>
+                            <p class="mb-1"><strong>Category:</strong> <span id="scannedProductCategory"></span></p>
+                            <p class="mb-1"><strong>Current Stock:</strong> <span id="scannedCurrentStock"></span></p>
+                            <p class="mb-3"><strong>Min Stock Level:</strong> <span id="scannedMinStock"></span></p>
+                            
+                            <div class="alert alert-warning" id="lowStockAlert" style="display: none;">
+                                <i class="bi bi-exclamation-triangle"></i> Low stock alert!
+                            </div>
+
+                            <div class="row g-2 mt-3">
+                                <div class="col-md-6">
+                                    <label>Quantity to Add</label>
+                                    <input type="number" id="addQuantityInput" class="form-control" min="1" value="1">
+                                    <button class="btn btn-success w-100 mt-2" onclick="updateInventoryFromScan('add')">
+                                        <i class="bi bi-plus-circle"></i> Add Stock
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Quantity to Subtract</label>
+                                    <input type="number" id="subtractQuantityInput" class="form-control" min="1" value="1">
+                                    <button class="btn btn-danger w-100 mt-2" onclick="updateInventoryFromScan('subtract')">
+                                        <i class="bi bi-dash-circle"></i> Subtract Stock
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </form>
+
+                <div id="scanErrorMessage" class="alert alert-danger mt-3" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="stopCameraOnClose()">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -158,7 +248,12 @@ $title = 'Inventory';
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 <script>
+let scannerStream = null;
+let scannerScanning = false;
+let currentScannedProduct = null;
+
 function updateInventory(id, branchId, productId, currentQty) {
     document.getElementById('update_branch_id').value = branchId;
     document.getElementById('update_product_id').value = productId;
@@ -166,111 +261,200 @@ function updateInventory(id, branchId, productId, currentQty) {
     new bootstrap.Modal(document.getElementById('updateModal')).show();
 }
 
-// Handle barcode scan form submission
-document.getElementById('scanForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const form = this;
-    const formData = new FormData(form);
-    const submitButton = form.querySelector('button[type="submit"]');
-    const originalText = submitButton.innerHTML;
-    
-    // Disable button and show loading
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Scanning...';
-    
-    fetch(form.action, {
+// Barcode Scanner Functions
+document.getElementById('toggleCameraBtn').addEventListener('click', function() {
+    if (!scannerScanning) {
+        startCamera();
+    } else {
+        stopCamera();
+    }
+});
+
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: 'environment' // Use back camera on mobile
+        } 
+    })
+    .then(function(mediaStream) {
+        scannerStream = mediaStream;
+        const video = document.getElementById('scannerVideo');
+        video.srcObject = mediaStream;
+        document.getElementById('videoContainer').style.display = 'block';
+        document.getElementById('cameraStatus').textContent = 'Stop Camera';
+        scannerScanning = true;
+
+        // Initialize QuaggaJS for barcode scanning
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: video,
+                constraints: {
+                    width: 640,
+                    height: 480,
+                    facingMode: "environment"
+                }
+            },
+            decoder: {
+                readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error('Error initializing Quagga:', err);
+                document.getElementById('scanErrorMessage').textContent = 'Camera initialization failed. Please use manual input.';
+                document.getElementById('scanErrorMessage').style.display = 'block';
+                return;
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code;
+            scanBarcode(code);
+            Quagga.stop();
+        });
+    })
+    .catch(function(err) {
+        console.error('Error accessing camera:', err);
+        document.getElementById('scanErrorMessage').textContent = 'Camera access denied. Please use manual input.';
+        document.getElementById('scanErrorMessage').style.display = 'block';
+    });
+}
+
+function stopCamera() {
+    if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        scannerStream = null;
+    }
+    if (typeof Quagga !== 'undefined' && Quagga) {
+        Quagga.stop();
+    }
+    document.getElementById('videoContainer').style.display = 'none';
+    document.getElementById('cameraStatus').textContent = 'Start Camera';
+    scannerScanning = false;
+}
+
+function stopCameraOnClose() {
+    stopCamera();
+    // Reset scan result
+    document.getElementById('scanResultCard').style.display = 'none';
+    document.getElementById('scanErrorMessage').style.display = 'none';
+    document.getElementById('manualBarcodeInput').value = '';
+    currentScannedProduct = null;
+}
+
+function scanManualBarcode() {
+    const barcode = document.getElementById('manualBarcodeInput').value.trim();
+    if (barcode) {
+        scanBarcode(barcode);
+    } else {
+        alert('Please enter a barcode');
+    }
+}
+
+function scanBarcode(barcode) {
+    fetch('<?= base_url('barcode/scan') ?>', {
         method: 'POST',
-        body: formData,
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'barcode=' + encodeURIComponent(barcode)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show success notification with product details
-            showScanResult(data.product, 'success');
-            
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('scanModal'));
-            modal.hide();
-            
-            // Reset form
-            form.reset();
-            
+            currentScannedProduct = data.product;
+            displayScannedProduct(data);
+        } else {
+            document.getElementById('scanErrorMessage').textContent = data.message || 'Product not found';
+            document.getElementById('scanErrorMessage').style.display = 'block';
+            document.getElementById('scanResultCard').style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('scanErrorMessage').textContent = 'Error scanning barcode';
+        document.getElementById('scanErrorMessage').style.display = 'block';
+    });
+}
+
+function displayScannedProduct(data) {
+    document.getElementById('scanErrorMessage').style.display = 'none';
+    document.getElementById('scanResultCard').style.display = 'block';
+    
+    document.getElementById('scannedProductName').textContent = data.product.name;
+    document.getElementById('scannedProductSku').textContent = data.product.sku;
+    document.getElementById('scannedProductCategory').textContent = data.product.category || 'N/A';
+    
+    if (data.inventory) {
+        document.getElementById('scannedCurrentStock').textContent = data.inventory.quantity;
+        document.getElementById('scannedMinStock').textContent = data.inventory.min_stock_level;
+        
+        if (data.inventory.quantity <= data.inventory.min_stock_level) {
+            document.getElementById('lowStockAlert').style.display = 'block';
+        } else {
+            document.getElementById('lowStockAlert').style.display = 'none';
+        }
+    } else {
+        document.getElementById('scannedCurrentStock').textContent = '0 (Not in inventory)';
+        document.getElementById('scannedMinStock').textContent = data.product.min_stock_level;
+        document.getElementById('lowStockAlert').style.display = 'block';
+    }
+}
+
+function updateInventoryFromScan(action) {
+    if (!currentScannedProduct) return;
+    
+    const quantity = action === 'add' 
+        ? parseInt(document.getElementById('addQuantityInput').value)
+        : parseInt(document.getElementById('subtractQuantityInput').value);
+    
+    if (quantity <= 0) {
+        alert('Quantity must be greater than 0');
+        return;
+    }
+
+    fetch('<?= base_url('barcode/update-inventory') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'barcode=' + encodeURIComponent(currentScannedProduct.barcode) +
+              '&quantity=' + quantity +
+              '&action=' + action
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Inventory updated successfully! New quantity: ' + data.quantity);
+            // Refresh the product display
+            scanBarcode(currentScannedProduct.barcode);
             // Reload page after a short delay to show updated inventory
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
         } else {
-            // Show error notification
-            showScanResult(null, 'error', data.message || 'Product not found');
-            submitButton.disabled = false;
-            submitButton.innerHTML = originalText;
+            alert('Error: ' + (data.error || 'Failed to update inventory'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showScanResult(null, 'error', 'An error occurred while scanning');
-        submitButton.disabled = false;
-        submitButton.innerHTML = originalText;
+        alert('Error updating inventory');
     });
+}
+
+// Allow Enter key on manual barcode input
+document.getElementById('manualBarcodeInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        scanManualBarcode();
+    }
 });
 
-function showScanResult(product, type, message) {
-    // Remove any existing scan result alert
-    const existingAlert = document.getElementById('scanResultAlert');
-    if (existingAlert) {
-        existingAlert.remove();
-    }
-    
-    // Create alert element
-    const alertDiv = document.createElement('div');
-    alertDiv.id = 'scanResultAlert';
-    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;';
-    
-    let alertContent = '';
-    
-    if (type === 'success' && product) {
-        const scannedQty = product.scanned_quantity || 1;
-        const newTotal = product.new_total_quantity || scannedQty;
-        alertContent = `
-            <h5 class="alert-heading"><i class="bi bi-check-circle-fill"></i> Barcode Scanned Successfully!</h5>
-            <hr>
-            <p class="mb-1"><strong>Product:</strong> ${product.name}</p>
-            <p class="mb-1"><strong>SKU:</strong> ${product.sku}</p>
-            <p class="mb-1"><strong>Barcode:</strong> ${product.barcode}</p>
-            <p class="mb-1"><strong>Category:</strong> ${product.category || 'N/A'}</p>
-            <p class="mb-1"><strong>Scanned Quantity:</strong> <span class="badge bg-info">+${scannedQty}</span></p>
-            <p class="mb-1"><strong>New Total:</strong> <span class="badge bg-${newTotal <= (product.min_stock_level || 0) ? 'danger' : 'success'}">${newTotal}</span></p>
-            <p class="mb-0"><strong>Status:</strong> <span class="badge bg-${product.status === 'active' ? 'success' : 'secondary'}">${product.status}</span></p>
-            <p class="mt-2 mb-0"><small class="text-muted">Inventory updated successfully!</small></p>
-        `;
-    } else {
-        alertContent = `
-            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Scan Failed</h5>
-            <hr>
-            <p class="mb-0">${message || 'Product not found'}</p>
-        `;
-    }
-    
-    alertDiv.innerHTML = alertContent + `
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    // Append to body
-    document.body.appendChild(alertDiv);
-    
-    // Auto dismiss after 5 seconds for success, 7 seconds for error
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.classList.remove('show');
-            setTimeout(() => alertDiv.remove(), 150);
-        }
-    }, type === 'success' ? 5000 : 7000);
-}
+// Stop camera when modal is closed
+document.getElementById('scanModal').addEventListener('hidden.bs.modal', function() {
+    stopCameraOnClose();
+});
 </script>
 <?= $this->endSection() ?>
 

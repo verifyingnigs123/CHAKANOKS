@@ -77,6 +77,11 @@ $title = 'Branches';
                                         <a href="<?= base_url('branches/edit/' . $branch['id']) ?>" class="btn btn-sm btn-primary">
                                             <i class="bi bi-pencil"></i> Edit
                                         </a>
+                                        <a href="<?= base_url('branches/delete/' . $branch['id']) ?>" 
+                                           class="btn btn-sm btn-danger" 
+                                           onclick="return confirm('Are you sure you want to delete <?= esc($branch['name']) ?>? This action cannot be undone.')">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </a>
                                     </td>
                                 <?php endif; ?>
                             </tr>

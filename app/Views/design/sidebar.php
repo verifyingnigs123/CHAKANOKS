@@ -137,7 +137,6 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
       <li><a href="<?= base_url('inventory/overview') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Stock Overview</span><span class="nav-badge">12</span></a></li>
       <li><a href="<?= base_url('inventory/update') ?>" class="nav-link"><i class="bi bi-pencil-square"></i><span>Update Stock</span></a></li>
-      <li><a href="<?= base_url('inventory/scan') ?>" class="nav-link"><i class="bi bi-upc-scan"></i><span>Barcode Scan</span></a></li>
       <li class="menu-divider"></li>
       <li class="menu-label">Suppliers</li>
       <li><a href="<?= base_url('suppliers/request') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Request Supply</span></a></li>
