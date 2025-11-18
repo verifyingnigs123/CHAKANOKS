@@ -10,6 +10,7 @@ use App\Models\SupplierModel;
 use App\Models\BranchModel;
 use App\Models\ProductModel;
 use App\Models\ActivityLogModel;
+use App\Libraries\NotificationService;
 
 class PurchaseOrderController extends BaseController
 {
@@ -21,6 +22,7 @@ class PurchaseOrderController extends BaseController
     protected $branchModel;
     protected $productModel;
     protected $activityLogModel;
+    protected $notificationService;
 
     public function __construct()
     {
@@ -32,6 +34,7 @@ class PurchaseOrderController extends BaseController
         $this->branchModel = new BranchModel();
         $this->productModel = new ProductModel();
         $this->activityLogModel = new ActivityLogModel();
+        $this->notificationService = new NotificationService();
     }
 
     public function index()
@@ -225,6 +228,13 @@ class PurchaseOrderController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'purchase_order', "Created purchase order: $poNumber");
 
+        // Send notification that PO is created and needs to be sent to supplier
+        $branch = $this->branchModel->find($branchId);
+        $supplier = $this->supplierModel->find($supplierId);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $supplierName = $supplier ? $supplier['name'] : 'Unknown Supplier';
+        $this->notificationService->sendPurchaseOrderCreatedNotification($poId, $poNumber, $branchName, $supplierName);
+
         return redirect()->to('/purchase-orders')->with('success', 'Purchase order created successfully');
     }
 
@@ -264,11 +274,23 @@ class PurchaseOrderController extends BaseController
             return redirect()->to('/login');
         }
 
+        $po = $this->purchaseOrderModel->find($id);
+        if (!$po) {
+            return redirect()->back()->with('error', 'Purchase order not found');
+        }
+
         $this->purchaseOrderModel->update($id, [
             'status' => 'sent'
         ]);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'send', 'purchase_order', "Sent purchase order ID: $id");
+
+        // Send notification that PO is sent and needs delivery scheduling
+        $branch = $this->branchModel->find($po['branch_id']);
+        $supplier = $this->supplierModel->find($po['supplier_id']);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $supplierName = $supplier ? $supplier['name'] : 'Unknown Supplier';
+        $this->notificationService->sendPurchaseOrderSentNotification($id, $po['po_number'], $branchName, $supplierName);
 
         return redirect()->back()->with('success', 'Purchase order sent to supplier');
     }

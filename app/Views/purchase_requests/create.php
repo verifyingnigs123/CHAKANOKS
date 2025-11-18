@@ -16,20 +16,31 @@ $title = 'Create Purchase Request';
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label>Branch</label>
-                    <select name="branch_id" class="form-select" required <?= ($branch_id) ? 'readonly' : '' ?>>
-                        <?php if ($branch_id): ?>
+                    <?php 
+                    $role = session()->get('role');
+                    $isAdmin = ($role === 'system_admin' || $role === 'central_admin');
+                    ?>
+                    <select name="branch_id" class="form-select" required <?= ($branch_id && !$isAdmin) ? 'disabled' : '' ?>>
+                        <?php if ($branch_id && !$isAdmin): ?>
                             <?php foreach ($branches as $branch): ?>
                                 <?php if ($branch['id'] == $branch_id): ?>
                                     <option value="<?= $branch['id'] ?>" selected><?= $branch['name'] ?></option>
                                 <?php endif; ?>
                             <?php endforeach; ?>
+                            <!-- Hidden input to submit the branch_id when disabled -->
+                            <input type="hidden" name="branch_id" value="<?= $branch_id ?>">
                         <?php else: ?>
                             <option value="">Select Branch</option>
                             <?php foreach ($branches as $branch): ?>
-                                <option value="<?= $branch['id'] ?>"><?= $branch['name'] ?></option>
+                                <option value="<?= $branch['id'] ?>" <?= ($branch_id && $branch['id'] == $branch_id) ? 'selected' : '' ?>>
+                                    <?= $branch['name'] ?>
+                                </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </select>
+                    <?php if ($branch_id && !$isAdmin): ?>
+                        <small class="text-muted">You can only create requests for your assigned branch.</small>
+                    <?php endif; ?>
                 </div>
                 <div class="col-md-6">
                     <label>Priority</label>

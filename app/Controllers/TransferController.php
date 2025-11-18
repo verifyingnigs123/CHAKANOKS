@@ -8,6 +8,7 @@ use App\Models\BranchModel;
 use App\Models\ProductModel;
 use App\Models\InventoryModel;
 use App\Models\ActivityLogModel;
+use App\Libraries\NotificationService;
 
 class TransferController extends BaseController
 {
@@ -17,6 +18,7 @@ class TransferController extends BaseController
     protected $productModel;
     protected $inventoryModel;
     protected $activityLogModel;
+    protected $notificationService;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class TransferController extends BaseController
         $this->productModel = new ProductModel();
         $this->inventoryModel = new InventoryModel();
         $this->activityLogModel = new ActivityLogModel();
+        $this->notificationService = new NotificationService();
     }
 
     public function index()
@@ -133,6 +136,13 @@ class TransferController extends BaseController
         }
 
         $this->activityLogModel->logActivity($requestedBy, 'create', 'transfer', "Created transfer: $transferNumber");
+
+        // Send notification to admins and branch managers for approval
+        $fromBranch = $this->branchModel->find($fromBranchId);
+        $toBranch = $this->branchModel->find($toBranchId);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        $this->notificationService->sendTransferApprovalNotification($transferId, $transferNumber, $fromBranchId, $toBranchId, $fromBranchName, $toBranchName);
 
         return redirect()->to('/transfers')->with('success', 'Transfer request created successfully');
     }

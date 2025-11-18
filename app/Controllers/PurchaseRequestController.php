@@ -7,6 +7,7 @@ use App\Models\PurchaseRequestItemModel;
 use App\Models\ProductModel;
 use App\Models\BranchModel;
 use App\Models\ActivityLogModel;
+use App\Libraries\NotificationService;
 
 class PurchaseRequestController extends BaseController
 {
@@ -15,6 +16,7 @@ class PurchaseRequestController extends BaseController
     protected $productModel;
     protected $branchModel;
     protected $activityLogModel;
+    protected $notificationService;
 
     public function __construct()
     {
@@ -23,6 +25,7 @@ class PurchaseRequestController extends BaseController
         $this->productModel = new ProductModel();
         $this->branchModel = new BranchModel();
         $this->activityLogModel = new ActivityLogModel();
+        $this->notificationService = new NotificationService();
     }
 
     public function index()
@@ -135,6 +138,11 @@ class PurchaseRequestController extends BaseController
 
         $this->activityLogModel->logActivity($requestedBy, 'create', 'purchase_request', "Created purchase request: $requestNumber");
 
+        // Send notification to admins for approval
+        $branch = $this->branchModel->find($branchId);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $this->notificationService->sendPurchaseRequestNotification($requestId, $requestNumber, $branchName);
+
         return redirect()->to('/purchase-requests')->with('success', 'Purchase request created successfully');
     }
 
@@ -150,6 +158,11 @@ class PurchaseRequestController extends BaseController
             return redirect()->back()->with('error', 'Unauthorized');
         }
 
+        $request = $this->purchaseRequestModel->find($id);
+        if (!$request) {
+            return redirect()->back()->with('error', 'Purchase request not found');
+        }
+
         $this->purchaseRequestModel->update($id, [
             'status' => 'approved',
             'approved_by' => $session->get('user_id'),
@@ -157,6 +170,11 @@ class PurchaseRequestController extends BaseController
         ]);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'approve', 'purchase_request', "Approved purchase request ID: $id");
+
+        // Send notification that approved request needs to be converted to Purchase Order
+        $branch = $this->branchModel->find($request['branch_id']);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $this->notificationService->sendApprovedPurchaseRequestNotification($id, $request['request_number'], $branchName);
 
         return redirect()->back()->with('success', 'Purchase request approved');
     }

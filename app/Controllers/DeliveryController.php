@@ -10,6 +10,8 @@ use App\Models\InventoryItemModel;
 use App\Models\StockAlertModel;
 use App\Models\ActivityLogModel;
 use App\Models\DriverModel;
+use App\Models\BranchModel;
+use App\Libraries\NotificationService;
 
 class DeliveryController extends BaseController
 {
@@ -21,6 +23,8 @@ class DeliveryController extends BaseController
     protected $stockAlertModel;
     protected $activityLogModel;
     protected $driverModel;
+    protected $branchModel;
+    protected $notificationService;
 
     public function __construct()
     {
@@ -32,6 +36,8 @@ class DeliveryController extends BaseController
         $this->stockAlertModel = new StockAlertModel();
         $this->activityLogModel = new ActivityLogModel();
         $this->driverModel = new DriverModel();
+        $this->branchModel = new BranchModel();
+        $this->notificationService = new NotificationService();
     }
 
     public function index()
@@ -110,6 +116,11 @@ class DeliveryController extends BaseController
         $deliveryId = $this->deliveryModel->insert($deliveryData);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'delivery', "Created delivery: $deliveryNumber");
+
+        // Send notification that delivery is scheduled and needs to be received
+        $branch = $this->branchModel->find($po['branch_id']);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $this->notificationService->sendDeliveryScheduledNotification($deliveryId, $deliveryNumber, $po['branch_id'], $branchName, $po['po_number']);
 
         return redirect()->to('/deliveries')->with('success', 'Delivery scheduled successfully');
     }
@@ -195,6 +206,14 @@ class DeliveryController extends BaseController
         $this->deliveryModel->update($id, $updateData);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'delivery', "Updated delivery ID: $id status to $status");
+
+        // Send notification when delivery is in transit or delivered (needs receiving)
+        if ($status == 'in_transit' || $status == 'delivered') {
+            $delivery = $this->deliveryModel->find($id);
+            $branch = $this->branchModel->find($delivery['branch_id']);
+            $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+            $this->notificationService->sendDeliveryReceivingNotification($id, $delivery['delivery_number'], $delivery['branch_id'], $branchName, $status);
+        }
 
         return redirect()->back()->with('success', 'Delivery status updated');
     }
@@ -291,6 +310,11 @@ class DeliveryController extends BaseController
         }
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'receive', 'delivery', "Received delivery ID: $id");
+
+        // Send notification that delivery is received and inventory is updated
+        $branch = $this->branchModel->find($branchId);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $this->notificationService->sendDeliveryReceivedNotification($id, $delivery['delivery_number'], $branchId, $branchName, $po['po_number']);
 
         return redirect()->to('/deliveries')->with('success', 'Delivery received and inventory updated');
     }
