@@ -10,7 +10,7 @@ $title = 'Inventory';
     <h4>Inventory List</h4>
     <div>
         <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
-            <select class="form-select d-inline-block" style="width: auto;" onchange="window.location.href='?branch_id='+this.value">
+            <select class="form-select d-inline-block me-2" style="width: auto;" onchange="window.location.href='?branch_id='+this.value">
                 <option value="">All Branches</option>
                 <?php foreach ($branches as $branch): ?>
                     <option value="<?= $branch['id'] ?>" <?= ($current_branch_id == $branch['id']) ? 'selected' : '' ?>>
@@ -19,6 +19,9 @@ $title = 'Inventory';
                 <?php endforeach; ?>
             </select>
         <?php endif; ?>
+        <a href="<?= base_url('inventory/history' . ($current_branch_id ? '?branch_id=' . $current_branch_id : '')) ?>" class="btn btn-outline-primary me-2">
+            <i class="bi bi-clock-history"></i> View History
+        </a>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scanModal">
             <i class="bi bi-upc-scan"></i> Scan Barcode
         </button>

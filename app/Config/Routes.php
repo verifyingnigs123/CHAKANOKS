@@ -18,6 +18,7 @@ $routes->get('dashboard', 'DashboardController::index');
 // Inventory Management
 $routes->group('inventory', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'InventoryController::index');
+    $routes->get('history', 'InventoryController::history');
     $routes->post('update', 'InventoryController::update');
     $routes->post('scan', 'InventoryController::scan');
     $routes->get('alerts', 'InventoryController::alerts');

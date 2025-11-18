@@ -11,6 +11,7 @@ use App\Models\StockAlertModel;
 use App\Models\ActivityLogModel;
 use App\Models\DriverModel;
 use App\Models\BranchModel;
+use App\Models\InventoryHistoryModel;
 use App\Libraries\NotificationService;
 
 class DeliveryController extends BaseController
@@ -24,6 +25,7 @@ class DeliveryController extends BaseController
     protected $activityLogModel;
     protected $driverModel;
     protected $branchModel;
+    protected $inventoryHistoryModel;
     protected $notificationService;
 
     public function __construct()
@@ -37,6 +39,7 @@ class DeliveryController extends BaseController
         $this->activityLogModel = new ActivityLogModel();
         $this->driverModel = new DriverModel();
         $this->branchModel = new BranchModel();
+        $this->inventoryHistoryModel = new InventoryHistoryModel();
         $this->notificationService = new NotificationService();
     }
 
@@ -243,11 +246,14 @@ class DeliveryController extends BaseController
             foreach ($products as $index => $productId) {
                 $quantity = (int) $quantities[$index];
                 if ($quantity > 0) {
-                    // Update inventory
+                    // Get current inventory before update
                     $inventory = $this->inventoryModel->where('branch_id', $branchId)
                         ->where('product_id', $productId)
                         ->first();
 
+                    $previousQuantity = $inventory ? $inventory['quantity'] : 0;
+
+                    // Update inventory
                     if ($inventory) {
                         $newQuantity = $inventory['quantity'] + $quantity;
                         $this->inventoryModel->updateQuantity($branchId, $productId, $newQuantity, $session->get('user_id'));
@@ -256,7 +262,25 @@ class DeliveryController extends BaseController
                         $inventory = $this->inventoryModel->where('branch_id', $branchId)
                             ->where('product_id', $productId)
                             ->first();
+                        $newQuantity = $quantity;
                     }
+
+                    // Record inventory history
+                    $this->inventoryHistoryModel->insert([
+                        'branch_id' => $branchId,
+                        'product_id' => $productId,
+                        'purchase_order_id' => $po['id'],
+                        'delivery_id' => $id,
+                        'po_number' => $po['po_number'],
+                        'delivery_number' => $delivery['delivery_number'],
+                        'quantity_added' => $quantity,
+                        'previous_quantity' => $previousQuantity,
+                        'new_quantity' => $newQuantity,
+                        'transaction_type' => 'delivery_received',
+                        'received_by' => $session->get('user_id'),
+                        'notes' => "Received from Purchase Order {$po['po_number']} via Delivery {$delivery['delivery_number']}",
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
 
                     // Add inventory items (for perishables with batch/expiry)
                     if (!empty($batchNumbers[$index]) || !empty($expiryDates[$index])) {

@@ -8,6 +8,7 @@ use App\Models\BranchModel;
 use App\Models\StockAlertModel;
 use App\Models\InventoryItemModel;
 use App\Models\ActivityLogModel;
+use App\Models\InventoryHistoryModel;
 
 class InventoryController extends BaseController
 {
@@ -17,6 +18,7 @@ class InventoryController extends BaseController
     protected $stockAlertModel;
     protected $inventoryItemModel;
     protected $activityLogModel;
+    protected $inventoryHistoryModel;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class InventoryController extends BaseController
         $this->stockAlertModel = new StockAlertModel();
         $this->inventoryItemModel = new InventoryItemModel();
         $this->activityLogModel = new ActivityLogModel();
+        $this->inventoryHistoryModel = new InventoryHistoryModel();
     }
 
     public function index()
@@ -233,6 +236,41 @@ class InventoryController extends BaseController
         return $this->response->setJSON([
             'quantity' => $inventory ? $inventory['quantity'] : 0
         ]);
+    }
+
+    public function history()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        $branchId = $this->request->getGet('branch_id');
+        $productId = $this->request->getGet('product_id');
+
+        // If no branch_id in query and user is not admin, use their branch
+        if ($branchId === null && $role !== 'central_admin' && $role !== 'system_admin') {
+            $branchId = $session->get('branch_id');
+        }
+
+        // Get history based on filters
+        if ($productId) {
+            $history = $this->inventoryHistoryModel->getHistoryByProduct($productId, $branchId, 100);
+        } elseif ($branchId) {
+            $history = $this->inventoryHistoryModel->getHistoryByBranch($branchId, 100);
+        } else {
+            $history = $this->inventoryHistoryModel->getAllHistory(null, 100);
+        }
+
+        $data['history'] = $history;
+        $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
+        $data['products'] = $this->productModel->where('status', 'active')->findAll();
+        $data['current_branch_id'] = $branchId;
+        $data['current_product_id'] = $productId;
+        $data['role'] = $role;
+
+        return view('inventory/history', $data);
     }
 }
 
