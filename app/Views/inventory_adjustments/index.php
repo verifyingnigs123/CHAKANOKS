@@ -27,7 +27,7 @@ $title = 'Inventory Adjustments';
                     <option value="set" <?= ($type == 'set') ? 'selected' : '' ?>>Set</option>
                 </select>
             </div>
-            <?php if ($role == 'system_admin' || $role == 'central_admin'): ?>
+            <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
             <div class="col-md-2">
                 <select name="branch_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Branches</option>

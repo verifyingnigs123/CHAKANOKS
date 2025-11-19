@@ -55,7 +55,7 @@ $title = 'Transfers';
                                     <a href="<?= base_url('transfers/view/' . $transfer['id']) ?>" class="btn btn-sm btn-info">
                                         <i class="bi bi-eye"></i> View
                                     </a>
-                                    <?php if (($role == 'branch_manager' || $role == 'central_admin' || $role == 'system_admin') && $transfer['status'] == 'pending'): ?>
+                                    <?php if (($role == 'branch_manager' || $role == 'central_admin' || $role == 'central_admin') && $transfer['status'] == 'pending'): ?>
                                         <form method="post" action="<?= base_url('transfers/' . $transfer['id'] . '/approve') ?>" class="d-inline">
                                             <button type="submit" class="btn btn-sm btn-success">
                                                 <i class="bi bi-check"></i> Approve

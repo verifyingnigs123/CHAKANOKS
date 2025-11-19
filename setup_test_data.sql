@@ -6,14 +6,9 @@
 -- ============================================
 -- Password for all users: 'password'
 
--- System Admin
-INSERT INTO users (username, password, full_name, email, role, status, created_at) 
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@scms.com', 'system_admin', 'active', NOW())
-ON DUPLICATE KEY UPDATE username=username;
-
 -- Central Admin
 INSERT INTO users (username, password, full_name, email, role, status, created_at) 
-VALUES ('central', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Central Office Admin', 'central@scms.com', 'central_admin', 'active', NOW())
+VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Central Administrator', 'admin@scms.com', 'central_admin', 'active', NOW())
 ON DUPLICATE KEY UPDATE username=username;
 
 -- Branch Manager

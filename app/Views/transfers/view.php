@@ -115,7 +115,7 @@ $title = 'Transfer Details';
             </table>
         </div>
 
-        <?php if (($role == 'branch_manager' || $role == 'central_admin' || $role == 'system_admin') && $transfer['status'] == 'pending'): ?>
+        <?php if (($role == 'branch_manager' || $role == 'central_admin' || $role == 'central_admin') && $transfer['status'] == 'pending'): ?>
         <div class="mt-3">
             <form method="post" action="<?= base_url('transfers/' . $transfer['id'] . '/approve') ?>" class="d-inline">
                 <button type="submit" class="btn btn-success">

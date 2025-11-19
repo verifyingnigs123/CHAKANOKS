@@ -16,7 +16,7 @@ $title = 'Purchase Requests';
 <div class="card mb-3">
     <div class="card-body">
         <form method="get" action="<?= base_url('purchase-requests') ?>" id="filterForm" class="row g-3">
-            <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
+            <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
             <div class="col-md-3">
                 <label class="form-label">Branch</label>
                 <select name="branch_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
@@ -101,7 +101,7 @@ $title = 'Purchase Requests';
                                     <a href="<?= base_url('purchase-requests/view/' . $request['id']) ?>" class="btn btn-sm btn-info">
                                         <i class="bi bi-eye"></i> View
                                     </a>
-                                    <?php if (($role == 'central_admin' || $role == 'system_admin') && $request['status'] == 'pending'): ?>
+                                    <?php if (($role == 'central_admin' || $role == 'central_admin') && $request['status'] == 'pending'): ?>
                                         <form method="post" action="<?= base_url('purchase-requests/' . $request['id'] . '/approve') ?>" class="d-inline">
                                             <button type="submit" class="btn btn-sm btn-success">
                                                 <i class="bi bi-check"></i> Approve

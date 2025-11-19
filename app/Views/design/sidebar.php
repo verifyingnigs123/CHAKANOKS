@@ -88,17 +88,26 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
 <div class="modern-sidebar" role="navigation" aria-label="Primary sidebar">
   <div class="sidebar-header">
     <div class="sidebar-user" role="group" aria-label="User info">
-      <div class="sidebar-user-avatar" aria-hidden="true"><?= strtoupper(substr($username, 0, 1)) ?></div>
+      <?php 
+      $roleDisplay = ucwords(str_replace('_', ' ', $role));
+      // For central_admin, show as "Central Admin"
+      if ($role === 'central_admin') {
+          $roleDisplay = 'Central Admin';
+      }
+      // Get first letter of role display for avatar
+      $avatarInitial = strtoupper(substr($roleDisplay, 0, 1));
+      ?>
+      <div class="sidebar-user-avatar" aria-hidden="true"><?= $avatarInitial ?></div>
       <div class="sidebar-user-info">
-        <p class="sidebar-user-name"><?= esc($username) ?></p>
-        <p class="sidebar-user-role"><?= esc(ucwords(str_replace('_',' ',$role))) ?></p>
+        <p class="sidebar-user-name"><?= esc($roleDisplay) ?></p>
+        <p class="sidebar-user-role"><?= esc($roleDisplay) ?></p>
       </div>
     </div>
   </div>
 
   <ul class="sidebar-menu" role="menu" aria-label="Sidebar menu">
-    <!-- System Admin -->
-    <?php if ($role === 'system_admin'): ?>
+    <!-- Central Admin -->
+    <?php if ($role === 'central_admin'): ?>
       <li class="menu-label">Administrator</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
       <li><a href="<?= base_url('users') ?>" class="nav-link"><i class="bi bi-people"></i><span>User Management</span></a></li>
@@ -116,25 +125,6 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
       <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Reports</span></a></li>
       <li><a href="<?= base_url('activity-logs') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Activity Logs</span></a></li>
       <li><a href="<?= base_url('settings') ?>" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
-
-    <!-- Central Admin -->
-    <?php elseif ($role === 'central_admin'): ?>
-      <li class="menu-label">Central Office</li>
-      <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('users') ?>" class="nav-link"><i class="bi bi-people"></i><span>User Management</span></a></li>
-      <li><a href="<?= base_url('branches') ?>" class="nav-link"><i class="bi bi-building"></i><span>Branches</span></a></li>
-      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Inventory</span></a></li>
-      <li><a href="<?= base_url('suppliers') ?>" class="nav-link"><i class="bi bi-briefcase"></i><span>Suppliers</span></a></li>
-      <li class="menu-divider"></li>
-
-      <li class="menu-label">Procurement</li>
-      <li><a href="<?= base_url('purchase-requests') ?>" class="nav-link"><i class="bi bi-journal-plus"></i><span>Purchase Requests</span></a></li>
-      <li><a href="<?= base_url('purchase-orders') ?>" class="nav-link"><i class="bi bi-receipt"></i><span>Purchase Orders</span></a></li>
-      <li class="menu-divider"></li>
-
-      <li class="menu-label">Analytics & Operations</li>
-      <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Reports</span></a></li>
-      <li><a href="<?= base_url('activity-logs') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Activity Logs</span></a></li>
 
     <!-- Branch Manager -->
     <?php elseif ($role === 'branch_manager'): ?>

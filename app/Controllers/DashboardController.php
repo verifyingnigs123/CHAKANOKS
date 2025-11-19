@@ -33,7 +33,6 @@ class DashboardController extends BaseController
         // Role-based dashboard data
         switch ($role) {
             case 'central_admin':
-            case 'system_admin':
                 $data['total_branches'] = (new BranchModel())->where('status', 'active')->countAllResults();
                 $data['total_products'] = (new ProductModel())->countAllResults();
                 $data['total_suppliers'] = (new SupplierModel())->where('status', 'active')->countAllResults();
@@ -64,6 +63,36 @@ class DashboardController extends BaseController
                 $data['low_stock_items'] = $this->getLowStockItems($branchId);
                 $data['pending_requests'] = (new PurchaseRequestModel())->where('branch_id', $branchId)->where('status', 'pending')->countAllResults();
                 $data['active_alerts'] = (new StockAlertModel())->where('branch_id', $branchId)->where('status', 'active')->countAllResults();
+                
+                // Additional metrics for branch manager
+                $data['pending_transfers'] = (new TransferModel())->where('to_branch_id', $branchId)->where('status', 'pending')->countAllResults();
+                $data['pending_approvals'] = (new TransferModel())->where('from_branch_id', $branchId)->where('status', 'pending')->countAllResults();
+                $data['in_transit_deliveries'] = (new DeliveryModel())->where('branch_id', $branchId)->where('status', 'in_transit')->countAllResults();
+                $data['scheduled_deliveries'] = (new DeliveryModel())->where('branch_id', $branchId)->where('status', 'scheduled')->countAllResults();
+                
+                // Inventory value
+                $data['inventory_value'] = $this->getBranchInventoryValue($branchId);
+                
+                // Purchase orders for this branch
+                $data['pending_orders'] = (new PurchaseOrderModel())->where('branch_id', $branchId)->whereIn('status', ['draft', 'sent'])->countAllResults();
+                $data['completed_orders'] = (new PurchaseOrderModel())->where('branch_id', $branchId)->where('status', 'completed')->countAllResults();
+                
+                // Recent activities
+                $data['recent_requests'] = (new PurchaseRequestModel())->where('branch_id', $branchId)->orderBy('created_at', 'DESC')->limit(5)->findAll();
+                $transferModel = new TransferModel();
+                $data['recent_transfers'] = $transferModel->groupStart()
+                    ->where('from_branch_id', $branchId)
+                    ->orWhere('to_branch_id', $branchId)
+                    ->groupEnd()
+                    ->orderBy('created_at', 'DESC')
+                    ->limit(5)
+                    ->findAll();
+                $data['recent_deliveries'] = (new DeliveryModel())->where('branch_id', $branchId)->orderBy('created_at', 'DESC')->limit(5)->findAll();
+                
+                // Chart data
+                $data['purchase_requests_chart'] = $this->getBranchPurchaseRequestsChartData($branchId);
+                $data['inventory_trends_chart'] = $this->getBranchInventoryTrendsChartData($branchId);
+                $data['transfers_chart'] = $this->getBranchTransfersChartData($branchId);
                 break;
 
             case 'inventory_staff':
@@ -167,7 +196,9 @@ class DashboardController extends BaseController
         for ($i = 6; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-$i days"));
             $labels[] = date('M d', strtotime($date));
-            $count = $purchaseOrderModel->where('DATE(created_at)', $date)->countAllResults();
+            $count = $purchaseOrderModel->where('created_at >=', $date . ' 00:00:00')
+                ->where('created_at <=', $date . ' 23:59:59')
+                ->countAllResults();
             $data[] = $count;
         }
 
@@ -207,6 +238,95 @@ class DashboardController extends BaseController
 
         return [
             'labels' => ['Scheduled', 'In Transit', 'Delivered'],
+            'data' => $data
+        ];
+    }
+
+    private function getBranchInventoryValue($branchId)
+    {
+        $inventoryModel = new InventoryModel();
+        $productModel = new ProductModel();
+
+        $inventoryItems = $inventoryModel->select('inventory.quantity, products.cost_price')
+            ->join('products', 'products.id = inventory.product_id')
+            ->where('inventory.branch_id', $branchId)
+            ->findAll();
+
+        $totalValue = 0;
+        foreach ($inventoryItems as $item) {
+            $totalValue += ($item['quantity'] * $item['cost_price']);
+        }
+
+        return $totalValue;
+    }
+
+    private function getBranchPurchaseRequestsChartData($branchId)
+    {
+        $purchaseRequestModel = new PurchaseRequestModel();
+        
+        // Get last 7 days of purchase requests
+        $data = [];
+        $labels = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-$i days"));
+            $labels[] = date('M d', strtotime($date));
+            $count = $purchaseRequestModel->where('branch_id', $branchId)
+                ->where('created_at >=', $date . ' 00:00:00')
+                ->where('created_at <=', $date . ' 23:59:59')
+                ->countAllResults();
+            $data[] = $count;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $data
+        ];
+    }
+
+    private function getBranchInventoryTrendsChartData($branchId)
+    {
+        $inventoryModel = new InventoryModel();
+        
+        // Get current inventory count for last 7 days (simplified - showing current inventory)
+        // For a more accurate trend, we'd need to track daily snapshots
+        $data = [];
+        $labels = [];
+        $currentCount = $inventoryModel->where('branch_id', $branchId)->countAllResults();
+        
+        for ($i = 6; $i >= 0; $i--) {
+            $date = date('M d', strtotime("-$i days"));
+            $labels[] = $date;
+            // For now, show current count (in a real scenario, you'd track daily snapshots)
+            $data[] = $currentCount;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $data
+        ];
+    }
+
+    private function getBranchTransfersChartData($branchId)
+    {
+        $transferModel = new TransferModel();
+        
+        $statuses = ['pending', 'approved', 'completed', 'rejected'];
+        $data = [];
+        $labels = [];
+        
+        foreach ($statuses as $status) {
+            $count = $transferModel->groupStart()
+                ->where('from_branch_id', $branchId)
+                ->orWhere('to_branch_id', $branchId)
+                ->groupEnd()
+                ->where('status', $status)
+                ->countAllResults();
+            $data[] = $count;
+            $labels[] = ucfirst($status);
+        }
+
+        return [
+            'labels' => $labels,
             'data' => $data
         ];
     }

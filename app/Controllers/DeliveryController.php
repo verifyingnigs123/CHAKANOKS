@@ -59,7 +59,7 @@ class DeliveryController extends BaseController
             ->join('branches', 'branches.id = deliveries.branch_id')
             ->orderBy('deliveries.created_at', 'DESC');
 
-        if ($branchId && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
             $builder->where('deliveries.branch_id', $branchId);
         }
 

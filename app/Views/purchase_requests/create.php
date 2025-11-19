@@ -18,7 +18,7 @@ $title = 'Create Purchase Request';
                     <label>Branch</label>
                     <?php 
                     $role = session()->get('role');
-                    $isAdmin = ($role === 'system_admin' || $role === 'central_admin');
+                    $isAdmin = ($role === 'central_admin' || $role === 'central_admin');
                     ?>
                     <select name="branch_id" class="form-select" required <?= ($branch_id && !$isAdmin) ? 'disabled' : '' ?>>
                         <?php if ($branch_id && !$isAdmin): ?>

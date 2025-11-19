@@ -23,8 +23,8 @@ class SupplierController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Allow system_admin, central_admin, supplier, and franchise_manager roles to access suppliers management
-        if (!$this->checkRoleAccess(['system_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
+        // Allow central_admin, central_admin, supplier, and franchise_manager roles to access suppliers management
+        if (!$this->checkRoleAccess(['central_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
             return $this->unauthorized('Only administrators, suppliers, and franchise managers can access supplier management');
         }
 
@@ -62,8 +62,8 @@ class SupplierController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Allow system_admin, central_admin, supplier, and franchise_manager roles to create suppliers
-        if (!$this->checkRoleAccess(['system_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
+        // Allow central_admin, central_admin, supplier, and franchise_manager roles to create suppliers
+        if (!$this->checkRoleAccess(['central_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
             return $this->unauthorized('Only administrators, suppliers, and franchise managers can create suppliers');
         }
 
@@ -77,8 +77,8 @@ class SupplierController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Allow system_admin, central_admin, supplier, and franchise_manager roles to store suppliers
-        if (!$this->checkRoleAccess(['system_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
+        // Allow central_admin, central_admin, supplier, and franchise_manager roles to store suppliers
+        if (!$this->checkRoleAccess(['central_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
             return $this->unauthorized('Only administrators, suppliers, and franchise managers can create suppliers');
         }
 
@@ -109,8 +109,8 @@ class SupplierController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Allow system_admin, central_admin, supplier, and franchise_manager roles to edit suppliers
-        if (!$this->checkRoleAccess(['system_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
+        // Allow central_admin, central_admin, supplier, and franchise_manager roles to edit suppliers
+        if (!$this->checkRoleAccess(['central_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
             return $this->unauthorized('Only administrators, suppliers, and franchise managers can edit suppliers');
         }
 
@@ -129,8 +129,8 @@ class SupplierController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Allow system_admin, central_admin, supplier, and franchise_manager roles to update suppliers
-        if (!$this->checkRoleAccess(['system_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
+        // Allow central_admin, central_admin, supplier, and franchise_manager roles to update suppliers
+        if (!$this->checkRoleAccess(['central_admin', 'central_admin', 'supplier', 'franchise_manager'])) {
             return $this->unauthorized('Only administrators, suppliers, and franchise managers can update suppliers');
         }
 

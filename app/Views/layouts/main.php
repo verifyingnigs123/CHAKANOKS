@@ -279,7 +279,7 @@
                         </a>
                     </li>
                     <?php endif; ?>
-                    <?php if (session()->get('role') == 'system_admin' || session()->get('role') == 'central_admin'): ?>
+                    <?php if (session()->get('role') == 'central_admin' || session()->get('role') == 'central_admin'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'users') !== false) ? 'active' : '' ?>" href="<?= base_url('users') ?>">
                             <i class="bi bi-people"></i> User Management
@@ -298,7 +298,7 @@
                         </a>
                     </li>
                     <?php endif; ?>
-                    <?php if (session()->get('role') == 'system_admin'): ?>
+                    <?php if (session()->get('role') == 'central_admin'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'settings') !== false) ? 'active' : '' ?>" href="<?= base_url('settings') ?>">
                             <i class="bi bi-gear"></i> Settings
@@ -336,8 +336,16 @@
                             </ul>
                         </div>
                         <div>
-                            <span class="text-muted">Welcome, <strong><?= session()->get('username') ?></strong></span>
-                            <span class="badge bg-secondary ms-2"><?= ucfirst(str_replace('_', ' ', session()->get('role'))) ?></span>
+                            <?php 
+                            $role = session()->get('role');
+                            $roleDisplay = ucwords(str_replace('_', ' ', $role));
+                            // For central_admin, show as "Central Admin"
+                            if ($role === 'central_admin') {
+                                $roleDisplay = 'Central Admin';
+                            }
+                            ?>
+                            <span class="text-muted">Welcome, <strong><?= $roleDisplay ?></strong></span>
+                            <span class="badge bg-secondary ms-2"><?= $roleDisplay ?></span>
                         </div>
                     </div>
                 </div>

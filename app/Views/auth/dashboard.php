@@ -76,16 +76,23 @@
   
   <!-- Welcome Header -->
   <div class="welcome-header shadow">
-    <h2 class="mb-2"><i class="fas fa-user-circle me-2"></i>Welcome, <?= esc($username) ?>!</h2>
-    <h5 class="mb-0 opacity-75">Your Role: <?= esc(ucwords(str_replace('_', ' ', $role))) ?></h5>
+    <?php 
+    $roleDisplay = ucwords(str_replace('_', ' ', $role));
+    // For central_admin, show as "Central Admin"
+    if ($role === 'central_admin') {
+        $roleDisplay = 'Central Admin';
+    }
+    ?>
+    <h2 class="mb-2"><i class="fas fa-user-circle me-2"></i>Welcome, <?= esc($roleDisplay) ?>!</h2>
+    <h5 class="mb-0 opacity-75">Your Role: <?= esc($roleDisplay) ?></h5>
   </div>
 
-  <?php if ($role === 'system_admin'): ?>
-    <!-- System Administrator Dashboard -->
+  <?php if ($role === 'central_admin'): ?>
+    <!-- Central Administrator Dashboard -->
     <div class="row mb-4">
       <div class="col-12">
         <div class="alert alert-primary border-0 shadow-sm" style="border-left: 5px solid #0d6efd;">
-          <h5 class="alert-heading mb-2"><i class="fas fa-crown me-2"></i>System Administrator Panel</h5>
+          <h5 class="alert-heading mb-2"><i class="fas fa-crown me-2"></i>Central Administrator Panel</h5>
           <p class="mb-0">Complete control over all system operations — Manage everything here.</p>
         </div>
       </div>

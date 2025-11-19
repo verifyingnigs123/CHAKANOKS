@@ -42,13 +42,13 @@ class PurchaseRequestController extends BaseController
             ->join('branches', 'branches.id = purchase_requests.branch_id')
             ->join('users', 'users.id = purchase_requests.requested_by');
 
-        if ($branchId && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
             $builder->where('purchase_requests.branch_id', $branchId);
         }
 
         // Filter by branch (from dropdown)
         $filterBranchId = $this->request->getGet('branch_id');
-        if ($filterBranchId && ($role === 'central_admin' || $role === 'system_admin')) {
+        if ($filterBranchId && ($role === 'central_admin' || $role === 'central_admin')) {
             $builder->where('purchase_requests.branch_id', $filterBranchId);
         }
 
@@ -161,7 +161,7 @@ class PurchaseRequestController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'central_admin' && $role !== 'system_admin') {
+        if ($role !== 'central_admin' && $role !== 'central_admin') {
             return redirect()->back()->with('error', 'Unauthorized');
         }
 
@@ -194,7 +194,7 @@ class PurchaseRequestController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'central_admin' && $role !== 'system_admin') {
+        if ($role !== 'central_admin' && $role !== 'central_admin') {
             return redirect()->back()->with('error', 'Unauthorized');
         }
 

@@ -16,7 +16,7 @@ $title = 'Inventory History';
 <div class="card mb-3">
     <div class="card-body">
         <form method="get" action="<?= base_url('inventory/history') ?>" id="filterForm" class="row g-3">
-            <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
+            <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
             <div class="col-md-6">
                 <label>Branch</label>
                 <select name="branch_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
@@ -29,7 +29,7 @@ $title = 'Inventory History';
                 </select>
             </div>
             <?php endif; ?>
-            <div class="col-md-<?= ($role == 'central_admin' || $role == 'system_admin') ? '6' : '12' ?>">
+            <div class="col-md-<?= ($role == 'central_admin' || $role == 'central_admin') ? '6' : '12' ?>">
                 <label>Product</label>
                 <select name="product_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Products</option>
@@ -51,7 +51,7 @@ $title = 'Inventory History';
                 <thead>
                     <tr>
                         <th>Date & Time</th>
-                        <?php if (!$current_branch_id && ($role == 'central_admin' || $role == 'system_admin')): ?>
+                        <?php if (!$current_branch_id && ($role == 'central_admin' || $role == 'central_admin')): ?>
                         <th>Branch</th>
                         <?php endif; ?>
                         <th>Product</th>
@@ -69,7 +69,7 @@ $title = 'Inventory History';
                         <?php foreach ($history as $item): ?>
                             <tr>
                                 <td><?= date('M d, Y h:i A', strtotime($item['created_at'])) ?></td>
-                                <?php if (!$current_branch_id && ($role == 'central_admin' || $role == 'system_admin')): ?>
+                                <?php if (!$current_branch_id && ($role == 'central_admin' || $role == 'central_admin')): ?>
                                 <td>
                                     <span class="badge bg-info"><?= esc($item['branch_name']) ?></span>
                                 </td>
@@ -127,7 +127,7 @@ $title = 'Inventory History';
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="<?= (!$current_branch_id && ($role == 'central_admin' || $role == 'system_admin')) ? '10' : '9' ?>" class="text-center text-muted py-4">
+                            <td colspan="<?= (!$current_branch_id && ($role == 'central_admin' || $role == 'central_admin')) ? '10' : '9' ?>" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 No inventory history found
                             </td>

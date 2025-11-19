@@ -53,7 +53,7 @@ class PurchaseOrderController extends BaseController
             ->join('users', 'users.id = purchase_orders.created_by')
             ->orderBy('purchase_orders.created_at', 'DESC');
 
-        if ($branchId && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
             $builder->where('purchase_orders.branch_id', $branchId);
         }
 

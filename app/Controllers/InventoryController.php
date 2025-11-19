@@ -44,7 +44,7 @@ class InventoryController extends BaseController
             $branchId = null;
         }
         // If no branch_id in query and user is not admin, use their branch
-        if ($branchId === null && $session->get('role') !== 'central_admin' && $session->get('role') !== 'system_admin') {
+        if ($branchId === null && $session->get('role') !== 'central_admin' && $session->get('role') !== 'central_admin') {
             $branchId = $session->get('branch_id');
         }
         
@@ -189,7 +189,7 @@ class InventoryController extends BaseController
             ->join('branches', 'branches.id = stock_alerts.branch_id')
             ->where('stock_alerts.status', 'active');
 
-        if ($branchId && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
             $builder->where('stock_alerts.branch_id', $branchId);
         }
 
@@ -250,7 +250,7 @@ class InventoryController extends BaseController
         $productId = $this->request->getGet('product_id');
 
         // If no branch_id in query and user is not admin, use their branch
-        if ($branchId === null && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($branchId === null && $role !== 'central_admin' && $role !== 'central_admin') {
             $branchId = $session->get('branch_id');
         }
 

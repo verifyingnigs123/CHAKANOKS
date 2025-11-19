@@ -40,7 +40,7 @@ class InventoryAdjustmentController extends BaseController
         $role = $session->get('role');
         $branchId = $session->get('branch_id');
 
-        if ($branchId && $role !== 'system_admin' && $role !== 'central_admin') {
+        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
             $builder->where('inventory_adjustments.branch_id', $branchId);
         }
 

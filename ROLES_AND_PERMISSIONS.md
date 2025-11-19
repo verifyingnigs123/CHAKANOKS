@@ -7,22 +7,21 @@ This document outlines all user roles in the Supply Chain Management System (SCM
 
 ## All System Roles
 
-The system has **7 user roles** defined:
+The system has **6 user roles** defined:
 
-1. **system_admin** - System Administrator
-2. **central_admin** - Central Office Administrator  
-3. **branch_manager** - Branch Manager
-4. **inventory_staff** - Inventory Staff
-5. **supplier** - Supplier Account
-6. **logistics_coordinator** - Logistics Coordinator
-7. **franchise_manager** - Franchise Manager
+1. **central_admin** - Central Administrator (formerly System Administrator)
+2. **branch_manager** - Branch Manager
+3. **inventory_staff** - Inventory Staff
+4. **supplier** - Supplier Account
+5. **logistics_coordinator** - Logistics Coordinator
+6. **franchise_manager** - Franchise Manager
 
 ---
 
-## 1. System Administrator (`system_admin`)
+## 1. Central Admin (`central_admin`)
 
 ### **Role Description:**
-Full system access with complete administrative control over all modules and settings.
+Full system access with complete administrative control over all modules and settings. This role combines the responsibilities of the former System Administrator and Central Office Administrator roles.
 
 ### **Responsibilities:**
 - Manage all users and their roles
@@ -34,50 +33,24 @@ Full system access with complete administrative control over all modules and set
 - View system-wide reports and analytics
 - Access activity logs
 - Configure system settings
+- Monitor all stock alerts
+- Manage products, branches, and suppliers
 
 ### **Sidebar Pages Access:**
 - **Dashboard** - System-wide overview with statistics
-- **User Management** (`/admin/users`) - Create, edit, and manage all users
-- **Branches** (`/admin/branches`) - Manage all branch locations
+- **User Management** (`/users`) - Create, edit, and manage all users
+- **Branches** (`/branches`) - Manage all branch locations
 - **Inventory Overview** (`/inventory`) - View inventory across all branches
 - **Suppliers** (`/suppliers`) - Manage supplier database
 - **Purchase Requests** (`/purchase-requests`) - View and approve/reject all purchase requests
 - **Purchase Orders** (`/purchase-orders`) - Create and manage purchase orders
-- **Contracts** (`/suppliers/contracts`) - Manage supplier contracts
 - **Reports & Dashboards** (`/reports`) - System-wide analytics and reports
-- **Activity Logs** (`/logs`) - View all user activity logs
+- **Activity Logs** (`/activity-logs`) - View all user activity logs
 - **System Settings** (`/settings`) - Configure system parameters
 
 ---
 
-## 2. Central Admin (`central_admin`)
-
-### **Role Description:**
-Central office administrator with similar permissions to system admin but focused on operational oversight rather than system configuration.
-
-### **Responsibilities:**
-- View all branches and their inventory
-- Approve/reject purchase requests from branches
-- Manage products, branches, and suppliers
-- View consolidated reports
-- Monitor all stock alerts
-- Create and manage purchase orders
-- Access activity logs
-
-### **Sidebar Pages Access:**
-⚠️ **Note:** Currently, `central_admin` does not have a dedicated sidebar menu in the code. It shares the same dashboard access as `system_admin` but may need a custom sidebar menu. Based on the codebase, they have similar permissions but may have limited access to:
-- **Dashboard** - System-wide overview
-- **Inventory Overview** - View all branches
-- **Purchase Requests** - Approve/reject requests
-- **Purchase Orders** - Manage orders
-- **Reports** - View analytics
-- **Activity Logs** - View logs
-
-**Recommendation:** Consider adding a dedicated sidebar menu for `central_admin` with access to operational modules but excluding system settings.
-
----
-
-## 3. Branch Manager (`branch_manager`)
+## 2. Branch Manager (`branch_manager`)
 
 ### **Role Description:**
 Manages operations for a specific branch location, including inventory, orders, and transfers.
@@ -100,7 +73,7 @@ Manages operations for a specific branch location, including inventory, orders, 
 
 ---
 
-## 4. Inventory Staff (`inventory_staff`)
+## 3. Inventory Staff (`inventory_staff`)
 
 ### **Role Description:**
 Handles day-to-day inventory operations including stock updates, receiving deliveries, and monitoring stock levels.
@@ -120,7 +93,7 @@ Handles day-to-day inventory operations including stock updates, receiving deliv
 
 ---
 
-## 5. Supplier (`supplier`)
+## 4. Supplier (`supplier`)
 
 ### **Role Description:**
 External supplier account that can view and manage purchase orders, deliveries, and invoices related to their supplies.
@@ -139,7 +112,7 @@ External supplier account that can view and manage purchase orders, deliveries, 
 
 ---
 
-## 6. Logistics Coordinator (`logistics_coordinator`)
+## 5. Logistics Coordinator (`logistics_coordinator`)
 
 ### **Role Description:**
 Manages delivery operations, route planning, fleet management, and driver coordination.
@@ -160,7 +133,7 @@ Manages delivery operations, route planning, fleet management, and driver coordi
 
 ---
 
-## 7. Franchise Manager (`franchise_manager`)
+## 6. Franchise Manager (`franchise_manager`)
 
 ### **Role Description:**
 Manages franchise operations including applications, supply allocation, and royalty tracking.
@@ -183,8 +156,7 @@ Manages franchise operations including applications, supply allocation, and roya
 
 | Role | User Management | Branch Management | Inventory Access | Purchase Orders | Reports | System Settings |
 |------|----------------|-------------------|------------------|-----------------|---------|-----------------|
-| **system_admin** | ✅ Full | ✅ All Branches | ✅ All Branches | ✅ Full | ✅ Full | ✅ Full |
-| **central_admin** | ❌ No | ✅ View All | ✅ All Branches | ✅ Full | ✅ Full | ❌ No |
+| **central_admin** | ✅ Full | ✅ All Branches | ✅ All Branches | ✅ Full | ✅ Full | ✅ Full |
 | **branch_manager** | ❌ No | ❌ No | ✅ Own Branch | ✅ Create Requests | ✅ Branch Only | ❌ No |
 | **inventory_staff** | ❌ No | ❌ No | ✅ Own Branch | ❌ No | ❌ No | ❌ No |
 | **supplier** | ❌ No | ❌ No | ❌ No | ✅ View Own | ❌ No | ❌ No |
@@ -197,10 +169,10 @@ Manages franchise operations including applications, supply allocation, and roya
 
 Based on the UserSeeder, default test users are:
 
-1. **System Admin**
-   - Username: `sysadmin`
+1. **Central Admin**
+   - Username: `centraladmin`
    - Password: `admin123`
-   - Email: `sysadmin@scms.com`
+   - Email: `centraladmin@scms.com`
 
 2. **Branch Manager**
    - Username: `branchmanager`
@@ -234,8 +206,9 @@ Based on the UserSeeder, default test users are:
 - All roles require authentication to access the system
 - Role-based access control is enforced at both the controller and view levels
 - Activity logs track all user actions
-- The `central_admin` role currently shares dashboard access with `system_admin` but may need a dedicated sidebar menu
+- The `central_admin` role has full system access including user management, branch management, and system settings
 - Branch-specific roles (`branch_manager`, `inventory_staff`) are typically assigned to a specific branch via `branch_id`
+- **Note:** The `system_admin` role has been merged into `central_admin`. All system administrator responsibilities are now handled by the Central Admin role.
 
 ---
 

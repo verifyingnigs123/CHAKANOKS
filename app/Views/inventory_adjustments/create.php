@@ -38,7 +38,7 @@ $title = 'New Adjustment';
                 </div>
                 <div class="col-md-6">
                     <label>Branch *</label>
-                    <select name="branch_id" id="branch_id" class="form-select" required <?= ($role !== 'system_admin' && $role !== 'central_admin' && $branchId) ? 'readonly' : '' ?>>
+                    <select name="branch_id" id="branch_id" class="form-select" required <?= ($role !== 'central_admin' && $role !== 'central_admin' && $branchId) ? 'readonly' : '' ?>>
                         <option value="">Select Branch</option>
                         <?php foreach ($branches as $branch): ?>
                             <option value="<?= $branch['id'] ?>" <?= ($branchId == $branch['id']) ? 'selected' : '' ?>>

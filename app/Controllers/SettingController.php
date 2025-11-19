@@ -24,8 +24,8 @@ class SettingController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin') {
-            return redirect()->to('/dashboard')->with('error', 'Only system administrators can access settings');
+        if ($role !== 'central_admin') {
+            return redirect()->to('/dashboard')->with('error', 'Only central administrators can access settings');
         }
 
         $data['settings'] = $this->settingModel->getAllSettings();
@@ -40,7 +40,7 @@ class SettingController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin') {
+        if ($role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized');
         }
 

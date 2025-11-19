@@ -27,7 +27,7 @@ class UserController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
@@ -60,7 +60,6 @@ class UserController extends BaseController
         $data['users'] = $builder->findAll();
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['roles'] = [
-            'system_admin' => 'System Admin',
             'central_admin' => 'Central Admin',
             'branch_manager' => 'Branch Manager',
             'inventory_staff' => 'Inventory Staff',
@@ -83,13 +82,12 @@ class UserController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['roles'] = [
-            'system_admin' => 'System Admin',
             'central_admin' => 'Central Admin',
             'branch_manager' => 'Branch Manager',
             'inventory_staff' => 'Inventory Staff',
@@ -109,7 +107,7 @@ class UserController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
@@ -118,7 +116,7 @@ class UserController extends BaseController
             'email' => 'required|valid_email|is_unique[users.email]',
             'full_name' => 'required|min_length[2]|max_length[150]',
             'password' => 'required|min_length[6]',
-            'role' => 'required|in_list[system_admin,central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager]',
+            'role' => 'required|in_list[central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager]',
             'status' => 'required|in_list[active,inactive]'
         ];
 
@@ -152,7 +150,7 @@ class UserController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
@@ -164,7 +162,6 @@ class UserController extends BaseController
         $data['user'] = $user;
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['roles'] = [
-            'system_admin' => 'System Admin',
             'central_admin' => 'Central Admin',
             'branch_manager' => 'Branch Manager',
             'inventory_staff' => 'Inventory Staff',
@@ -184,7 +181,7 @@ class UserController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
@@ -197,7 +194,7 @@ class UserController extends BaseController
             'username' => "required|min_length[3]|max_length[100]|is_unique[users.username,id,{$id}]",
             'email' => "required|valid_email|is_unique[users.email,id,{$id}]",
             'full_name' => 'required|min_length[2]|max_length[150]',
-            'role' => 'required|in_list[system_admin,central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager]',
+            'role' => 'required|in_list[central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager]',
             'status' => 'required|in_list[active,inactive]'
         ];
 
@@ -236,7 +233,7 @@ class UserController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 

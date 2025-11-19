@@ -7,7 +7,7 @@ $title = 'Dashboard';
 ?>
 
 <div class="row mb-4">
-    <?php if (in_array($role, ['central_admin', 'system_admin'])): ?>
+    <?php if (in_array($role, ['central_admin', 'central_admin'])): ?>
         <!-- Central Admin Dashboard -->
         <div class="col-md-3 mb-3">
             <a href="<?= base_url('branches') ?>" class="text-decoration-none">
@@ -130,7 +130,8 @@ $title = 'Dashboard';
         </div>
     <?php elseif ($role == 'branch_manager'): ?>
         <!-- Branch Manager Dashboard -->
-        <div class="col-md-4 mb-3">
+        <!-- First Row: Key Metrics -->
+        <div class="col-md-3 mb-3">
             <a href="<?= base_url('inventory') ?>" class="text-decoration-none">
                 <div class="card stat-card primary clickable-card">
                     <div class="card-body">
@@ -138,6 +139,7 @@ $title = 'Dashboard';
                             <div>
                                 <h6 class="text-muted mb-1">Inventory Items</h6>
                                 <h3 class="mb-0"><?= $branch_inventory ?? 0 ?></h3>
+                                <small class="text-muted">Total Products</small>
                             </div>
                             <div class="align-self-center">
                                 <i class="bi bi-boxes fs-1 text-primary"></i>
@@ -147,7 +149,7 @@ $title = 'Dashboard';
                 </div>
             </a>
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <a href="<?= base_url('inventory/alerts') ?>" class="text-decoration-none">
                 <div class="card stat-card warning clickable-card">
                     <div class="card-body">
@@ -155,6 +157,7 @@ $title = 'Dashboard';
                             <div>
                                 <h6 class="text-muted mb-1">Low Stock Items</h6>
                                 <h3 class="mb-0"><?= $low_stock_items ?? 0 ?></h3>
+                                <small class="text-muted">Needs Attention</small>
                             </div>
                             <div class="align-self-center">
                                 <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
@@ -164,7 +167,7 @@ $title = 'Dashboard';
                 </div>
             </a>
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <a href="<?= base_url('purchase-requests') ?>" class="text-decoration-none">
                 <div class="card stat-card success clickable-card">
                     <div class="card-body">
@@ -172,6 +175,7 @@ $title = 'Dashboard';
                             <div>
                                 <h6 class="text-muted mb-1">Pending Requests</h6>
                                 <h3 class="mb-0"><?= $pending_requests ?? 0 ?></h3>
+                                <small class="text-muted">Awaiting Approval</small>
                             </div>
                             <div class="align-self-center">
                                 <i class="bi bi-cart-plus fs-1 text-success"></i>
@@ -180,6 +184,215 @@ $title = 'Dashboard';
                     </div>
                 </div>
             </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="<?= base_url('transfers') ?>" class="text-decoration-none">
+                <div class="card stat-card info clickable-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-1">Pending Transfers</h6>
+                                <h3 class="mb-0"><?= $pending_transfers ?? 0 ?></h3>
+                                <small class="text-muted">Incoming/Outgoing</small>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-arrow-left-right fs-1 text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <!-- Second Row: Additional Metrics -->
+        <div class="col-md-3 mb-3">
+            <a href="<?= base_url('transfers') ?>" class="text-decoration-none">
+                <div class="card stat-card secondary clickable-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-1">Pending Approvals</h6>
+                                <h3 class="mb-0"><?= $pending_approvals ?? 0 ?></h3>
+                                <small class="text-muted">Requires Action</small>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-check-circle fs-1 text-secondary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="<?= base_url('deliveries') ?>" class="text-decoration-none">
+                <div class="card stat-card danger clickable-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-1">In Transit</h6>
+                                <h3 class="mb-0"><?= $in_transit_deliveries ?? 0 ?></h3>
+                                <small class="text-muted">Deliveries</small>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-truck fs-1 text-danger"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="<?= base_url('deliveries') ?>" class="text-decoration-none">
+                <div class="card stat-card warning clickable-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-1">Scheduled</h6>
+                                <h3 class="mb-0"><?= $scheduled_deliveries ?? 0 ?></h3>
+                                <small class="text-muted">Upcoming</small>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-calendar-event fs-1 text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card success clickable-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-1">Inventory Value</h6>
+                            <h3 class="mb-0">₱<?= number_format($inventory_value ?? 0, 2) ?></h3>
+                            <small class="text-muted">Total Worth</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-currency-dollar fs-1 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#purchaseRequestsChartCollapse" aria-expanded="false" aria-controls="purchaseRequestsChartCollapse">
+                        <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                            <span>Purchase Requests (Last 7 Days)</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </h5>
+                    </div>
+                    <div class="collapse" id="purchaseRequestsChartCollapse">
+                        <div class="card-body">
+                            <canvas id="purchaseRequestsChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#transfersChartCollapse" aria-expanded="false" aria-controls="transfersChartCollapse">
+                        <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                            <span>Transfer Status</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </h5>
+                    </div>
+                    <div class="collapse" id="transfersChartCollapse">
+                        <div class="card-body">
+                            <canvas id="transfersChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Purchase Requests</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($recent_requests)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($recent_requests as $request): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $request['request_number'] ?? 'N/A' ?></strong>
+                                            <br>
+                                            <small class="text-muted"><?= date('M d, Y', strtotime($request['created_at'])) ?></small>
+                                        </div>
+                                        <span class="badge bg-<?= $request['status'] == 'approved' ? 'success' : ($request['status'] == 'rejected' ? 'danger' : 'warning') ?>">
+                                            <?= ucfirst($request['status']) ?>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No recent purchase requests</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Transfers</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($recent_transfers)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($recent_transfers as $transfer): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $transfer['transfer_number'] ?? 'N/A' ?></strong>
+                                            <br>
+                                            <small class="text-muted"><?= date('M d, Y', strtotime($transfer['created_at'])) ?></small>
+                                        </div>
+                                        <span class="badge bg-<?= $transfer['status'] == 'completed' ? 'success' : ($transfer['status'] == 'rejected' ? 'danger' : ($transfer['status'] == 'approved' ? 'info' : 'warning')) ?>">
+                                            <?= ucfirst($transfer['status']) ?>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No recent transfers</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Deliveries</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($recent_deliveries)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($recent_deliveries as $delivery): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $delivery['delivery_number'] ?? 'N/A' ?></strong>
+                                            <br>
+                                            <small class="text-muted"><?= date('M d, Y', strtotime($delivery['created_at'])) ?></small>
+                                        </div>
+                                        <span class="badge bg-<?= $delivery['status'] == 'delivered' ? 'success' : ($delivery['status'] == 'in_transit' ? 'info' : 'warning') ?>">
+                                            <?= ucfirst(str_replace('_', ' ', $delivery['status'])) ?>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No recent deliveries</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
         </div>
     <?php else: ?>
         <!-- Inventory Staff Dashboard -->
@@ -220,7 +433,7 @@ $title = 'Dashboard';
     <?php endif; ?>
 </div>
 
-<?php if (in_array($role, ['central_admin', 'system_admin'])): ?>
+<?php if (in_array($role, ['central_admin', 'central_admin'])): ?>
     <!-- Charts Section -->
     <div class="row mb-4">
         <div class="col-md-6 mb-3">
@@ -288,7 +501,7 @@ $title = 'Dashboard';
     </div>
 <?php endif; ?>
 
-<?php if (in_array($role, ['central_admin', 'system_admin'])): ?>
+<?php if (in_array($role, ['central_admin', 'central_admin'])): ?>
     <!-- Branch Inventory Report -->
     <div class="row mb-4">
         <div class="col-12">
@@ -431,7 +644,121 @@ $title = 'Dashboard';
 <?= $this->section('scripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-<?php if (in_array($role, ['central_admin', 'system_admin']) && isset($purchase_orders_chart)): ?>
+<?php if ($role == 'branch_manager' && isset($purchase_requests_chart)): ?>
+// Branch Manager Charts
+let purchaseRequestsChart = null;
+let transfersChart = null;
+
+// Function to initialize Purchase Requests Chart
+function initPurchaseRequestsChart() {
+    if (purchaseRequestsChart) return;
+    const ctx = document.getElementById('purchaseRequestsChart');
+    if (ctx) {
+        purchaseRequestsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($purchase_requests_chart['labels']) ?>,
+                datasets: [{
+                    label: 'Purchase Requests',
+                    data: <?= json_encode($purchase_requests_chart['data']) ?>,
+                    borderColor: 'rgb(25, 135, 84)',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Function to initialize Transfers Chart
+function initTransfersChart() {
+    if (transfersChart) return;
+    const ctx = document.getElementById('transfersChart');
+    if (ctx) {
+        transfersChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: <?= json_encode($transfers_chart['labels']) ?>,
+                datasets: [{
+                    data: <?= json_encode($transfers_chart['data']) ?>,
+                    backgroundColor: [
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(13, 110, 253, 0.8)',
+                        'rgba(25, 135, 84, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Handle collapse events for branch manager charts
+document.addEventListener('DOMContentLoaded', function() {
+    const prCollapse = document.getElementById('purchaseRequestsChartCollapse');
+    if (prCollapse) {
+        prCollapse.addEventListener('shown.bs.collapse', function() {
+            initPurchaseRequestsChart();
+        });
+    }
+    
+    const trCollapse = document.getElementById('transfersChartCollapse');
+    if (trCollapse) {
+        trCollapse.addEventListener('shown.bs.collapse', function() {
+            initTransfersChart();
+        });
+    }
+    
+    // Rotate chevron icons on collapse/expand
+    const collapseElements = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    collapseElements.forEach(function(element) {
+        element.addEventListener('click', function() {
+            const icon = this.querySelector('i.bi-chevron-down, i.bi-chevron-up');
+            if (icon) {
+                const target = document.querySelector(this.getAttribute('data-bs-target'));
+                if (target) {
+                    setTimeout(function() {
+                        if (target.classList.contains('show')) {
+                            icon.classList.remove('bi-chevron-down');
+                            icon.classList.add('bi-chevron-up');
+                        } else {
+                            icon.classList.remove('bi-chevron-up');
+                            icon.classList.add('bi-chevron-down');
+                        }
+                    }, 100);
+                }
+            }
+        });
+    });
+});
+<?php elseif (in_array($role, ['central_admin', 'central_admin']) && isset($purchase_orders_chart)): ?>
 // Store chart instances
 let purchaseOrdersChart = null;
 let inventoryValueChart = null;

@@ -42,7 +42,6 @@ class CreateUsersTable extends Migration
             'role' => [
                 'type'       => 'ENUM',
                 'constraint' => [
-                    'system_admin',
                     'central_admin',
                     'branch_manager',
                     'inventory_staff',

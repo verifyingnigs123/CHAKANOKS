@@ -11,12 +11,12 @@ class UserSeeder extends Seeder
     {
         $data = [
             [
-                'username'      => 'sysadmin',
+                'username'      => 'centraladmin',
                 'password'      => password_hash('admin123', PASSWORD_DEFAULT),
-                'full_name'     => 'System Administrator',
-                'email'         => 'sysadmin@scms.com',
+                'full_name'     => 'Central Administrator',
+                'email'         => 'centraladmin@scms.com',
                 'phone'         => '09999999999',
-                'role'          => 'system_admin',
+                'role'          => 'central_admin',
                 'status'        => 'active',
                 'created_at'    => Time::now(),
                 'updated_at'    => Time::now(),
@@ -78,7 +78,40 @@ class UserSeeder extends Seeder
             ],
         ];
 
-        // Insert multiple users at once
-        $this->db->table('users')->insertBatch($data);
+        // Insert or update users (handles duplicates gracefully)
+        $userTable = $this->db->table('users');
+        
+        foreach ($data as $user) {
+            // Check by username first
+            $existing = $userTable->where('username', $user['username'])->get()->getRowArray();
+            
+            // Also check for old sysadmin user to migrate it
+            if ($user['username'] === 'centraladmin') {
+                $oldSysadmin = $userTable->where('username', 'sysadmin')->get()->getRowArray();
+                if ($oldSysadmin && !$existing) {
+                    // Migrate old sysadmin to centraladmin
+                    $userTable->where('username', 'sysadmin')->update([
+                        'username' => 'centraladmin',
+                        'email' => 'centraladmin@scms.com',
+                        'role' => 'central_admin',
+                        'full_name' => 'Central Administrator',
+                        'password' => $user['password'],
+                        'updated_at' => Time::now()
+                    ]);
+                    continue; // Skip to next user
+                }
+            }
+            
+            if ($existing) {
+                // Update existing user
+                $updateData = $user;
+                // Uncomment the line below if you want to preserve existing passwords
+                // unset($updateData['password']);
+                $userTable->where('username', $user['username'])->update($updateData);
+            } else {
+                // Insert new user
+                $userTable->insert($user);
+            }
+        }
     }
 }

@@ -9,7 +9,7 @@ $title = 'Inventory';
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>Inventory List</h4>
     <div>
-        <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
+        <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
             <select class="form-select d-inline-block me-2" style="width: auto;" onchange="window.location.href='?branch_id='+this.value">
                 <option value="">All Branches</option>
                 <?php foreach ($branches as $branch): ?>
@@ -34,7 +34,7 @@ $title = 'Inventory';
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <?php if ($current_branch_id === null && ($role == 'central_admin' || $role == 'system_admin')): ?>
+                        <?php if ($current_branch_id === null && ($role == 'central_admin' || $role == 'central_admin')): ?>
                             <th>Branch</th>
                         <?php endif; ?>
                         <th>Product</th>
@@ -51,7 +51,7 @@ $title = 'Inventory';
                     <?php if (!empty($inventory)): ?>
                         <?php foreach ($inventory as $item): ?>
                             <tr>
-                                <?php if ($current_branch_id === null && ($role == 'central_admin' || $role == 'system_admin')): ?>
+                                <?php if ($current_branch_id === null && ($role == 'central_admin' || $role == 'central_admin')): ?>
                                     <td>
                                         <span class="badge bg-info"><?= $item['branch_name'] ?? 'N/A' ?></span>
                                     </td>
@@ -84,7 +84,7 @@ $title = 'Inventory';
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="<?= ($current_branch_id === null && ($role == 'central_admin' || $role == 'system_admin')) ? '9' : '8' ?>" class="text-center">No inventory records found</td>
+                            <td colspan="<?= ($current_branch_id === null && ($role == 'central_admin' || $role == 'central_admin')) ? '9' : '8' ?>" class="text-center">No inventory records found</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

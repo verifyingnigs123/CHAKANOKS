@@ -52,7 +52,7 @@ class TransferController extends BaseController
             ->join('users as approver', 'approver.id = transfers.approved_by', 'left')
             ->orderBy('transfers.created_at', 'DESC');
 
-        if ($branchId && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
             $builder->where('transfers.from_branch_id', $branchId)
                 ->orWhere('transfers.to_branch_id', $branchId);
         }
@@ -189,7 +189,7 @@ class TransferController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'branch_manager' && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($role !== 'branch_manager' && $role !== 'central_admin' && $role !== 'central_admin') {
             return redirect()->back()->with('error', 'Unauthorized');
         }
 
@@ -217,7 +217,7 @@ class TransferController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'branch_manager' && $role !== 'central_admin' && $role !== 'system_admin') {
+        if ($role !== 'branch_manager' && $role !== 'central_admin' && $role !== 'central_admin') {
             return redirect()->back()->with('error', 'Unauthorized');
         }
 

@@ -8,7 +8,6 @@ The notification system has been enhanced to automatically notify users when the
 ### 1. **Purchase Requests - Approval Needed**
 - **When:** A new purchase request is created with status "pending"
 - **Who Gets Notified:** 
-  - System Administrators (`system_admin`)
   - Central Administrators (`central_admin`)
 - **Notification Message:** "New purchase request [REQUEST_NUMBER] from [BRANCH_NAME] requires approval"
 - **Link:** Direct link to view the purchase request
@@ -30,7 +29,6 @@ The notification system has been enhanced to automatically notify users when the
 ### 3. **Transfers - Approval Needed**
 - **When:** A new inter-branch transfer request is created with status "pending"
 - **Who Gets Notified:**
-  - System Administrators (`system_admin`)
   - Central Administrators (`central_admin`)
   - Branch Managers of both source and destination branches
 - **Notification Message:** "Transfer request [TRANSFER_NUMBER] from [FROM_BRANCH] to [TO_BRANCH] requires approval"
@@ -95,7 +93,7 @@ The notification system has been enhanced to automatically notify users when the
 
 1. **Test Purchase Request Notification:**
    - Create a new purchase request as a branch manager
-   - Login as system admin or central admin
+   - Login as central admin
    - Check notification bell - should show notification
 
 2. **Test Delivery Notification:**
@@ -105,7 +103,7 @@ The notification system has been enhanced to automatically notify users when the
 
 3. **Test Transfer Notification:**
    - Create a transfer request
-   - Login as system admin, central admin, or branch manager
+   - Login as central admin or branch manager
    - Check notification bell - should show notification
 
 ## Future Enhancements

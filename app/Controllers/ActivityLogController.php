@@ -24,7 +24,7 @@ class ActivityLogController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin' && $role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
@@ -92,7 +92,7 @@ class ActivityLogController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'system_admin' && $role !== 'central_admin') {
+        if ($role !== 'central_admin' && $role !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 

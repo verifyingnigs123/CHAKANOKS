@@ -53,7 +53,7 @@ class NotificationService
      */
     public function sendToAdmins($type, $title, $message, $link = null)
     {
-        $users = $this->userModel->whereIn('role', ['system_admin', 'central_admin'])
+        $users = $this->userModel->whereIn('role', ['central_admin', 'central_admin'])
             ->where('status', 'active')
             ->findAll();
 
@@ -240,7 +240,7 @@ class NotificationService
         $count = 0;
         
         // Notify admins
-        $adminUsers = $this->userModel->whereIn('role', ['system_admin', 'central_admin'])
+        $adminUsers = $this->userModel->whereIn('role', ['central_admin', 'central_admin'])
             ->where('status', 'active')
             ->findAll();
         

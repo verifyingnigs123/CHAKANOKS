@@ -8,7 +8,7 @@ $title = 'Branches';
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4>Branches</h4>
-    <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
+    <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
         <a href="<?= base_url('branches/create') ?>" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Branch
         </a>
@@ -44,7 +44,7 @@ $title = 'Branches';
                         <th>Manager</th>
                         <th>Type</th>
                         <th>Status</th>
-                        <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
+                        <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
                             <th>Actions</th>
                         <?php endif; ?>
                     </tr>
@@ -69,7 +69,7 @@ $title = 'Branches';
                                         <?= ucfirst($branch['status']) ?>
                                     </span>
                                 </td>
-                                <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
+                                <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
                                     <td>
                                         <a href="<?= base_url('branches/edit/' . $branch['id']) ?>" class="btn btn-sm btn-primary">
                                             <i class="bi bi-pencil"></i> Edit
