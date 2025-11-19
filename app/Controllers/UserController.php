@@ -106,11 +106,14 @@ class UserController extends BaseController
             return redirect()->to('/login');
         }
 
-        $role = $session->get('role');
-        if ($role !== 'central_admin') {
+        $sessionRole = $session->get('role');
+        if ($sessionRole !== 'central_admin') {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
+        $role = $this->request->getPost('role');
+        $branchId = $this->request->getPost('branch_id');
+        
         $rules = [
             'username' => 'required|min_length[3]|max_length[100]|is_unique[users.username]',
             'email' => 'required|valid_email|is_unique[users.email]',
@@ -119,9 +122,22 @@ class UserController extends BaseController
             'role' => 'required|in_list[central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager]',
             'status' => 'required|in_list[active,inactive]'
         ];
+        
+        // Branch is required for branch_manager and inventory_staff
+        if (in_array($role, ['branch_manager', 'inventory_staff'])) {
+            $rules['branch_id'] = 'required|integer';
+        }
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        
+        // Validate branch exists if provided
+        if ($branchId) {
+            $branch = $this->branchModel->find($branchId);
+            if (!$branch) {
+                return redirect()->back()->withInput()->with('errors', ['branch_id' => 'Selected branch does not exist']);
+            }
         }
 
         $userData = [
@@ -130,8 +146,8 @@ class UserController extends BaseController
             'full_name' => $this->request->getPost('full_name'),
             'password' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'phone' => $this->request->getPost('phone'),
-            'role' => $this->request->getPost('role'),
-            'branch_id' => $this->request->getPost('branch_id') ?: null,
+            'role' => $role,
+            'branch_id' => $branchId ?: null,
             'status' => $this->request->getPost('status'),
         ];
 

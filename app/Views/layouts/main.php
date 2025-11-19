@@ -343,6 +343,11 @@
                             if ($role === 'central_admin') {
                                 $roleDisplay = 'Central Admin';
                             }
+                            // For branch_manager, show branch name instead
+                            elseif ($role === 'branch_manager') {
+                                $branchName = session()->get('branch_name');
+                                $roleDisplay = $branchName ? $branchName : 'Branch Manager';
+                            }
                             ?>
                             <span class="text-muted">Welcome, <strong><?= $roleDisplay ?></strong></span>
                             <span class="badge bg-secondary ms-2"><?= $roleDisplay ?></span>

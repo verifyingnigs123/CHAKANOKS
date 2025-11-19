@@ -94,6 +94,11 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
       if ($role === 'central_admin') {
           $roleDisplay = 'Central Admin';
       }
+      // For branch_manager, show branch name instead
+      elseif ($role === 'branch_manager') {
+          $branchName = session()->get('branch_name');
+          $roleDisplay = $branchName ? $branchName : 'Branch Manager';
+      }
       // Get first letter of role display for avatar
       $avatarInitial = strtoupper(substr($roleDisplay, 0, 1));
       ?>

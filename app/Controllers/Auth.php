@@ -26,17 +26,26 @@ class Auth extends Controller
         if ($user) {
             if ($user['status'] !== 'active') {
                 $session->setFlashdata('msg', 'Your account is inactive. Please contact the administrator.');
-                return redirect()->to('/auth');
+                return redirect()->to('/login');
             }
 
             $verify_pass = password_verify($password, $user['password']);
             if ($verify_pass) {
+                // Fetch branch name if user has a branch_id
+                $branchName = null;
+                if (!empty($user['branch_id'])) {
+                    $branchModel = new \App\Models\BranchModel();
+                    $branch = $branchModel->find($user['branch_id']);
+                    $branchName = $branch ? $branch['name'] : null;
+                }
+                
                 $session_data = [
                     'user_id'   => $user['id'],
                     'username'  => $user['username'],
                     'email'     => $user['email'],
                     'role'      => $user['role'],
                     'branch_id' => $user['branch_id'] ?? null,
+                    'branch_name' => $branchName,
                     'supplier_id' => $user['supplier_id'] ?? null,
                     'isLoggedIn' => true
                 ];
@@ -52,11 +61,11 @@ class Auth extends Controller
                 return redirect()->to('/dashboard');
             } else {
                 $session->setFlashdata('msg', 'Wrong password.');
-                return redirect()->to('/auth');
+                return redirect()->to('/login');
             }
         } else {
             $session->setFlashdata('msg', 'Email not found.');
-            return redirect()->to('/auth');
+            return redirect()->to('/login');
         }
     }
 
