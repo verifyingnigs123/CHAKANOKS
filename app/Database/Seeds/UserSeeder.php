@@ -4,11 +4,24 @@ namespace App\Database\Seeds;
 
 use CodeIgniter\Database\Seeder;
 use CodeIgniter\I18n\Time;
+use App\Models\BranchModel;
+use App\Models\SupplierModel;
 
 class UserSeeder extends Seeder
 {
     public function run()
     {
+        $branchModel = new BranchModel();
+        $supplierModel = new SupplierModel();
+
+        // Resolve branch ids (use main branch as default for branch users)
+        $mainBranch = $branchModel->where('code', 'main_branch')->first();
+        $northBranch = $branchModel->where('code', 'north_branch')->first();
+        $southBranch = $branchModel->where('code', 'south_branch')->first();
+
+        // Resolve a supplier to attach to the seeded supplier user (use first supplier)
+        $firstSupplier = $supplierModel->orderBy('id', 'ASC')->first();
+
         $data = [
             [
                 'username'      => 'centraladmin',
@@ -28,6 +41,7 @@ class UserSeeder extends Seeder
                 'email'         => 'branchmanager@scms.com',
                 'phone'         => '09951112222',
                 'role'          => 'branch_manager',
+                'branch_id'     => $mainBranch ? $mainBranch['id'] : null,
                 'status'        => 'active',
                 'created_at'    => Time::now(),
                 'updated_at'    => Time::now(),
@@ -39,6 +53,7 @@ class UserSeeder extends Seeder
                 'email'         => 'inventory@scms.com',
                 'phone'         => '09953334444',
                 'role'          => 'inventory_staff',
+                'branch_id'     => $mainBranch ? $mainBranch['id'] : null,
                 'status'        => 'active',
                 'created_at'    => Time::now(),
                 'updated_at'    => Time::now(),
@@ -50,6 +65,7 @@ class UserSeeder extends Seeder
                 'email'         => 'supplier@scms.com',
                 'phone'         => '09954445555',
                 'role'          => 'supplier',
+                'supplier_id'   => $firstSupplier ? $firstSupplier['id'] : null,
                 'status'        => 'active',
                 'created_at'    => Time::now(),
                 'updated_at'    => Time::now(),
@@ -61,6 +77,7 @@ class UserSeeder extends Seeder
                 'email'         => 'logistics@scms.com',
                 'phone'         => '09955556666',
                 'role'          => 'logistics_coordinator',
+                'branch_id'     => $northBranch ? $northBranch['id'] : null,
                 'status'        => 'active',
                 'created_at'    => Time::now(),
                 'updated_at'    => Time::now(),
@@ -72,6 +89,7 @@ class UserSeeder extends Seeder
                 'email'         => 'franchise@scms.com',
                 'phone'         => '09957778888',
                 'role'          => 'franchise_manager',
+                'branch_id'     => $southBranch ? $southBranch['id'] : null,
                 'status'        => 'active',
                 'created_at'    => Time::now(),
                 'updated_at'    => Time::now(),

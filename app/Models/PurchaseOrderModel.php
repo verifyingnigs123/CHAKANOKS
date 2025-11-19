@@ -10,7 +10,8 @@ class PurchaseOrderModel extends Model
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'po_number', 'purchase_request_id', 'supplier_id', 'branch_id', 'created_by', 'status', 
-        'order_date', 'expected_delivery_date', 'subtotal', 'tax', 'total_amount', 'notes', 'created_at', 'updated_at'
+        'order_date', 'expected_delivery_date', 'subtotal', 'tax', 'total_amount', 'notes', 'created_at', 'updated_at',
+        'prepared_at', 'prepared_by', 'sent_at', 'confirmed_at'
     ];
     
     protected $useTimestamps = true;

@@ -76,11 +76,11 @@ class DeliveryController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Get purchase orders that are confirmed or sent
+        // Get purchase orders that are prepared, confirmed or sent
         $data['purchase_orders'] = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, branches.name as branch_name')
             ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
             ->join('branches', 'branches.id = purchase_orders.branch_id')
-            ->whereIn('purchase_orders.status', ['sent', 'confirmed'])
+            ->whereIn('purchase_orders.status', ['prepared', 'sent', 'confirmed'])
             ->findAll();
 
         // Get active drivers with their vehicles
@@ -338,7 +338,7 @@ class DeliveryController extends BaseController
         // Send notification that delivery is received and inventory is updated
         $branch = $this->branchModel->find($branchId);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-        $this->notificationService->sendDeliveryReceivedNotification($id, $delivery['delivery_number'], $branchId, $branchName, $po['po_number']);
+        $this->notificationService->sendDeliveryReceivedNotification($id, $delivery['delivery_number'], $branchId, $branchName, $po['po_number'], $po['supplier_id']);
 
         return redirect()->to('/deliveries')->with('success', 'Delivery received and inventory updated');
     }

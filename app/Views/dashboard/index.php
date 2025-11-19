@@ -278,6 +278,31 @@ $title = 'Dashboard';
         
         <!-- Charts Section -->
         <div class="row mb-4">
+            <div class="col-12 mb-3">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Approved Purchase Requests (Assigned to You)</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($approved_requests_for_supplier)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($approved_requests_for_supplier as $r): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= esc($r['request_number']) ?></strong>
+                                            <br><small class="text-muted"><?= $r['approved_at'] ? date('M d, Y H:i', strtotime($r['approved_at'])) : date('M d, Y', strtotime($r['created_at'])) ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('purchase-requests/view/'.$r['id']) ?>" class="btn btn-sm btn-outline-primary me-2">View</a>
+                                            <a href="<?= base_url('purchase-orders/create-from-request/'.$r['id']) ?>" class="btn btn-sm btn-success">Create PO</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No approved purchase requests assigned to you.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
             <div class="col-md-6 mb-3">
                 <div class="card">
                     <div class="card-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#purchaseRequestsChartCollapse" aria-expanded="false" aria-controls="purchaseRequestsChartCollapse">
@@ -429,6 +454,221 @@ $title = 'Dashboard';
                     </div>
                 </div>
             </a>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($role == 'supplier'): ?>
+        <!-- Supplier Dashboard -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Approved Orders Waiting Preparation</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($waiting_preparation)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($waiting_preparation as $po): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $po['po_number'] ?></strong>
+                                            <br><small class="text-muted"><?= date('M d, Y', strtotime($po['order_date'])) ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('purchase-orders/view/'.$po['id']) ?>" class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No orders waiting preparation</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Orders Being Prepared</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($being_prepared)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($being_prepared as $po): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $po['po_number'] ?></strong>
+                                            <br><small class="text-muted">Prepared: <?= $po['prepared_at'] ? date('M d, Y H:i', strtotime($po['prepared_at'])) : 'N/A' ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('purchase-orders/view/'.$po['id']) ?>" class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No active preparations</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Completed & Shipped</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($completed_orders)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($completed_orders as $po): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $po['po_number'] ?></strong>
+                                            <br><small class="text-muted">Completed: <?= $po['updated_at'] ? date('M d, Y', strtotime($po['updated_at'])) : 'N/A' ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('purchase-orders/view/'.$po['id']) ?>" class="btn btn-sm btn-outline-secondary">View</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No completed orders</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Recent Notifications</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($notifications)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($notifications as $note): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $note['title'] ?></strong>
+                                            <br><small class="text-muted"><?= date('M d, Y H:i', strtotime($note['created_at'])) ?></small>
+                                            <div class="text-muted"><?= $note['message'] ?></div>
+                                        </div>
+                                        <div>
+                                            <a href="<?= $note['link'] ?? '#' ?>" class="btn btn-sm btn-primary">Open</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No notifications</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($role == 'logistics_coordinator'): ?>
+        <!-- Logistics Dashboard -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Orders Ready for Shipment</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($ready_for_shipment)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($ready_for_shipment as $po): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $po['po_number'] ?></strong>
+                                            <br><small class="text-muted">Prepared: <?= $po['prepared_at'] ? date('M d, Y H:i', strtotime($po['prepared_at'])) : 'N/A' ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('purchase-orders/view/'.$po['id']) ?>" class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No orders ready for shipment</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Shipment Schedules</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($shipment_schedules)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($shipment_schedules as $d): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $d['delivery_number'] ?></strong>
+                                            <br><small class="text-muted">Scheduled: <?= $d['scheduled_date'] ?? 'N/A' ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('deliveries/view/'.$d['id']) ?>" class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No scheduled shipments</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Active Deliveries</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($active_deliveries)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($active_deliveries as $d): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $d['delivery_number'] ?></strong>
+                                            <br><small class="text-muted">Status: <?= ucfirst(str_replace('_', ' ', $d['status'])) ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('deliveries/view/'.$d['id']) ?>" class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No active deliveries</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Delivery Completion History</h5></div>
+                    <div class="card-body">
+                        <?php if (!empty($delivery_history)): ?>
+                            <ul class="list-group list-group-flush">
+                                <?php foreach ($delivery_history as $d): ?>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?= $d['delivery_number'] ?></strong>
+                                            <br><small class="text-muted">Delivered: <?= $d['delivery_date'] ?? 'N/A' ?></small>
+                                        </div>
+                                        <div>
+                                            <a href="<?= base_url('deliveries/view/'.$d['id']) ?>" class="btn btn-sm btn-outline-secondary">View</a>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="text-muted">No completed deliveries</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
         </div>
     <?php endif; ?>
 </div>

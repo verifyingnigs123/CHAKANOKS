@@ -56,8 +56,16 @@ class DriverSeeder extends Seeder
             ],
         ];
 
-        // Using Query Builder to insert
-        $this->db->table('drivers')->insertBatch($drivers);
+        // Insert or update drivers to avoid duplicate key errors
+        $table = $this->db->table('drivers');
+        foreach ($drivers as $d) {
+            $existing = $table->where('vehicle_number', $d['vehicle_number'])->get()->getRowArray();
+            if ($existing) {
+                $table->where('id', $existing['id'])->update($d);
+            } else {
+                $table->insert($d);
+            }
+        }
     }
 }
 

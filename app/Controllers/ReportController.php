@@ -9,6 +9,7 @@ use App\Models\PurchaseRequestModel;
 use App\Models\PurchaseOrderModel;
 use App\Models\DeliveryModel;
 use App\Models\SupplierModel;
+use App\Models\PurchaseOrderItemModel;
 use App\Models\TransferModel;
 
 class ReportController extends BaseController
@@ -21,6 +22,7 @@ class ReportController extends BaseController
     protected $deliveryModel;
     protected $supplierModel;
     protected $transferModel;
+    protected $purchaseOrderItemModel;
 
     public function __construct()
     {
@@ -32,6 +34,7 @@ class ReportController extends BaseController
         $this->deliveryModel = new DeliveryModel();
         $this->supplierModel = new SupplierModel();
         $this->transferModel = new TransferModel();
+        $this->purchaseOrderItemModel = new PurchaseOrderItemModel();
     }
 
     public function index()
@@ -101,7 +104,7 @@ class ReportController extends BaseController
         $dateFrom = $this->request->getGet('date_from');
         $dateTo = $this->request->getGet('date_to');
 
-        $builder = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, branches.name as branch_name')
+        $builder = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, branches.name as branch_name, purchase_orders.prepared_at, purchase_orders.sent_at, purchase_orders.confirmed_at')
             ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
             ->join('branches', 'branches.id = purchase_orders.branch_id');
 
@@ -128,10 +131,12 @@ class ReportController extends BaseController
         $data['dateFrom'] = $dateFrom;
         $data['dateTo'] = $dateTo;
 
-        // Calculate totals
+        // Calculate totals and quantities
         $totalAmount = 0;
-        foreach ($data['orders'] as $order) {
+        foreach ($data['orders'] as &$order) {
             $totalAmount += $order['total_amount'];
+            $qtyRow = $this->purchaseOrderItemModel->select('SUM(quantity) as total_qty')->where('purchase_order_id', $order['id'])->first();
+            $order['total_quantity'] = $qtyRow ? (int)$qtyRow['total_qty'] : 0;
         }
         $data['totalAmount'] = $totalAmount;
 

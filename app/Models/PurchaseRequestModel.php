@@ -9,7 +9,7 @@ class PurchaseRequestModel extends Model
     protected $table = 'purchase_requests';
     protected $primaryKey = 'id';
     protected $allowedFields = [
-        'request_number', 'branch_id', 'requested_by', 'status', 'priority', 'notes', 
+        'request_number', 'branch_id', 'requested_by', 'supplier_id', 'status', 'priority', 'notes', 
         'approved_by', 'approved_at', 'rejection_reason', 'created_at', 'updated_at'
     ];
     
@@ -19,6 +19,7 @@ class PurchaseRequestModel extends Model
         'request_number' => 'required|is_unique[purchase_requests.request_number,id,{id}]',
         'branch_id' => 'required|integer',
         'requested_by' => 'required|integer',
+        'supplier_id' => 'permit_empty|integer',
     ];
     
     public function generateRequestNumber()

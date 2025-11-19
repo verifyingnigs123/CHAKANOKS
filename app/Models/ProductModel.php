@@ -9,6 +9,7 @@ class ProductModel extends Model
     protected $table = 'products';
     protected $primaryKey = 'id';
     protected $allowedFields = [
+        'supplier_id',
         'name', 'sku', 'barcode', 'description', 'category', 'unit', 'is_perishable', 'shelf_life_days', 
         'min_stock_level', 'max_stock_level', 'cost_price', 'selling_price', 'status', 'created_at', 'updated_at'
     ];

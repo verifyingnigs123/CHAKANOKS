@@ -235,65 +235,19 @@ function clearAllItems() {
     calculateTotals();
 }
 
-// Auto-fill branch and items when purchase request is selected
+// When an approved request is selected, redirect to the server route that creates a PO from the request.
+// Server logic will auto-create the PO if it can; otherwise it will show the manual create-from-request view.
 document.getElementById('purchase_request_id').addEventListener('change', function() {
     const requestId = this.value;
-    const selectedOption = this.options[this.selectedIndex];
-    
     if (!requestId) {
-        // Clear items if no request selected
+        // Clear items and branch if no request selected
         clearAllItems();
         document.getElementById('branch_id').value = '';
-        // Remove hidden purchase_request_id input if exists
-        const hiddenInput = document.querySelector('input[name="purchase_request_id"]');
-        if (hiddenInput) {
-            hiddenInput.remove();
-        }
         return;
     }
-    
-    // Set branch
-    const branchId = selectedOption.getAttribute('data-branch-id');
-    document.getElementById('branch_id').value = branchId;
-    
-    // Add hidden input for purchase_request_id
-    let hiddenInput = document.querySelector('input[name="purchase_request_id"]');
-    if (!hiddenInput) {
-        hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'purchase_request_id';
-        document.getElementById('poForm').appendChild(hiddenInput);
-    }
-    hiddenInput.value = requestId;
-    
-    // Fetch request items via AJAX
-    fetch(`<?= base_url('purchase-orders/get-request-items/') ?>${requestId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.items) {
-                // Clear existing items
-                clearAllItems();
-                
-                // Create rows for all items from the request
-                data.items.forEach((item) => {
-                    createItemRow(
-                        item.product_id,
-                        item.product_name,
-                        item.sku,
-                        item.quantity,
-                        item.unit_price || item.cost_price || 0
-                    );
-                });
-                
-                calculateTotals();
-            } else {
-                alert('Failed to load request items: ' + (data.error || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching request items:', error);
-            alert('Error loading request items. Please try again.');
-        });
+
+    // Redirect to controller action which handles auto-creation when possible
+    window.location.href = `<?= base_url('purchase-orders/create-from-request/') ?>${requestId}`;
 });
 
 // Initial calculation

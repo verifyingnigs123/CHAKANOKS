@@ -77,6 +77,7 @@ $routes->group('purchase-orders', ['filter' => 'auth'], function($routes) {
     $routes->get('print/(:num)', 'PurchaseOrderController::print/$1');
     $routes->post('(:num)/send', 'PurchaseOrderController::send/$1');
     $routes->post('(:num)/confirm', 'PurchaseOrderController::confirm/$1');
+    $routes->post('(:num)/prepare', 'PurchaseOrderController::markPrepared/$1');
 });
 
 // Deliveries

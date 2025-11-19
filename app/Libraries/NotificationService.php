@@ -202,7 +202,7 @@ class NotificationService
     /**
      * Send delivery received notification (inventory updated)
      */
-    public function sendDeliveryReceivedNotification($deliveryId, $deliveryNumber, $branchId, $branchName, $poNumber)
+    public function sendDeliveryReceivedNotification($deliveryId, $deliveryNumber, $branchId, $branchName, $poNumber, $supplierId = null)
     {
         $title = 'Purchase Order Received - Inventory Updated';
         $message = "Delivery {$deliveryNumber} for Purchase Order {$poNumber} has been received at {$branchName}. Inventory has been updated successfully. Click to view updated inventory.";
@@ -224,6 +224,19 @@ class NotificationService
         // Also notify admins
         $adminCount = $this->sendToAdmins('success', $title, $message, $link);
         $count += $adminCount;
+
+        // Notify supplier users if supplierId provided
+        if ($supplierId) {
+            $supplierUsers = $this->userModel->where('role', 'supplier')
+                ->where('supplier_id', $supplierId)
+                ->where('status', 'active')
+                ->findAll();
+
+            foreach ($supplierUsers as $suser) {
+                $this->sendToUser($suser['id'], 'info', 'Order Received by Branch', "Purchase Order {$poNumber} has been received at {$branchName}.", base_url("purchase-orders/view/{$deliveryId}"));
+                $count++;
+            }
+        }
 
         return $count;
     }

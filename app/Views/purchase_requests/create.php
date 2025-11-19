@@ -15,40 +15,36 @@ $title = 'Create Purchase Request';
             <?= csrf_field() ?>
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <label>Branch</label>
                     <?php 
                     $role = session()->get('role');
                     $isAdmin = ($role === 'central_admin' || $role === 'central_admin');
                     ?>
-                    <select name="branch_id" class="form-select" required <?= ($branch_id && !$isAdmin) ? 'disabled' : '' ?>>
-                        <?php if ($branch_id && !$isAdmin): ?>
-                            <?php foreach ($branches as $branch): ?>
-                                <?php if ($branch['id'] == $branch_id): ?>
-                                    <option value="<?= $branch['id'] ?>" selected><?= $branch['name'] ?></option>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                            <!-- Hidden input to submit the branch_id when disabled -->
-                            <input type="hidden" name="branch_id" value="<?= $branch_id ?>">
-                        <?php else: ?>
+                    <?php if ($isAdmin): ?>
+                        <label>Branch</label>
+                        <select name="branch_id" class="form-select" required>
                             <option value="">Select Branch</option>
                             <?php foreach ($branches as $branch): ?>
                                 <option value="<?= $branch['id'] ?>" <?= ($branch_id && $branch['id'] == $branch_id) ? 'selected' : '' ?>>
                                     <?= $branch['name'] ?>
                                 </option>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                    <?php if ($branch_id && !$isAdmin): ?>
-                        <small class="text-muted">You can only create requests for your assigned branch.</small>
+                        </select>
+                    <?php else: ?>
+                        <!-- For branch managers/inventory staff: branch is fixed, include hidden input -->
+                        <input type="hidden" name="branch_id" value="<?= $branch_id ?>">
+                        <div class="mb-2"><strong>Branch:</strong> <?= array_values(array_filter($branches, fn($b) => $b['id'] == $branch_id))[0]['name'] ?? 'N/A' ?></div>
                     <?php endif; ?>
                 </div>
+
                 <div class="col-md-6">
-                    <label>Priority</label>
-                    <select name="priority" class="form-select" required>
-                        <option value="normal">Normal</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="low">Low</option>
+                    <label>Supplier</label>
+                    <select name="supplier_id" id="supplierSelect" class="form-select">
+                        <option value="">-- Select Supplier --</option>
+                        <?php if (!empty($suppliers)): ?>
+                            <?php foreach ($suppliers as $sup): ?>
+                                <option value="<?= $sup['id'] ?>"><?= esc($sup['name']) ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
                 </div>
             </div>
@@ -66,8 +62,8 @@ $title = 'Create Purchase Request';
                         <select name="products[]" class="form-select product-select" required>
                             <option value="">Select Product</option>
                             <?php foreach ($products as $product): ?>
-                                <option value="<?= $product['id'] ?>" data-price="<?= $product['cost_price'] ?>">
-                                    <?= $product['name'] ?> (<?= $product['sku'] ?>)
+                                <option value="<?= $product['id'] ?>" data-price="<?= $product['cost_price'] ?>" data-supplier="<?= $product['supplier_id'] ?? '' ?>">
+                                    <?= esc($product['name']) ?> (<?= esc($product['sku']) ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -105,6 +101,8 @@ document.getElementById('addProduct').addEventListener('click', function() {
     newRow.querySelector('.product-select').value = '';
     newRow.querySelector('input[name="quantities[]"]').value = '';
     container.appendChild(newRow);
+    // Apply supplier filter to newly added row
+    applySupplierFilter();
 });
 
 document.addEventListener('click', function(e) {
@@ -117,6 +115,51 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
+// Filter products by selected supplier
+const supplierSelect = document.getElementById('supplierSelect');
+function applySupplierFilter() {
+    const supplierId = supplierSelect ? supplierSelect.value : '';
+    const productSelects = document.querySelectorAll('.product-select');
+
+    productSelects.forEach(function(sel) {
+        // keep current selection
+        const current = sel.value;
+        let hasVisible = false;
+        Array.from(sel.options).forEach(function(opt) {
+            const optSupplier = opt.getAttribute('data-supplier') || '';
+            if (!supplierId) {
+                opt.hidden = false;
+                opt.disabled = false;
+                hasVisible = hasVisible || opt.value !== '';
+            } else {
+                if (opt.value === '') {
+                    opt.hidden = false;
+                    opt.disabled = false;
+                } else if (optSupplier === supplierId) {
+                    opt.hidden = false;
+                    opt.disabled = false;
+                    hasVisible = true;
+                } else {
+                    opt.hidden = true;
+                    opt.disabled = true;
+                }
+            }
+        });
+
+        // If the currently selected option is hidden, clear selection
+        const selectedOpt = sel.querySelector('option:checked');
+        if (selectedOpt && selectedOpt.hidden) {
+            sel.value = '';
+        }
+    });
+}
+
+if (supplierSelect) {
+    supplierSelect.addEventListener('change', applySupplierFilter);
+    // apply on load
+    applySupplierFilter();
+}
 </script>
 <?= $this->endSection() ?>
 

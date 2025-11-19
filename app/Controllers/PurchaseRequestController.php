@@ -94,6 +94,8 @@ class PurchaseRequestController extends BaseController
         $data['products'] = $this->productModel->where('status', 'active')->findAll();
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['branch_id'] = $session->get('branch_id');
+        // Load suppliers for supplier selection
+        $data['suppliers'] = (new \App\Models\SupplierModel())->where('status', 'active')->findAll();
 
         return view('purchase_requests/create', $data);
     }
@@ -104,7 +106,6 @@ class PurchaseRequestController extends BaseController
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
         }
-
         $requestNumber = $this->purchaseRequestModel->generateRequestNumber();
         $branchId = $this->request->getPost('branch_id') ?? $session->get('branch_id');
         $requestedBy = $session->get('user_id');
@@ -113,12 +114,24 @@ class PurchaseRequestController extends BaseController
             'request_number' => $requestNumber,
             'branch_id' => $branchId,
             'requested_by' => $requestedBy,
+            'supplier_id' => $this->request->getPost('supplier_id') ?: null,
             'status' => 'pending',
             'priority' => $this->request->getPost('priority') ?: 'normal',
             'notes' => $this->request->getPost('notes'),
         ];
 
-        $requestId = $this->purchaseRequestModel->insert($requestData);
+        // Use DB transaction to ensure the parent request exists before inserting items
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $inserted = $this->purchaseRequestModel->insert($requestData);
+        // Get the inserted ID reliably
+        $requestId = $this->purchaseRequestModel->getInsertID();
+
+        if (!$requestId) {
+            $db->transComplete();
+            return redirect()->back()->withInput()->with('error', 'Failed to create purchase request.');
+        }
 
         // Add items
         $products = $this->request->getPost('products');
@@ -141,6 +154,12 @@ class PurchaseRequestController extends BaseController
                     ]);
                 }
             }
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->back()->withInput()->with('error', 'Failed to save purchase request items. Transaction rolled back.');
         }
 
         $this->activityLogModel->logActivity($requestedBy, 'create', 'purchase_request', "Created purchase request: $requestNumber");
@@ -170,6 +189,7 @@ class PurchaseRequestController extends BaseController
             return redirect()->back()->with('error', 'Purchase request not found');
         }
 
+        // Mark the request as approved
         $this->purchaseRequestModel->update($id, [
             'status' => 'approved',
             'approved_by' => $session->get('user_id'),
@@ -178,10 +198,73 @@ class PurchaseRequestController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'approve', 'purchase_request', "Approved purchase request ID: $id");
 
-        // Send notification that approved request needs to be converted to Purchase Order
-        $branch = $this->branchModel->find($request['branch_id']);
-        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-        $this->notificationService->sendApprovedPurchaseRequestNotification($id, $request['request_number'], $branchName);
+        // If supplier is assigned on the request, auto-create a Purchase Order and send to supplier
+        try {
+            if (!empty($request['supplier_id'])) {
+                $poModel = new \App\Models\PurchaseOrderModel();
+                $poItemModel = new \App\Models\PurchaseOrderItemModel();
+                $reqItemModel = new \App\Models\PurchaseRequestItemModel();
+
+                // Prevent creating duplicate PO for same request
+                $existingPO = $poModel->where('purchase_request_id', $id)->first();
+                if (!$existingPO) {
+                    $poNumber = $poModel->generatePONumber();
+                    $poData = [
+                        'po_number' => $poNumber,
+                        'purchase_request_id' => $id,
+                        'supplier_id' => $request['supplier_id'],
+                        'branch_id' => $request['branch_id'],
+                        'created_by' => $session->get('user_id'),
+                        'status' => 'sent',
+                        'order_date' => date('Y-m-d'),
+                        'sent_at' => date('Y-m-d H:i:s'),
+                        'subtotal' => 0,
+                        'tax' => 0,
+                        'total_amount' => 0,
+                        'notes' => null,
+                    ];
+
+                    $poId = $poModel->insert($poData);
+                    if ($poId) {
+                        // copy items
+                        $items = $reqItemModel->where('purchase_request_id', $id)->findAll();
+                        $subtotal = 0;
+                        foreach ($items as $it) {
+                            $totalPrice = ($it['unit_price'] ?? 0) * $it['quantity'];
+                            $poItemModel->insert([
+                                'purchase_order_id' => $poId,
+                                'product_id' => $it['product_id'],
+                                'quantity' => $it['quantity'],
+                                'quantity_received' => 0,
+                                'unit_price' => $it['unit_price'] ?? 0,
+                                'total_price' => $totalPrice,
+                            ]);
+                            $subtotal += $totalPrice;
+                        }
+
+                        $tax = $subtotal * 0.12;
+                        $totalAmount = $subtotal + $tax;
+                        $poModel->update($poId, ['subtotal' => $subtotal, 'tax' => $tax, 'total_amount' => $totalAmount]);
+
+                        // Notify supplier users for this supplier
+                        $userModel = new \App\Models\UserModel();
+                        $supplierUsers = $userModel->where('role', 'supplier')->where('supplier_id', $request['supplier_id'])->where('status', 'active')->findAll();
+                        foreach ($supplierUsers as $suser) {
+                            $this->notificationService->sendToUser($suser['id'], 'info', 'New Purchase Order', "Purchase Order {$poNumber} has been created and sent.", base_url("purchase-orders/view/{$poId}"));
+                        }
+                    }
+                }
+            } else {
+                // No supplier assigned - notify admins to convert to PO
+                $branch = $this->branchModel->find($request['branch_id']);
+                $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+                $this->notificationService->sendApprovedPurchaseRequestNotification($id, $request['request_number'], $branchName);
+            }
+        } catch (\Exception $e) {
+            // Log but don't break approval flow
+            // Ideally ActivityLogModel has method to log errors; fall back to a simple activity
+            $this->activityLogModel->logActivity($session->get('user_id'), 'error', 'purchase_request', "Auto-create PO failed for request ID: $id - {$e->getMessage()}");
+        }
 
         return redirect()->back()->with('success', 'Purchase request approved');
     }

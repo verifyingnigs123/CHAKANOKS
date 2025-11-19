@@ -12,6 +12,7 @@ use App\Models\DeliveryModel;
 use App\Models\TransferModel;
 use App\Models\SupplierModel;
 use App\Models\PurchaseOrderItemModel;
+use App\Models\NotificationModel;
 
 class DashboardController extends BaseController
 {
@@ -99,6 +100,68 @@ class DashboardController extends BaseController
                 $data['branch_inventory'] = (new InventoryModel())->where('branch_id', $branchId)->countAllResults();
                 $data['active_alerts'] = (new StockAlertModel())->where('branch_id', $branchId)->where('status', 'active')->countAllResults();
                 $data['pending_transfers'] = (new TransferModel())->where('to_branch_id', $branchId)->where('status', 'pending')->countAllResults();
+                break;
+
+            case 'supplier':
+                // Supplier dashboard: show orders assigned to this supplier
+                $supplierId = $session->get('supplier_id') ?: $session->get('user_id');
+                // Approved orders waiting for preparation (sent/confirmed and not prepared)
+                $poModel = new PurchaseOrderModel();
+                $data['waiting_preparation'] = $poModel->where('supplier_id', $supplierId)
+                    ->whereIn('status', ['sent', 'confirmed'])
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+
+                // Orders being prepared (prepared)
+                $data['being_prepared'] = $poModel->where('supplier_id', $supplierId)
+                    ->where('status', 'prepared')
+                    ->orderBy('prepared_at', 'DESC')
+                    ->findAll();
+
+                // Completed and shipped
+                $data['completed_orders'] = $poModel->where('supplier_id', $supplierId)
+                    ->where('status', 'completed')
+                    ->orderBy('updated_at', 'DESC')
+                    ->findAll();
+
+                // Notifications for supplier user
+                $notificationModel = new NotificationModel();
+                $data['notifications'] = $notificationModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->limit(10)->findAll();
+
+                // Approved purchase requests assigned to this supplier (for creating PO / preparing)
+                $purchaseRequestModel = new PurchaseRequestModel();
+
+                // Fetch requests where supplier_id = this supplier OR any of the request items' products belong to this supplier
+                $builder = $purchaseRequestModel->select('purchase_requests.*')
+                    ->join('purchase_request_items', 'purchase_request_items.purchase_request_id = purchase_requests.id')
+                    ->join('products', 'products.id = purchase_request_items.product_id')
+                    ->where('purchase_requests.status', 'approved')
+                    ->groupStart()
+                        ->where('purchase_requests.supplier_id', $supplierId)
+                        ->orWhere('products.supplier_id', $supplierId)
+                    ->groupEnd()
+                    ->orderBy('purchase_requests.approved_at', 'DESC')
+                    ->groupBy('purchase_requests.id');
+
+                $data['approved_requests_for_supplier'] = $builder->findAll();
+                break;
+
+            case 'logistics_coordinator':
+                // Logistics dashboard: shipments and schedules
+                $deliveryModel = new DeliveryModel();
+                $poModel = new PurchaseOrderModel();
+
+                // Orders ready for shipment (prepared)
+                $data['ready_for_shipment'] = $poModel->where('status', 'prepared')->orderBy('prepared_at', 'DESC')->findAll();
+
+                // Shipment schedules (scheduled and in_transit)
+                $data['shipment_schedules'] = $deliveryModel->whereIn('status', ['scheduled', 'in_transit'])->orderBy('scheduled_date', 'ASC')->findAll();
+
+                // Active deliveries (in_transit)
+                $data['active_deliveries'] = $deliveryModel->where('status', 'in_transit')->orderBy('updated_at', 'DESC')->findAll();
+
+                // Delivery completion history
+                $data['delivery_history'] = $deliveryModel->where('status', 'delivered')->orderBy('delivery_date', 'DESC')->limit(20)->findAll();
                 break;
 
             default:
