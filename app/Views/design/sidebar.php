@@ -101,78 +101,86 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
     <?php if ($role === 'system_admin'): ?>
       <li class="menu-label">Administrator</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('admin/users') ?>" class="nav-link"><i class="bi bi-people"></i><span>User Management</span></a></li>
-      <li><a href="<?= base_url('admin/branches') ?>" class="nav-link"><i class="bi bi-building"></i><span>Branches</span></a></li>
-      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Inventory Overview</span></a></li>
+      <li><a href="<?= base_url('users') ?>" class="nav-link"><i class="bi bi-people"></i><span>User Management</span></a></li>
+      <li><a href="<?= base_url('branches') ?>" class="nav-link"><i class="bi bi-building"></i><span>Branches</span></a></li>
+      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Inventory</span></a></li>
       <li><a href="<?= base_url('suppliers') ?>" class="nav-link"><i class="bi bi-briefcase"></i><span>Suppliers</span></a></li>
       <li class="menu-divider"></li>
 
       <li class="menu-label">Procurement</li>
       <li><a href="<?= base_url('purchase-requests') ?>" class="nav-link"><i class="bi bi-journal-plus"></i><span>Purchase Requests</span></a></li>
       <li><a href="<?= base_url('purchase-orders') ?>" class="nav-link"><i class="bi bi-receipt"></i><span>Purchase Orders</span></a></li>
-      <li><a href="<?= base_url('suppliers/contracts') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Contracts</span></a></li>
       <li class="menu-divider"></li>
 
       <li class="menu-label">Analytics & Operations</li>
-      <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Reports & Dashboards</span></a></li>
-      <li><a href="<?= base_url('logs') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Activity Logs</span></a></li>
-      <li><a href="<?= base_url('settings') ?>" class="nav-link"><i class="bi bi-gear"></i><span>System Settings</span></a></li>
+      <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Reports</span></a></li>
+      <li><a href="<?= base_url('activity-logs') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Activity Logs</span></a></li>
+      <li><a href="<?= base_url('settings') ?>" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
+
+    <!-- Central Admin -->
+    <?php elseif ($role === 'central_admin'): ?>
+      <li class="menu-label">Central Office</li>
+      <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <li><a href="<?= base_url('users') ?>" class="nav-link"><i class="bi bi-people"></i><span>User Management</span></a></li>
+      <li><a href="<?= base_url('branches') ?>" class="nav-link"><i class="bi bi-building"></i><span>Branches</span></a></li>
+      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Inventory</span></a></li>
+      <li><a href="<?= base_url('suppliers') ?>" class="nav-link"><i class="bi bi-briefcase"></i><span>Suppliers</span></a></li>
+      <li class="menu-divider"></li>
+
+      <li class="menu-label">Procurement</li>
+      <li><a href="<?= base_url('purchase-requests') ?>" class="nav-link"><i class="bi bi-journal-plus"></i><span>Purchase Requests</span></a></li>
+      <li><a href="<?= base_url('purchase-orders') ?>" class="nav-link"><i class="bi bi-receipt"></i><span>Purchase Orders</span></a></li>
+      <li class="menu-divider"></li>
+
+      <li class="menu-label">Analytics & Operations</li>
+      <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Reports</span></a></li>
+      <li><a href="<?= base_url('activity-logs') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Activity Logs</span></a></li>
 
     <!-- Branch Manager -->
     <?php elseif ($role === 'branch_manager'): ?>
       <li class="menu-label">Branch Operations</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('orders') ?>" class="nav-link"><i class="bi bi-cart-check"></i><span>Orders</span><span class="nav-badge">15</span></a></li>
-      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Inventory</span><span class="nav-badge">7</span></a></li>
+      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Inventory</span></a></li>
       <li><a href="<?= base_url('purchase-requests/create') ?>" class="nav-link"><i class="bi bi-journal-plus"></i><span>Create Purchase Request</span></a></li>
       <li><a href="<?= base_url('transfers') ?>" class="nav-link"><i class="bi bi-arrow-left-right"></i><span>Transfers</span></a></li>
       <li class="menu-divider"></li>
 
       <li class="menu-label">Reports</li>
-      <li><a href="<?= base_url('reports/branch') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Branch Reports</span></a></li>
+      <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Branch Reports</span></a></li>
 
     <!-- Inventory Staff -->
     <?php elseif ($role === 'inventory_staff'): ?>
       <li class="menu-label">Inventory</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('inventory/overview') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Stock Overview</span><span class="nav-badge">12</span></a></li>
-      <li><a href="<?= base_url('inventory/update') ?>" class="nav-link"><i class="bi bi-pencil-square"></i><span>Update Stock</span></a></li>
+      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Stock Overview</span></a></li>
+      <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-pencil-square"></i><span>Update Stock</span></a></li>
       <li class="menu-divider"></li>
       <li class="menu-label">Suppliers</li>
-      <li><a href="<?= base_url('suppliers/request') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Request Supply</span></a></li>
+      <li><a href="<?= base_url('purchase-requests/create') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Request Supply</span></a></li>
 
     <!-- Supplier -->
     <?php elseif ($role === 'supplier'): ?>
       <li class="menu-label">Supplier</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('supplier/orders') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Purchase Orders</span><span class="nav-badge">23</span></a></li>
-      <li><a href="<?= base_url('supplier/deliveries') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Deliveries</span></a></li>
-      <li><a href="<?= base_url('supplier/invoices') ?>" class="nav-link"><i class="bi bi-receipt"></i><span>Invoices</span></a></li>
+      <li><a href="<?= base_url('purchase-orders') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Purchase Orders</span></a></li>
+      <li><a href="<?= base_url('deliveries') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Deliveries</span></a></li>
 
     <!-- Logistics Coordinator -->
     <?php elseif ($role === 'logistics_coordinator'): ?>
       <li class="menu-label">Logistics</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('logistics/deliveries') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Active Deliveries</span><span class="nav-badge">34</span></a></li>
-      <li><a href="<?= base_url('logistics/routes') ?>" class="nav-link"><i class="bi bi-geo-alt"></i><span>Route Planning</span></a></li>
-      <li><a href="<?= base_url('logistics/fleet') ?>" class="nav-link"><i class="bi bi-truck-flatbed"></i><span>Fleet</span></a></li>
-      <li class="menu-divider"></li>
-      <li class="menu-label">Management</li>
-      <li><a href="<?= base_url('logistics/drivers') ?>" class="nav-link"><i class="bi bi-person-badge"></i><span>Drivers</span></a></li>
+      <li><a href="<?= base_url('deliveries') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Active Deliveries</span></a></li>
 
     <!-- Franchise Manager -->
     <?php elseif ($role === 'franchise_manager'): ?>
       <li class="menu-label">Franchising</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('franchise/applications') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Applications</span></a></li>
-      <li><a href="<?= base_url('franchise/supplies') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Supply Allocation</span></a></li>
-      <li><a href="<?= base_url('franchise/payments') ?>" class="nav-link"><i class="bi bi-currency-dollar"></i><span>Royalties</span></a></li>
+      <li><a href="<?= base_url('suppliers') ?>" class="nav-link"><i class="bi bi-briefcase"></i><span>Suppliers</span></a></li>
 
     <!-- Default / Guest -->
     <?php else: ?>
       <li class="menu-label">Navigation</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-      <li><a href="<?= base_url('profile') ?>" class="nav-link"><i class="bi bi-person"></i><span>Profile</span></a></li>
     <?php endif; ?>
 
   </ul>

@@ -15,27 +15,24 @@ $title = 'Users';
 
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get" action="<?= base_url('users') ?>" class="row g-3">
+        <form method="get" action="<?= base_url('users') ?>" id="filterForm" class="row g-3">
             <div class="col-md-4">
-                <input type="text" name="search" class="form-control" placeholder="Search by name, username, email..." value="<?= esc($search ?? '') ?>">
+                <input type="text" name="search" class="form-control" placeholder="Search by name, username, email..." value="<?= esc($search ?? '') ?>" onkeypress="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('filterForm').submit(); }">
             </div>
-            <div class="col-md-3">
-                <select name="role" class="form-select">
+            <div class="col-md-4">
+                <select name="role" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Roles</option>
                     <?php foreach ($roles as $key => $label): ?>
                         <option value="<?= $key ?>" <?= ($filterRole == $key) ? 'selected' : '' ?>><?= $label ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-3">
-                <select name="status" class="form-select">
+            <div class="col-md-4">
+                <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Status</option>
                     <option value="active" <?= ($filterStatus == 'active') ? 'selected' : '' ?>>Active</option>
                     <option value="inactive" <?= ($filterStatus == 'inactive') ? 'selected' : '' ?>>Inactive</option>
                 </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
             </div>
         </form>
     </div>

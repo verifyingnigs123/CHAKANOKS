@@ -46,12 +46,17 @@ class PurchaseRequestController extends BaseController
             $builder->where('purchase_requests.branch_id', $branchId);
         }
 
-        // Search functionality
+        // Filter by branch (from dropdown)
+        $filterBranchId = $this->request->getGet('branch_id');
+        if ($filterBranchId && ($role === 'central_admin' || $role === 'system_admin')) {
+            $builder->where('purchase_requests.branch_id', $filterBranchId);
+        }
+
+        // Search functionality (for request number and requester name)
         $search = $this->request->getGet('search');
         if ($search) {
             $builder->groupStart()
                 ->like('purchase_requests.request_number', $search)
-                ->orLike('branches.name', $search)
                 ->orLike('users.full_name', $search)
                 ->groupEnd();
         }
@@ -69,9 +74,11 @@ class PurchaseRequestController extends BaseController
         }
 
         $data['requests'] = $builder->orderBy('purchase_requests.created_at', 'DESC')->findAll();
+        $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['search'] = $search;
         $data['status'] = $status;
         $data['priority'] = $priority;
+        $data['filter_branch_id'] = $filterBranchId;
         $data['role'] = $role;
 
         return view('purchase_requests/index', $data);

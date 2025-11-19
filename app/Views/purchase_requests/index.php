@@ -15,12 +15,23 @@ $title = 'Purchase Requests';
 
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get" action="<?= base_url('purchase-requests') ?>" class="row g-3">
-            <div class="col-md-4">
-                <input type="text" name="search" class="form-control" placeholder="Search by request number, branch, requester..." value="<?= esc($search ?? '') ?>">
-            </div>
+        <form method="get" action="<?= base_url('purchase-requests') ?>" id="filterForm" class="row g-3">
+            <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
             <div class="col-md-3">
-                <select name="status" class="form-select">
+                <label class="form-label">Branch</label>
+                <select name="branch_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
+                    <option value="">All Branches</option>
+                    <?php foreach ($branches as $branch): ?>
+                        <option value="<?= $branch['id'] ?>" <?= (isset($filter_branch_id) && $filter_branch_id == $branch['id']) ? 'selected' : '' ?>>
+                            <?= $branch['name'] ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Status</option>
                     <option value="pending" <?= ($status == 'pending') ? 'selected' : '' ?>>Pending</option>
                     <option value="approved" <?= ($status == 'approved') ? 'selected' : '' ?>>Approved</option>
@@ -29,15 +40,18 @@ $title = 'Purchase Requests';
                 </select>
             </div>
             <div class="col-md-3">
-                <select name="priority" class="form-select">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Priorities</option>
                     <option value="urgent" <?= ($priority == 'urgent') ? 'selected' : '' ?>>Urgent</option>
                     <option value="high" <?= ($priority == 'high') ? 'selected' : '' ?>>High</option>
                     <option value="normal" <?= ($priority == 'normal') ? 'selected' : '' ?>>Normal</option>
+                    <option value="low" <?= ($priority == 'low') ? 'selected' : '' ?>>Low</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" placeholder="Request number, requester..." value="<?= esc($search ?? '') ?>" onkeypress="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('filterForm').submit(); }">
             </div>
         </form>
     </div>

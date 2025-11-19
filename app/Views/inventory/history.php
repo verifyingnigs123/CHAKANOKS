@@ -15,11 +15,11 @@ $title = 'Inventory History';
 
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get" action="<?= base_url('inventory/history') ?>" class="row g-3">
+        <form method="get" action="<?= base_url('inventory/history') ?>" id="filterForm" class="row g-3">
             <?php if ($role == 'central_admin' || $role == 'system_admin'): ?>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label>Branch</label>
-                <select name="branch_id" class="form-select">
+                <select name="branch_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Branches</option>
                     <?php foreach ($branches as $branch): ?>
                         <option value="<?= $branch['id'] ?>" <?= ($current_branch_id == $branch['id']) ? 'selected' : '' ?>>
@@ -29,9 +29,9 @@ $title = 'Inventory History';
                 </select>
             </div>
             <?php endif; ?>
-            <div class="col-md-4">
+            <div class="col-md-<?= ($role == 'central_admin' || $role == 'system_admin') ? '6' : '12' ?>">
                 <label>Product</label>
-                <select name="product_id" class="form-select">
+                <select name="product_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Products</option>
                     <?php foreach ($products as $product): ?>
                         <option value="<?= $product['id'] ?>" <?= ($current_product_id == $product['id']) ? 'selected' : '' ?>>
@@ -39,12 +39,6 @@ $title = 'Inventory History';
                         </option>
                     <?php endforeach; ?>
                 </select>
-            </div>
-            <div class="col-md-4">
-                <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-funnel"></i> Filter
-                </button>
             </div>
         </form>
     </div>

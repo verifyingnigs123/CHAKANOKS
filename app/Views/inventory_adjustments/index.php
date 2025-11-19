@@ -15,12 +15,12 @@ $title = 'Inventory Adjustments';
 
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get" action="<?= base_url('inventory-adjustments') ?>" class="row g-3">
+        <form method="get" action="<?= base_url('inventory-adjustments') ?>" id="filterForm" class="row g-3">
             <div class="col-md-3">
-                <input type="text" name="search" class="form-control" placeholder="Search by product, SKU, reason..." value="<?= esc($search ?? '') ?>">
+                <input type="text" name="search" class="form-control" placeholder="Search by product, SKU, reason..." value="<?= esc($search ?? '') ?>" onkeypress="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('filterForm').submit(); }">
             </div>
             <div class="col-md-2">
-                <select name="type" class="form-select">
+                <select name="type" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Types</option>
                     <option value="increase" <?= ($type == 'increase') ? 'selected' : '' ?>>Increase</option>
                     <option value="decrease" <?= ($type == 'decrease') ? 'selected' : '' ?>>Decrease</option>
@@ -29,7 +29,7 @@ $title = 'Inventory Adjustments';
             </div>
             <?php if ($role == 'system_admin' || $role == 'central_admin'): ?>
             <div class="col-md-2">
-                <select name="branch_id" class="form-select">
+                <select name="branch_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Branches</option>
                     <?php foreach ($branches as $branch): ?>
                         <option value="<?= $branch['id'] ?>" <?= ($filterBranch == $branch['id']) ? 'selected' : '' ?>>
@@ -40,13 +40,10 @@ $title = 'Inventory Adjustments';
             </div>
             <?php endif; ?>
             <div class="col-md-2">
-                <input type="date" name="date_from" class="form-control" value="<?= esc($dateFrom ?? '') ?>" placeholder="From">
+                <input type="date" name="date_from" class="form-control" value="<?= esc($dateFrom ?? '') ?>" placeholder="From" onchange="document.getElementById('filterForm').submit();">
             </div>
             <div class="col-md-2">
-                <input type="date" name="date_to" class="form-control" value="<?= esc($dateTo ?? '') ?>" placeholder="To">
-            </div>
-            <div class="col-md-1">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <input type="date" name="date_to" class="form-control" value="<?= esc($dateTo ?? '') ?>" placeholder="To" onchange="document.getElementById('filterForm').submit();">
             </div>
         </form>
     </div>

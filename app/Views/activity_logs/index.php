@@ -35,12 +35,12 @@ $title = 'Activity Logs';
 
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get" action="<?= base_url('activity-logs') ?>" class="row g-3">
+        <form method="get" action="<?= base_url('activity-logs') ?>" id="filterForm" class="row g-3">
             <div class="col-md-3">
-                <input type="text" name="search" class="form-control" placeholder="Search..." value="<?= esc($search ?? '') ?>">
+                <input type="text" name="search" class="form-control" placeholder="Search..." value="<?= esc($search ?? '') ?>" onkeypress="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('filterForm').submit(); }">
             </div>
             <div class="col-md-2">
-                <select name="user_id" class="form-select">
+                <select name="user_id" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Users</option>
                     <?php foreach ($users as $user): ?>
                         <option value="<?= $user['id'] ?>" <?= ($filterUser == $user['id']) ? 'selected' : '' ?>>
@@ -50,7 +50,7 @@ $title = 'Activity Logs';
                 </select>
             </div>
             <div class="col-md-2">
-                <select name="action" class="form-select">
+                <select name="action" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Actions</option>
                     <option value="create" <?= ($filterAction == 'create') ? 'selected' : '' ?>>Create</option>
                     <option value="update" <?= ($filterAction == 'update') ? 'selected' : '' ?>>Update</option>
@@ -60,7 +60,7 @@ $title = 'Activity Logs';
                 </select>
             </div>
             <div class="col-md-2">
-                <select name="entity_type" class="form-select">
+                <select name="entity_type" class="form-select" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Types</option>
                     <option value="user" <?= ($filterEntity == 'user') ? 'selected' : '' ?>>User</option>
                     <option value="product" <?= ($filterEntity == 'product') ? 'selected' : '' ?>>Product</option>
@@ -74,15 +74,14 @@ $title = 'Activity Logs';
             <div class="col-md-3">
                 <div class="row g-2">
                     <div class="col-6">
-                        <input type="date" name="date_from" class="form-control" value="<?= esc($dateFrom ?? '') ?>" placeholder="From">
+                        <input type="date" name="date_from" class="form-control" value="<?= esc($dateFrom ?? '') ?>" onchange="document.getElementById('filterForm').submit();">
                     </div>
                     <div class="col-6">
-                        <input type="date" name="date_to" class="form-control" value="<?= esc($dateTo ?? '') ?>" placeholder="To">
+                        <input type="date" name="date_to" class="form-control" value="<?= esc($dateTo ?? '') ?>" onchange="document.getElementById('filterForm').submit();">
                     </div>
                 </div>
             </div>
             <div class="col-md-12">
-                <button type="submit" class="btn btn-primary">Filter</button>
                 <a href="<?= base_url('activity-logs') ?>" class="btn btn-secondary">Clear</a>
             </div>
         </form>

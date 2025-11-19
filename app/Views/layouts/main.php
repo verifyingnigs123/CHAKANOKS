@@ -218,11 +218,14 @@
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
+                    <?php if (session()->get('role') != 'supplier' && session()->get('role') != 'logistics_coordinator' && session()->get('role') != 'franchise_manager'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'inventory') !== false) ? 'active' : '' ?>" href="<?= base_url('inventory') ?>">
                             <i class="bi bi-boxes"></i> Inventory
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (session()->get('role') != 'logistics_coordinator' && session()->get('role') != 'franchise_manager' && session()->get('role') != 'inventory_staff'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'purchase-requests') !== false) ? 'active' : '' ?>" href="<?= base_url('purchase-requests') ?>">
                             <i class="bi bi-cart-plus"></i> Purchase Requests
@@ -233,31 +236,49 @@
                             <i class="bi bi-file-earmark-text"></i> Purchase Orders
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (session()->get('role') != 'franchise_manager' && session()->get('role') != 'inventory_staff'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'deliveries') !== false) ? 'active' : '' ?>" href="<?= base_url('deliveries') ?>">
                             <i class="bi bi-truck"></i> Deliveries
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (session()->get('role') != 'logistics_coordinator' && session()->get('role') != 'franchise_manager' && session()->get('role') != 'inventory_staff'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'products') !== false) ? 'active' : '' ?>" href="<?= base_url('products') ?>">
                             <i class="bi bi-tags"></i> Products
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (session()->get('role') != 'branch_manager' && session()->get('role') != 'inventory_staff' && session()->get('role') != 'logistics_coordinator' && session()->get('role') != 'franchise_manager' && session()->get('role') != 'supplier'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'suppliers') !== false) ? 'active' : '' ?>" href="<?= base_url('suppliers') ?>">
                             <i class="bi bi-truck"></i> Suppliers
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (session()->get('role') == 'franchise_manager'): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'suppliers') !== false) ? 'active' : '' ?>" href="<?= base_url('suppliers') ?>">
+                            <i class="bi bi-briefcase"></i> Suppliers
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if (session()->get('role') != 'branch_manager' && session()->get('role') != 'inventory_staff' && session()->get('role') != 'supplier' && session()->get('role') != 'logistics_coordinator' && session()->get('role') != 'franchise_manager'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'branches') !== false) ? 'active' : '' ?>" href="<?= base_url('branches') ?>">
                             <i class="bi bi-building"></i> Branches
                         </a>
                     </li>
+                    <?php endif; ?>
+                    <?php if (session()->get('role') != 'logistics_coordinator' && session()->get('role') != 'franchise_manager' && session()->get('role') != 'inventory_staff'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'transfers') !== false) ? 'active' : '' ?>" href="<?= base_url('transfers') ?>">
                             <i class="bi bi-arrow-left-right"></i> Transfers
                         </a>
                     </li>
+                    <?php endif; ?>
                     <?php if (session()->get('role') == 'system_admin' || session()->get('role') == 'central_admin'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'users') !== false) ? 'active' : '' ?>" href="<?= base_url('users') ?>">
@@ -270,11 +291,13 @@
                         </a>
                     </li>
                     <?php endif; ?>
+                    <?php if (session()->get('role') != 'franchise_manager'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'reports') !== false) ? 'active' : '' ?>" href="<?= base_url('reports') ?>">
                             <i class="bi bi-graph-up"></i> Reports
                         </a>
                     </li>
+                    <?php endif; ?>
                     <?php if (session()->get('role') == 'system_admin'): ?>
                     <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'settings') !== false) ? 'active' : '' ?>" href="<?= base_url('settings') ?>">

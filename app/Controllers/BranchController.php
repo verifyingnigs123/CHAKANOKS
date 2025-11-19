@@ -26,6 +26,11 @@ class BranchController extends BaseController
             return redirect()->to('/login');
         }
 
+        // Only system_admin and central_admin can access branches management
+        if (!$this->checkRoleAccess(['system_admin', 'central_admin'])) {
+            return $this->unauthorized('Only administrators can access branch management');
+        }
+
         $builder = $this->branchModel->select('branches.*, users.full_name as manager_name')
             ->join('users', 'users.id = branches.manager_id', 'left');
 
@@ -60,6 +65,11 @@ class BranchController extends BaseController
             return redirect()->to('/login');
         }
 
+        // Only system_admin and central_admin can create branches
+        if (!$this->checkRoleAccess(['system_admin', 'central_admin'])) {
+            return $this->unauthorized('Only administrators can create branches');
+        }
+
         $data['managers'] = $this->userModel->whereIn('role', ['branch_manager'])->findAll();
 
         return view('branches/create', $data);
@@ -70,6 +80,11 @@ class BranchController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only system_admin and central_admin can create branches
+        if (!$this->checkRoleAccess(['system_admin', 'central_admin'])) {
+            return $this->unauthorized('Only administrators can create branches');
         }
 
         $data = [
@@ -99,6 +114,11 @@ class BranchController extends BaseController
             return redirect()->to('/login');
         }
 
+        // Only system_admin and central_admin can edit branches
+        if (!$this->checkRoleAccess(['system_admin', 'central_admin'])) {
+            return $this->unauthorized('Only administrators can edit branches');
+        }
+
         $data['branch'] = $this->branchModel->find($id);
         if (!$data['branch']) {
             return redirect()->to('/branches')->with('error', 'Branch not found');
@@ -114,6 +134,11 @@ class BranchController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only system_admin and central_admin can update branches
+        if (!$this->checkRoleAccess(['system_admin', 'central_admin'])) {
+            return $this->unauthorized('Only administrators can update branches');
         }
 
         $data = [
@@ -141,6 +166,11 @@ class BranchController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only system_admin and central_admin can delete branches
+        if (!$this->checkRoleAccess(['system_admin', 'central_admin'])) {
+            return $this->unauthorized('Only administrators can delete branches');
         }
 
         $branch = $this->branchModel->find($id);

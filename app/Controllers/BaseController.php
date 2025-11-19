@@ -55,4 +55,38 @@ abstract class BaseController extends Controller
 
         // E.g.: $this->session = service('session');
     }
+
+    /**
+     * Check if user has required role(s) to access a resource
+     * 
+     * @param string|array $allowedRoles Role(s) allowed to access
+     * @return bool
+     */
+    protected function checkRoleAccess($allowedRoles)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return false;
+        }
+
+        $userRole = $session->get('role');
+        
+        // Convert single role to array
+        if (is_string($allowedRoles)) {
+            $allowedRoles = [$allowedRoles];
+        }
+
+        return in_array($userRole, $allowedRoles);
+    }
+
+    /**
+     * Redirect unauthorized users
+     * 
+     * @param string $message Optional error message
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    protected function unauthorized($message = 'Unauthorized access. You do not have permission to access this page.')
+    {
+        return redirect()->to('/dashboard')->with('error', $message);
+    }
 }
