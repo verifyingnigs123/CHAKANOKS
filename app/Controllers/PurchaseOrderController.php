@@ -9,6 +9,7 @@ use App\Models\PurchaseRequestItemModel;
 use App\Models\SupplierModel;
 use App\Models\BranchModel;
 use App\Models\ProductModel;
+use App\Models\DeliveryModel;
 use App\Models\ActivityLogModel;
 use App\Libraries\NotificationService;
 
@@ -21,6 +22,7 @@ class PurchaseOrderController extends BaseController
     protected $supplierModel;
     protected $branchModel;
     protected $productModel;
+    protected $deliveryModel;
     protected $activityLogModel;
     protected $notificationService;
 
@@ -33,6 +35,7 @@ class PurchaseOrderController extends BaseController
         $this->supplierModel = new SupplierModel();
         $this->branchModel = new BranchModel();
         $this->productModel = new ProductModel();
+        $this->deliveryModel = new DeliveryModel();
         $this->activityLogModel = new ActivityLogModel();
         $this->notificationService = new NotificationService();
     }
@@ -326,9 +329,9 @@ class PurchaseOrderController extends BaseController
         }
 
         $po = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, suppliers.email as supplier_email, suppliers.phone as supplier_phone, branches.name as branch_name, users.full_name as created_by_name')
-            ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
-            ->join('branches', 'branches.id = purchase_orders.branch_id')
-            ->join('users', 'users.id = purchase_orders.created_by')
+            ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id', 'left')
+            ->join('branches', 'branches.id = purchase_orders.branch_id', 'left')
+            ->join('users', 'users.id = purchase_orders.created_by', 'left')
             ->find($id);
 
         if (!$po) {
@@ -340,8 +343,15 @@ class PurchaseOrderController extends BaseController
             ->where('purchase_order_items.purchase_order_id', $id)
             ->findAll();
 
+        // Find an active delivery for this PO (scheduled or in_transit)
+        $delivery = $this->deliveryModel->where('purchase_order_id', $id)
+            ->whereIn('status', ['scheduled', 'in_transit'])
+            ->orderBy('created_at', 'DESC')
+            ->first();
+
         $data['po'] = $po;
         $data['items'] = $items;
+        $data['delivery'] = $delivery;
         $data['role'] = $session->get('role');
 
         return view('purchase_orders/view', $data);
@@ -425,6 +435,9 @@ class PurchaseOrderController extends BaseController
         $supplier = $this->supplierModel->find($po['supplier_id']);
         $branch = $this->branchModel->find($po['branch_id']);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $this->notificationService->sendToRole('logistics_coordinator', 'info', 'PO Prepared - Schedule Shipment', "Purchase Order {$po['po_number']} for {$branchName} has been prepared by supplier.", base_url("purchase-orders/view/{$id}"));
+
+        // Notify logistics coordinator to schedule shipment
         $this->notificationService->sendToRole('logistics_coordinator', 'info', 'PO Prepared - Schedule Shipment', "Purchase Order {$po['po_number']} for {$branchName} has been prepared by supplier.", base_url("purchase-orders/view/{$id}"));
 
         return redirect()->back()->with('success', 'Purchase order marked as prepared');

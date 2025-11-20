@@ -13,6 +13,44 @@ $title = 'Deliveries';
     </a>
 </div>
 
+<?php if (!empty($prepared_pos) && $role === 'logistics_coordinator'): ?>
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Prepared Purchase Orders (Ready to Schedule)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>PO Number</th>
+                            <th>Supplier</th>
+                            <th>Branch</th>
+                            <th>Order Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($prepared_pos as $ppo): ?>
+                            <tr>
+                                <td><strong><?= esc($ppo['po_number']) ?></strong></td>
+                                <td><?= esc($ppo['supplier_name']) ?></td>
+                                <td><?= esc($ppo['branch_name']) ?></td>
+                                <td><?= $ppo['order_date'] ? date('M d, Y', strtotime($ppo['order_date'])) : '-' ?></td>
+                                <td>
+                                    <a href="<?= base_url('deliveries/create?po_id=' . $ppo['id']) ?>" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-truck"></i> Schedule
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
 <div class="card">
     <div class="card-body">
         <div class="table-responsive">

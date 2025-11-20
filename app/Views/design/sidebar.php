@@ -1,5 +1,38 @@
 <?php 
 $role = session()->get('userRole') ?? session()->get('role') ?? 'guest';
+$roleLower = strtolower($role);
+$username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
+?>
+
+<!-- Modern Role-Based Sidebar -->
+<style>
+  :root{
+    --sidebar-width: 280px;
+    --navbar-height: 56px;
+  }
+
+  .modern-sidebar {
+    width: var(--sidebar-width);
+    height: calc(100vh - var(--navbar-height)); /* Fixed height */
+    background: linear-gradient(180deg, #0f172a 0%, #0b3b5a 50%, #0f172a 100%);
+    position: fixed;
+    left: 0;
+    top: var(--navbar-height);
+    box-shadow: 4px 0 30px rgba(0,0,0,0.20);
+    z-index: 1030;
+    overflow-y: auto;
+    color: #e6eef8;
+  }
+
+  .sidebar-header {
+    padding: 22px 20px;
+    background: linear-gradient(90deg, rgba(255,112,67,0.06), transparent 60%);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    text-align: center;
+  }
+<?php 
+$role = session()->get('userRole') ?? session()->get('role') ?? 'guest';
+$roleLower = strtolower($role);
 $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
 ?>
 
@@ -88,14 +121,12 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
 <div class="modern-sidebar" role="navigation" aria-label="Primary sidebar">
   <div class="sidebar-header">
     <div class="sidebar-user" role="group" aria-label="User info">
-      <?php 
+      <?php
       $roleDisplay = ucwords(str_replace('_', ' ', $role));
-      // For central_admin, show as "Central Admin"
-      if ($role === 'central_admin') {
+      // Normalize display for special roles
+      if ($roleLower === 'central_admin') {
           $roleDisplay = 'Central Admin';
-      }
-      // For branch_manager, show branch name instead
-      elseif ($role === 'branch_manager') {
+      } elseif ($roleLower === 'branch_manager') {
           $branchName = session()->get('branch_name');
           $roleDisplay = $branchName ? $branchName : 'Branch Manager';
       }
@@ -110,9 +141,13 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
     </div>
   </div>
 
+  <?php
+  // Treat as supplier if role indicates supplier or session has supplier_id set
+  $isSupplier = ($roleLower === 'supplier' || !empty(session()->get('supplier_id')));
+  ?>
+
   <ul class="sidebar-menu" role="menu" aria-label="Sidebar menu">
-    <!-- Central Admin -->
-    <?php if ($role === 'central_admin'): ?>
+    <?php if ($roleLower === 'central_admin'): ?>
       <li class="menu-label">Administrator</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
       <li><a href="<?= base_url('users') ?>" class="nav-link"><i class="bi bi-people"></i><span>User Management</span></a></li>
@@ -122,7 +157,9 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
       <li class="menu-divider"></li>
 
       <li class="menu-label">Procurement</li>
+      <?php if (! $isSupplier): ?>
       <li><a href="<?= base_url('purchase-requests') ?>" class="nav-link"><i class="bi bi-journal-plus"></i><span>Purchase Requests</span></a></li>
+      <?php endif; ?>
       <li><a href="<?= base_url('purchase-orders') ?>" class="nav-link"><i class="bi bi-receipt"></i><span>Purchase Orders</span></a></li>
       <li class="menu-divider"></li>
 
@@ -131,20 +168,20 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
       <li><a href="<?= base_url('activity-logs') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Activity Logs</span></a></li>
       <li><a href="<?= base_url('settings') ?>" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
 
-    <!-- Branch Manager -->
-    <?php elseif ($role === 'branch_manager'): ?>
+    <?php elseif ($roleLower === 'branch_manager'): ?>
       <li class="menu-label">Branch Operations</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
       <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Inventory</span></a></li>
       <li><a href="<?= base_url('purchase-requests/create') ?>" class="nav-link"><i class="bi bi-journal-plus"></i><span>Create Purchase Request</span></a></li>
+      <?php if (! $isSupplier): ?>
       <li><a href="<?= base_url('transfers') ?>" class="nav-link"><i class="bi bi-arrow-left-right"></i><span>Transfers</span></a></li>
+      <?php endif; ?>
       <li class="menu-divider"></li>
 
       <li class="menu-label">Reports</li>
       <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Branch Reports</span></a></li>
 
-    <!-- Inventory Staff -->
-    <?php elseif ($role === 'inventory_staff'): ?>
+    <?php elseif ($roleLower === 'inventory_staff'): ?>
       <li class="menu-label">Inventory</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
       <li><a href="<?= base_url('inventory') ?>" class="nav-link"><i class="bi bi-box-seam"></i><span>Stock Overview</span></a></li>
@@ -153,26 +190,23 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
       <li class="menu-label">Suppliers</li>
       <li><a href="<?= base_url('purchase-requests/create') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Request Supply</span></a></li>
 
-    <!-- Supplier -->
-    <?php elseif ($role === 'supplier'): ?>
+    <?php elseif ($roleLower === 'supplier'): ?>
       <li class="menu-label">Supplier</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
       <li><a href="<?= base_url('purchase-orders') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Purchase Orders</span></a></li>
-      <li><a href="<?= base_url('deliveries') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Deliveries</span></a></li>
 
-    <!-- Logistics Coordinator -->
-    <?php elseif ($role === 'logistics_coordinator'): ?>
+    <?php elseif ($roleLower === 'logistics_coordinator'): ?>
       <li class="menu-label">Logistics</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+      <?php if (! $isSupplier): ?>
       <li><a href="<?= base_url('deliveries') ?>" class="nav-link"><i class="bi bi-truck"></i><span>Active Deliveries</span></a></li>
+      <?php endif; ?>
 
-    <!-- Franchise Manager -->
-    <?php elseif ($role === 'franchise_manager'): ?>
+    <?php elseif ($roleLower === 'franchise_manager'): ?>
       <li class="menu-label">Franchising</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
       <li><a href="<?= base_url('suppliers') ?>" class="nav-link"><i class="bi bi-briefcase"></i><span>Suppliers</span></a></li>
 
-    <!-- Default / Guest -->
     <?php else: ?>
       <li class="menu-label">Navigation</li>
       <li><a href="<?= base_url('dashboard') ?>" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
@@ -210,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  const currentPath = window.location.pathname.replace(/\/+$/, '');
+  const currentPath = window.location.pathname.replace(/\/+$, '');
   const navLinks = document.querySelectorAll('.sidebar-menu .nav-link');
   navLinks.forEach(link => {
     link.classList.remove('active');

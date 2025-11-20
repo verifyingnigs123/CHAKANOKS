@@ -66,6 +66,19 @@ class DeliveryController extends BaseController
         $data['deliveries'] = $builder->findAll();
         $data['role'] = $role;
 
+        // For logistics coordinator, also show prepared purchase orders ready to be scheduled
+        $preparedPOs = [];
+        if ($role === 'logistics_coordinator') {
+            $preparedPOs = $this->purchaseOrderModel->select('purchase_orders.id, purchase_orders.po_number, suppliers.name as supplier_name, branches.name as branch_name, purchase_orders.order_date')
+                ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id', 'left')
+                ->join('branches', 'branches.id = purchase_orders.branch_id', 'left')
+                ->where('purchase_orders.status', 'prepared')
+                ->orderBy('purchase_orders.created_at', 'DESC')
+                ->findAll();
+        }
+
+        $data['prepared_pos'] = $preparedPOs;
+
         return view('deliveries/index', $data);
     }
 
@@ -74,6 +87,12 @@ class DeliveryController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only logistics coordinators and central admins can schedule deliveries
+        $role = $session->get('role');
+        if (!in_array($role, ['logistics_coordinator', 'central_admin'])) {
+            return redirect()->back()->with('error', 'Unauthorized to schedule deliveries');
         }
 
         // Get purchase orders that are prepared, confirmed or sent
@@ -94,6 +113,12 @@ class DeliveryController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only logistics coordinators and central admins can schedule deliveries
+        $role = $session->get('role');
+        if (!in_array($role, ['logistics_coordinator', 'central_admin'])) {
+            return redirect()->back()->with('error', 'Unauthorized to schedule deliveries');
         }
 
         $deliveryNumber = $this->deliveryModel->generateDeliveryNumber();
@@ -242,6 +267,7 @@ class DeliveryController extends BaseController
         $batchNumbers = $this->request->getPost('batch_numbers');
         $expiryDates = $this->request->getPost('expiry_dates');
 
+        $itemUpdates = [];
         if ($products && $quantities) {
             foreach ($products as $index => $productId) {
                 $quantity = (int) $quantities[$index];
@@ -304,6 +330,7 @@ class DeliveryController extends BaseController
                         $this->purchaseOrderItemModel->update($poItem['id'], [
                             'quantity_received' => $newReceived
                         ]);
+                        $itemUpdates[$productId] = $newReceived;
                     }
                 }
             }
@@ -329,8 +356,10 @@ class DeliveryController extends BaseController
 
         if ($allReceived) {
             $this->purchaseOrderModel->update($po['id'], ['status' => 'completed']);
+            $poStatus = 'completed';
         } else {
             $this->purchaseOrderModel->update($po['id'], ['status' => 'partial']);
+            $poStatus = 'partial';
         }
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'receive', 'delivery', "Received delivery ID: $id");
@@ -339,6 +368,19 @@ class DeliveryController extends BaseController
         $branch = $this->branchModel->find($branchId);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
         $this->notificationService->sendDeliveryReceivedNotification($id, $delivery['delivery_number'], $branchId, $branchName, $po['po_number'], $po['supplier_id']);
+
+        // If AJAX request, return JSON so callers (like PO page) can update in-place
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Delivery received and inventory updated',
+                'delivery_status' => 'delivered',
+                'po_status' => $poStatus,
+                'item_updates' => $itemUpdates,
+                'delivery_id' => $id,
+                'po_id' => $po['id']
+            ]);
+        }
 
         return redirect()->to('/deliveries')->with('success', 'Delivery received and inventory updated');
     }
