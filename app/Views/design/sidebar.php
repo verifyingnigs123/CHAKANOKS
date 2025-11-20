@@ -24,6 +24,50 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
     color: #e6eef8;
   }
 
+  /* Bubble-style nav for modern sidebar */
+  .modern-sidebar .sidebar-menu {
+    position: relative;
+    padding-left: 18px;
+  }
+
+  .modern-sidebar .sidebar-menu .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    margin: 8px 12px;
+    border-radius: 999px;
+    background: transparent;
+    transition: transform 220ms cubic-bezier(.2,.9,.2,1), background 220ms ease, box-shadow 220ms ease;
+  }
+
+  .modern-sidebar .sidebar-menu .nav-link:hover {
+    transform: translateX(6px) scale(1.02);
+    background: rgba(255,255,255,0.03);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+  }
+
+  .modern-sidebar .sidebar-menu .nav-link.active {
+    background: linear-gradient(90deg, rgba(255,112,67,0.12), rgba(255,112,67,0.02));
+    box-shadow: 0 10px 26px rgba(11,59,90,0.14);
+    color: #fff;
+    transform: translateX(4px) scale(1.01);
+  }
+
+  .modern-sidebar #navIndicatorDesign {
+    position: absolute;
+    left: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(255,255,255,0.6));
+    box-shadow: 0 8px 22px rgba(124,58,237,0.12);
+    transition: top 360ms cubic-bezier(.22,.9,.28,1), opacity 240ms ease;
+    opacity: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+
   .sidebar-header {
     padding: 22px 20px;
     background: linear-gradient(90deg, rgba(255,112,67,0.06), transparent 60%);
@@ -119,6 +163,7 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
 </style>
 
 <div class="modern-sidebar" role="navigation" aria-label="Primary sidebar">
+  <div id="navIndicatorDesign" aria-hidden="true"></div>
   <div class="sidebar-header">
     <div class="sidebar-user" role="group" aria-label="User info">
       <?php
@@ -259,5 +304,39 @@ document.addEventListener('DOMContentLoaded', function() {
       if (hrefSeg && hrefSeg === curSeg) link.classList.add('active');
     }
   });
+
+  // Indicator movement for modern sidebar
+  (function() {
+    const nav = document.querySelector('.modern-sidebar .sidebar-menu');
+    const indicator = document.getElementById('navIndicatorDesign');
+    if (!nav || !indicator) return;
+
+    function updateIndicator() {
+      const active = nav.querySelector('.nav-link.active');
+      if (!active) {
+        indicator.style.opacity = '0';
+        return;
+      }
+      // compute position relative to modern-sidebar container
+      const sidebarEl = document.querySelector('.modern-sidebar');
+      const sidebarRect = sidebarEl.getBoundingClientRect();
+      const actRect = active.getBoundingClientRect();
+      const top = (actRect.top - sidebarRect.top) + (active.offsetHeight / 2) - (indicator.offsetHeight / 2) + nav.scrollTop;
+      indicator.style.top = top + 'px';
+      indicator.style.opacity = '1';
+    }
+
+    nav.addEventListener('click', function(e) {
+      const link = e.target.closest('.nav-link');
+      if (!link) return;
+      nav.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+      link.classList.add('active');
+      updateIndicator();
+    });
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    setTimeout(updateIndicator, 300);
+  })();
 });
 </script>

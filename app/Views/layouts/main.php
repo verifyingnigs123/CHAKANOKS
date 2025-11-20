@@ -155,6 +155,60 @@
         .notification-fade-out {
             animation: fadeOut 0.5s ease-out forwards;
         }
+
+        /* Bubble-style sidebar nav */
+        .sidebar {
+            position: relative;
+            padding-top: 1.25rem;
+        }
+
+        .sidebar .nav {
+            position: relative;
+        }
+
+        .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            margin: 6px 0;
+            border-radius: 999px;
+            color: rgba(255,255,255,0.9);
+            transition: transform 240ms cubic-bezier(.2,.9,.2,1), background 240ms ease, box-shadow 240ms ease;
+            will-change: transform, background;
+        }
+
+        .sidebar .nav-link i { font-size:1.05rem; width:28px; text-align:center }
+
+        .sidebar .nav-link:hover {
+            transform: translateX(6px) scale(1.02);
+            background: rgba(255,255,255,0.04);
+            box-shadow: 0 8px 20px rgba(2,6,23,0.18);
+            color: #fff;
+        }
+
+        .sidebar .nav-link.active {
+            background: linear-gradient(90deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(11,59,90,0.18);
+            transform: translateX(4px) scale(1.01);
+        }
+
+        /* Floating indicator bubble */
+        #navIndicator {
+            position: absolute;
+            left: 10px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+            box-shadow: 0 8px 22px rgba(124,58,237,0.14);
+            transform: translateY(0);
+            transition: top 360ms cubic-bezier(.22,.9,.28,1), opacity 240ms ease;
+            opacity: 0;
+            z-index: 5;
+            pointer-events: none;
+        }
         
         @keyframes fadeOut {
             from {
@@ -212,7 +266,8 @@
                     <small class="text-white-50">Supply Chain Management</small>
                 </div>
                 
-                <ul class="nav flex-column">
+                    <div id="navIndicator" aria-hidden="true"></div>
+                    <ul class="nav flex-column">
                     <li class="nav-item">
                         <a class="nav-link <?= (uri_string() == 'dashboard') ? 'active' : '' ?>" href="<?= base_url('dashboard') ?>">
                             <i class="bi bi-speedometer2"></i> Dashboard
@@ -568,6 +623,45 @@
             // Refresh every 30 seconds
             setInterval(loadNotifications, 30000);
         });
+    </script>
+    <script>
+    // Sidebar indicator movement logic
+    document.addEventListener('DOMContentLoaded', function () {
+        const nav = document.querySelector('.sidebar .nav.flex-column');
+        const indicator = document.getElementById('navIndicator');
+        if (!nav || !indicator) return;
+
+        function updateIndicator() {
+            const active = nav.querySelector('.nav-link.active');
+            if (!active) {
+                indicator.style.opacity = '0';
+                return;
+            }
+            // compute top relative to the sidebar container (handles offsets correctly)
+            const sidebarEl = document.querySelector('.sidebar');
+            const sidebarRect = sidebarEl.getBoundingClientRect();
+            const actRect = active.getBoundingClientRect();
+            const top = (actRect.top - sidebarRect.top) + (active.offsetHeight / 2) - (indicator.offsetHeight / 2) + nav.scrollTop;
+            indicator.style.top = top + 'px';
+            indicator.style.opacity = '1';
+        }
+
+        // Move indicator briefly when clicking links for a nicer UX
+        nav.addEventListener('click', function (e) {
+            const link = e.target.closest('.nav-link');
+            if (!link) return;
+            // set active class visually
+            nav.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            link.classList.add('active');
+            updateIndicator();
+        });
+
+        // update on load and resize
+        updateIndicator();
+        window.addEventListener('resize', updateIndicator);
+        // also update after a short delay (in case server set active after render)
+        setTimeout(updateIndicator, 300);
+    });
     </script>
     <?= $this->renderSection('scripts') ?>
 </body>

@@ -14,16 +14,26 @@
       display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
     }
     .login-wrap{max-width:980px;width:95%;display:flex;box-shadow:0 10px 30px rgba(2,6,23,0.4);border-radius:14px;overflow:hidden;background:rgba(255,255,255,0.02);backdrop-filter: blur(6px);}
-    .brand-side{flex:1;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;padding:40px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
-    .brand-side h1{font-size:28px;margin:0 0 8px 0;letter-spacing:0.4px}
+    .brand-side{flex:1;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;padding:40px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;position:relative;overflow:hidden}
+    .brand-side h1{font-size:28px;margin:0 0 8px 0;letter-spacing:0.4px;transform:translateY(-6px);opacity:0;animation:slideIn 700ms cubic-bezier(.2,.9,.2,1) forwards 120ms}
     .brand-side p{opacity:0.95;margin-bottom:18px}
-    .brand-art{width:100%;max-width:260px;margin-top:10px}
+    .brand-art{width:100%;max-width:320px;margin-top:18px;transform:translateY(12px);opacity:0;animation:floatIn 900ms ease-out forwards 200ms}
+    .brand-art-wrap{position:relative;display:inline-block}
+    .brand-glow{position:absolute;right:-40px;top:-40px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), rgba(124,58,237,0.02) 40%, transparent 60%);filter: blur(24px);transform:scale(0.9);opacity:0;animation:glow 1400ms ease-out forwards 250ms}
     .form-side{flex:1;background:#fff;padding:36px 32px;}
     .card-title{font-weight:700;margin-bottom:6px}
     .small-desc{color:#6b7280;margin-bottom:18px}
     .password-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6c757d;cursor:pointer;padding:5px 10px;z-index:10}
     .password-wrapper{position:relative}
     .password-wrapper input{padding-right:45px}
+    /* logo mark float */
+    .logo-mark{transform:translateY(-4px);animation:logoFloat 2200ms ease-in-out infinite}
+
+    /* entrance animations */
+    @keyframes floatIn {0%{opacity:0;transform:translateY(22px) scale(.98)}100%{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes slideIn {0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+    @keyframes logoFloat {0%{transform:translateY(-3px)}50%{transform:translateY(3px)}100%{transform:translateY(-3px)}}
+    @keyframes glow {0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
     @media (max-width:800px){.login-wrap{flex-direction:column}.brand-side{padding:28px;text-align:center;align-items:center}.form-side{padding:24px}}
     .logo-badge{display:inline-flex;align-items:center;gap:10px}
     .logo-mark{width:56px;height:56px;border-radius:10px;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center}
@@ -51,7 +61,10 @@
     <h1>ChakaNoks’ Supply Chain Management System (SCMS)</h1>
     <p>Manage inventory, orders, deliveries, and branches — all in one place. Fast, secure, and built for scale.</p>
 
-    <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='220' viewBox='0 0 420 220'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='%23ffffff' stop-opacity='0.12'/><stop offset='1' stop-color='%23ffffff' stop-opacity='0.06'/></linearGradient></defs><rect rx='20' width='420' height='220' fill='url(%23g)' /></svg>" alt="illustration" class="brand-art">
+    <div class="brand-art-wrap">
+      <div class="brand-glow" aria-hidden="true"></div>
+      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='220' viewBox='0 0 420 220'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='%23ffffff' stop-opacity='0.12'/><stop offset='1' stop-color='%23ffffff' stop-opacity='0.06'/></linearGradient></defs><rect rx='20' width='420' height='220' fill='url(%23g)' /></svg>" alt="illustration" class="brand-art">
+    </div>
   </div>
 
   <div class="form-side">
@@ -67,7 +80,7 @@
     <form action="<?= base_url('auth/login') ?>" method="post">
       <div class="mb-3">
         <label class="form-label">Email</label>
-        <input type="email" name="email" class="form-control" placeholder="you@company.com" required>
+        <input type="email" name="email" class="form-control" placeholder="Email" required>
       </div>
 
       <div class="mb-3">
