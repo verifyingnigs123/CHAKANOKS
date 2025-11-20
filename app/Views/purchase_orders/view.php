@@ -20,10 +20,13 @@ $title = 'Purchase Order Details';
                 <p><strong>Expected Delivery:</strong> <?= $po['expected_delivery_date'] ? date('M d, Y', strtotime($po['expected_delivery_date'])) : '-' ?></p>
             </div>
             <div class="col-md-6">
-                <p><strong>Status:</strong> 
-                    <span class="badge bg-<?= 
-                        $po['status'] == 'completed' ? 'success' : 
-                        ($po['status'] == 'sent' ? 'info' : 'secondary') 
+                <p><strong>Status:</strong>
+                    <span class="badge bg-<?
+                        if ($po['status'] == 'completed') echo 'success';
+                        elseif ($po['status'] == 'sent') echo 'info';
+                        elseif ($po['status'] == 'confirmed') echo 'primary';
+                        elseif ($po['status'] == 'prepared') echo 'warning';
+                        else echo 'secondary';
                     ?>">
                         <?= ucfirst($po['status']) ?>
                     </span>
@@ -121,6 +124,15 @@ $title = 'Purchase Order Details';
             <a href="<?= base_url('deliveries/create?po_id=' . $po['id']) ?>" class="btn btn-info">
                 <i class="bi bi-truck"></i> Schedule Delivery
             </a>
+        <?php endif; ?>
+
+        <?php if ($po['status'] == 'confirmed' && $role === 'supplier'): ?>
+            <form method="post" action="<?= base_url('purchase-orders/' . $po['id'] . '/prepare') ?>" class="d-inline">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-check-circle"></i> Mark as Prepared
+                </button>
+            </form>
         <?php endif; ?>
 
         <?php // Show Receive button for branch when a delivery has been scheduled/in_transit for this PO ?>

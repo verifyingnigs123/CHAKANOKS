@@ -55,11 +55,11 @@ $title = 'Purchase Orders';
                                     <a href="<?= base_url('purchase-orders/view/' . $po['id']) ?>" class="btn btn-sm btn-info">
                                         <i class="bi bi-eye"></i> View
                                     </a>
-                                    <?php if (session()->get('role') === 'supplier' && session()->get('supplier_id') && $po['supplier_id'] == session()->get('supplier_id') && in_array($po['status'], ['sent','confirmed'])): ?>
+                                    <?php if (session()->get('role') === 'supplier' && session()->get('supplier_id') && $po['supplier_id'] == session()->get('supplier_id') && $po['status'] == 'confirmed'): ?>
                                         <form method="post" action="<?= base_url('purchase-orders/' . $po['id'] . '/prepare') ?>" class="d-inline ms-1">
                                             <?= csrf_field() ?>
                                             <button type="submit" class="btn btn-sm btn-warning">
-                                                <i class="bi bi-gear"></i> Prepare
+                                                <i class="bi bi-check-circle"></i> Mark Prepared
                                             </button>
                                         </form>
                                     <?php endif; ?>
