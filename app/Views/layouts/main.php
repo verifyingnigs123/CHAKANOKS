@@ -345,6 +345,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link <?= (strpos(uri_string(), 'franchise-applications') !== false) ? 'active' : '' ?>" href="<?= base_url('franchise-applications') ?>">
+                            <i class="bi bi-file-earmark-person"></i> Franchise Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link <?= (strpos(uri_string(), 'activity-logs') !== false) ? 'active' : '' ?>" href="<?= base_url('activity-logs') ?>">
                             <i class="bi bi-clock-history"></i> Activity Logs
                         </a>

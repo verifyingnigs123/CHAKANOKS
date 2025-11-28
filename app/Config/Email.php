@@ -6,8 +6,17 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
+    /**
+     * Email address to send from
+     * For Gmail: Use your Gmail address (e.g., yourname@gmail.com)
+     */
     public string $fromEmail  = '';
-    public string $fromName   = '';
+
+    /**
+     * Name to display as sender
+     */
+    public string $fromName   = 'ChakaNoks SCMS';
+
     public string $recipients = '';
 
     /**
@@ -17,8 +26,9 @@ class Email extends BaseConfig
 
     /**
      * The mail sending protocol: mail, sendmail, smtp
+     * For Gmail, use 'smtp'
      */
-    public string $protocol = 'mail';
+    public string $protocol = 'smtp';
 
     /**
      * The server path to Sendmail.
@@ -27,23 +37,29 @@ class Email extends BaseConfig
 
     /**
      * SMTP Server Hostname
+     * For Gmail: smtp.gmail.com
      */
-    public string $SMTPHost = '';
+    public string $SMTPHost = 'smtp.gmail.com';
 
     /**
      * SMTP Username
+     * For Gmail: Your full Gmail address (e.g., yourname@gmail.com)
      */
     public string $SMTPUser = '';
 
     /**
      * SMTP Password
+     * For Gmail: Use an App Password (not your regular password)
+     * To generate: Google Account > Security > 2-Step Verification > App passwords
      */
     public string $SMTPPass = '';
 
     /**
      * SMTP Port
+     * For Gmail with TLS: 587
+     * For Gmail with SSL: 465
      */
-    public int $SMTPPort = 25;
+    public int $SMTPPort = 587;
 
     /**
      * SMTP Timeout (in seconds)
@@ -60,7 +76,9 @@ class Email extends BaseConfig
      *
      * @var string '', 'tls' or 'ssl'. 'tls' will issue a STARTTLS command
      *             to the server. 'ssl' means implicit SSL. Connection on port
-     *             465 should set this to ''.
+     *             465 should set this to 'ssl'.
+     * For Gmail with port 587: use 'tls'
+     * For Gmail with port 465: use 'ssl'
      */
     public string $SMTPCrypto = 'tls';
 
@@ -76,8 +94,9 @@ class Email extends BaseConfig
 
     /**
      * Type of mail, either 'text' or 'html'
+     * Set to 'html' for formatted emails
      */
-    public string $mailType = 'text';
+    public string $mailType = 'html';
 
     /**
      * Character set (utf-8, iso-8859-1, etc.)

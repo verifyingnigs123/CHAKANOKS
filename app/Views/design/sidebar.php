@@ -208,6 +208,10 @@ $username = session()->get('username') ?? session()->get('userEmail') ?? 'User';
       <li><a href="<?= base_url('purchase-orders') ?>" class="nav-link"><i class="bi bi-receipt"></i><span>Purchase Orders</span></a></li>
       <li class="menu-divider"></li>
 
+      <li class="menu-label">Franchising</li>
+      <li><a href="<?= base_url('franchise-applications') ?>" class="nav-link"><i class="bi bi-file-earmark-person"></i><span>Franchise Applications</span></a></li>
+      <li class="menu-divider"></li>
+
       <li class="menu-label">Analytics & Operations</li>
       <li><a href="<?= base_url('reports') ?>" class="nav-link"><i class="bi bi-graph-up"></i><span>Reports</span></a></li>
       <li><a href="<?= base_url('activity-logs') ?>" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Activity Logs</span></a></li>

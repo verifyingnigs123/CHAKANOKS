@@ -6,8 +6,14 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
+// Public Pages
+$routes->get('/', 'Home::index');
+$routes->get('about', 'Home::about');
+$routes->get('contact', 'Home::contact');
+$routes->get('franchise-application', 'Home::franchiseApplication');
+$routes->post('franchise-application/submit', 'Home::submitFranchiseApplication');
+
 // Authentication Routes
-$routes->get('/', 'Auth::index');
 $routes->get('login', 'Auth::index');
 $routes->post('auth/login', 'Auth::login');
 $routes->get('auth/logout', 'Auth::logout');
@@ -166,4 +172,12 @@ $routes->group('notifications', ['filter' => 'auth'], function($routes) {
 $routes->group('settings', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'SettingController::index');
     $routes->post('update', 'SettingController::update');
+});
+
+// Franchise Applications (Admin Only)
+$routes->group('franchise-applications', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'FranchiseApplicationController::index');
+    $routes->get('view/(:num)', 'FranchiseApplicationController::view/$1');
+    $routes->post('(:num)/approve', 'FranchiseApplicationController::approve/$1');
+    $routes->post('(:num)/reject', 'FranchiseApplicationController::reject/$1');
 });

@@ -7,11 +7,112 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <style>
-    :root{--accent1:#0ea5a4;--accent2:#7c3aed}
-    html,body{height:100%}
+    :root{
+      --accent1:#0ea5a4;
+      --accent2:#7c3aed;
+      --primary-blue: #1e40af;
+      --dark-blue: #1e3a8a;
+    }
+    html,body{min-height:100vh}
     body{
       background: linear-gradient(135deg, #0f172a 0%, rgba(124,58,237,0.08) 40%, rgba(14,165,164,0.06) 100%), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="none"/></svg>');
       display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      padding-top: 80px;
+      padding-bottom: 20px;
+    }
+    
+    /* Navigation */
+    .navbar {
+      background: var(--dark-blue) !important;
+      padding: 1.2rem 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+    
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: white !important;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+    
+    .navbar-brand i {
+      font-size: 1.6rem;
+      color: #60a5fa;
+    }
+    
+    .nav-link {
+      color: rgba(255,255,255,0.9) !important;
+      font-weight: 500;
+      font-size: 0.95rem;
+      margin: 0 0.3rem;
+      transition: all 0.3s ease;
+      padding: 0.5rem 1rem !important;
+      position: relative;
+      text-decoration: none;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 2px;
+      background: #60a5fa;
+      transition: width 0.3s ease;
+    }
+    
+    .nav-link:hover, .nav-link.active {
+      color: white !important;
+    }
+    
+    .nav-link:hover::after, .nav-link.active::after {
+      width: 80%;
+    }
+    
+    .btn-login {
+      background: white;
+      color: var(--dark-blue) !important;
+      font-weight: 600;
+      padding: 0.6rem 1.8rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      border: none;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-login:hover {
+      background: #e0e7ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .navbar-toggler {
+      border: none;
+      padding: 0.25rem 0.5rem;
+    }
+    
+    .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+    
+    @media (max-width: 991px) {
+      body {
+        padding-top: 70px;
+      }
     }
     .login-wrap{max-width:980px;width:95%;display:flex;box-shadow:0 10px 30px rgba(2,6,23,0.4);border-radius:14px;overflow:hidden;background:rgba(255,255,255,0.02);backdrop-filter: blur(6px);}
     .brand-side{flex:1;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;padding:40px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;position:relative;overflow:hidden}
@@ -41,6 +142,34 @@
   </style>
 </head>
 <body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="<?= base_url('/') ?>">
+        <i class="bi bi-shop"></i>
+        <span>ChakaNoks SCMS</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item">
+            <a class="nav-link" href="<?= base_url('/') ?>">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="<?= base_url('about') ?>">About</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="<?= base_url('contact') ?>">Contact</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="<?= base_url('login') ?>">Login</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
 <div class="login-wrap">
   <div class="brand-side">
@@ -123,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
       eyeIcon.classList.add('bi-eye-slash');
     }
   });
-});
+  });
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
