@@ -206,6 +206,13 @@ class TransferController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'approve', 'transfer', "Approved transfer ID: $id");
 
+        // Notify branch users that their transfer has been approved
+        $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
+        $toBranch = $this->branchModel->find($transfer['to_branch_id']);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        $this->notificationService->sendTransferApprovalToBranch($id, $transfer['transfer_number'], $transfer['from_branch_id'], $transfer['to_branch_id'], $fromBranchName, $toBranchName);
+
         return redirect()->back()->with('success', 'Transfer approved');
     }
 

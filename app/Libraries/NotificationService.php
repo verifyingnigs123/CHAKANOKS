@@ -96,6 +96,31 @@ class NotificationService
     }
 
     /**
+     * Send purchase request approval notification to branch users
+     */
+    public function sendPurchaseRequestApprovalToBranch($requestId, $requestNumber, $branchId, $branchName)
+    {
+        $title = 'Purchase Request Approved';
+        $message = "Your purchase request {$requestNumber} has been approved by the central admin. You can now proceed with the purchase order.";
+        $link = base_url("purchase-requests/view/{$requestId}");
+        
+        $count = 0;
+        
+        // Notify branch manager and inventory staff at the branch
+        $users = $this->userModel->where('branch_id', $branchId)
+            ->whereIn('role', ['branch_manager', 'inventory_staff'])
+            ->where('status', 'active')
+            ->findAll();
+
+        foreach ($users as $user) {
+            $this->sendToUser($user['id'], 'success', $title, $message, $link);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
      * Send purchase order created notification (needs to be sent)
      */
     public function sendPurchaseOrderCreatedNotification($poId, $poNumber, $branchName, $supplierName)
@@ -269,6 +294,43 @@ class NotificationService
             ->findAll();
         
         foreach ($branchManagers as $user) {
+            $this->sendToUser($user['id'], 'info', $title, $message, $link);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Send transfer approval notification to branch users
+     */
+    public function sendTransferApprovalToBranch($transferId, $transferNumber, $fromBranchId, $toBranchId, $fromBranchName, $toBranchName)
+    {
+        $title = 'Transfer Request Approved';
+        $link = base_url("transfers/view/{$transferId}");
+        
+        $count = 0;
+        
+        // Notify users at the source branch (from branch)
+        $fromBranchUsers = $this->userModel->where('branch_id', $fromBranchId)
+            ->whereIn('role', ['branch_manager', 'inventory_staff'])
+            ->where('status', 'active')
+            ->findAll();
+
+        foreach ($fromBranchUsers as $user) {
+            $message = "Your transfer request {$transferNumber} to {$toBranchName} has been approved. You can now proceed with the transfer.";
+            $this->sendToUser($user['id'], 'success', $title, $message, $link);
+            $count++;
+        }
+
+        // Notify users at the destination branch (to branch)
+        $toBranchUsers = $this->userModel->where('branch_id', $toBranchId)
+            ->whereIn('role', ['branch_manager', 'inventory_staff'])
+            ->where('status', 'active')
+            ->findAll();
+
+        foreach ($toBranchUsers as $user) {
+            $message = "Transfer request {$transferNumber} from {$fromBranchName} has been approved and will be arriving at your branch.";
             $this->sendToUser($user['id'], 'info', $title, $message, $link);
             $count++;
         }

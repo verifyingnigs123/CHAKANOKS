@@ -71,14 +71,21 @@ $title = 'Branches';
                                 </td>
                                 <?php if ($role == 'central_admin' || $role == 'central_admin'): ?>
                                     <td>
-                                        <a href="<?= base_url('branches/edit/' . $branch['id']) ?>" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-pencil"></i> Edit
-                                        </a>
-                                        <a href="<?= base_url('branches/delete/' . $branch['id']) ?>" 
-                                           class="btn btn-sm btn-danger" 
-                                           onclick="return confirm('Are you sure you want to delete <?= esc($branch['name']) ?>? This action cannot be undone.')">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </a>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <a href="<?= base_url('purchase-requests/create?branch_id=' . $branch['id']) ?>" 
+                                               class="btn btn-sm btn-success" 
+                                               title="Create Purchase Request for <?= esc($branch['name']) ?>">
+                                                <i class="bi bi-cart-plus"></i> Create Order
+                                            </a>
+                                            <a href="<?= base_url('branches/edit/' . $branch['id']) ?>" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            <a href="<?= base_url('branches/delete/' . $branch['id']) ?>" 
+                                               class="btn btn-sm btn-danger" 
+                                               onclick="return confirm('Are you sure you want to delete <?= esc($branch['name']) ?>? This action cannot be undone.')">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </a>
+                                        </div>
                                     </td>
                                 <?php endif; ?>
                             </tr>

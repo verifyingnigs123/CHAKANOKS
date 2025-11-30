@@ -25,5 +25,9 @@ class DatabaseSeeder extends Seeder
         if (class_exists('\App\Database\Seeds\UserSeeder')) {
             $this->call('UserSeeder');
         }
+
+        if (class_exists('\App\Database\Seeds\FranchiseApplicationSeeder')) {
+            $this->call('FranchiseApplicationSeeder');
+        }
     }
 }

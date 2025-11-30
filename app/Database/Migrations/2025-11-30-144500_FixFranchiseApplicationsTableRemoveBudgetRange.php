@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class RemoveUnusedFieldsFromFranchiseApplicationsTable extends Migration
+class FixFranchiseApplicationsTableRemoveBudgetRange extends Migration
 {
     public function up()
     {
@@ -19,19 +19,17 @@ class RemoveUnusedFieldsFromFranchiseApplicationsTable extends Migration
         $fields = $db->getFieldData('franchise_applications');
         $existingColumns = array_column($fields, 'name');
         
-        // Remove unused fields that are no longer in the form
-        // Only drop columns that exist
-        $columnsToRemove = [];
-        $columnsToCheck = ['budget_range', 'business_experience', 'reason', 'desired_start_date'];
-        
-        foreach ($columnsToCheck as $column) {
-            if (in_array($column, $existingColumns)) {
-                $columnsToRemove[] = $column;
-            }
+        // Remove budget_range column if it exists
+        if (in_array('budget_range', $existingColumns)) {
+            $this->forge->dropColumn('franchise_applications', 'budget_range');
         }
         
-        if (!empty($columnsToRemove)) {
-            $this->forge->dropColumn('franchise_applications', $columnsToRemove);
+        // Remove other unused columns if they exist
+        $columnsToRemove = ['business_experience', 'reason', 'desired_start_date'];
+        foreach ($columnsToRemove as $column) {
+            if (in_array($column, $existingColumns)) {
+                $this->forge->dropColumn('franchise_applications', $column);
+            }
         }
     }
 
@@ -62,6 +60,15 @@ class RemoveUnusedFieldsFromFranchiseApplicationsTable extends Migration
             ],
         ];
 
-        $this->forge->addColumn('franchise_applications', $fields);
+        $db = \Config\Database::connect();
+        $existingFields = $db->getFieldData('franchise_applications');
+        $existingColumns = array_column($existingFields, 'name');
+        
+        foreach ($fields as $column => $definition) {
+            if (!in_array($column, $existingColumns)) {
+                $this->forge->addColumn('franchise_applications', [$column => $definition]);
+            }
+        }
     }
 }
+

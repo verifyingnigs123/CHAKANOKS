@@ -93,7 +93,12 @@ class PurchaseRequestController extends BaseController
 
         $data['products'] = $this->productModel->where('status', 'active')->findAll();
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
-        $data['branch_id'] = $session->get('branch_id');
+        
+        // Get branch_id from query parameter if provided (for creating order from branch page)
+        // Otherwise use session branch_id (for branch users)
+        $branchIdFromQuery = $this->request->getGet('branch_id');
+        $data['branch_id'] = $branchIdFromQuery ?: $session->get('branch_id');
+        
         // Load suppliers for supplier selection
         $data['suppliers'] = (new \App\Models\SupplierModel())->where('status', 'active')->findAll();
 
@@ -198,6 +203,11 @@ class PurchaseRequestController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'approve', 'purchase_request', "Approved purchase request ID: $id");
 
+        // Notify branch users that their request has been approved
+        $branch = $this->branchModel->find($request['branch_id']);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        $this->notificationService->sendPurchaseRequestApprovalToBranch($id, $request['request_number'], $request['branch_id'], $branchName);
+
         // If supplier is assigned on the request, auto-create a Purchase Order and send to supplier
         try {
             if (!empty($request['supplier_id'])) {
@@ -256,8 +266,6 @@ class PurchaseRequestController extends BaseController
                 }
             } else {
                 // No supplier assigned - notify admins to convert to PO
-                $branch = $this->branchModel->find($request['branch_id']);
-                $branchName = $branch ? $branch['name'] : 'Unknown Branch';
                 $this->notificationService->sendApprovedPurchaseRequestNotification($id, $request['request_number'], $branchName);
             }
         } catch (\Exception $e) {
