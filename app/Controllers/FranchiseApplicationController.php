@@ -2,9 +2,9 @@
 
 namespace App\Controllers;
 
-use App\Models\FranchiseModel;
 use App\Models\ActivityLogModel;
-use CodeIgniter\Email\Email;
+use App\Models\FranchiseModel;
+use App\Libraries\Mailer;
 
 class FranchiseApplicationController extends BaseController
 {
@@ -174,27 +174,22 @@ class FranchiseApplicationController extends BaseController
 
     private function sendApplicationStatusEmail($toEmail, $fullName, $status)
     {
-        $email = \Config\Services::email();
-        
-        // Configure email (you may need to set up SMTP in app/Config/Email.php)
-        $email->setFrom('noreply@chakanoks.com', 'ChakaNoks SCMS');
-        $email->setTo($toEmail);
-        
+        $mailer = new Mailer();
+
         if ($status === 'approved') {
-            $email->setSubject('Congratulations! Your ChakaNoks Franchise Application Has Been Approved');
-            $email->setMessage($this->getApprovalEmailTemplate($fullName));
+            $subject = 'Congratulations! Your ChakaNoks Franchise Application Has Been Approved';
+            $body = $this->getApprovalEmailTemplate($fullName);
         } else {
-            $email->setSubject('ChakaNoks Franchise Application Update');
-            $email->setMessage($this->getRejectionEmailTemplate($fullName));
+            $subject = 'ChakaNoks Franchise Application Update';
+            $body = $this->getRejectionEmailTemplate($fullName);
         }
-        
-        $email->setMailType('html');
-        
-        try {
-            $email->send();
+
+        $sent = $mailer->sendHtml($toEmail, $subject, $body, $fullName);
+
+        if ($sent) {
             log_message('info', "Franchise application status email sent to {$toEmail} - Status: {$status}");
-        } catch (\Exception $e) {
-            log_message('error', "Failed to send email to {$toEmail}: " . $e->getMessage());
+        } else {
+            log_message('error', "Failed to send email to {$toEmail} - Status: {$status}");
         }
     }
 

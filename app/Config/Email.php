@@ -10,7 +10,7 @@ class Email extends BaseConfig
      * Email address to send from
      * For Gmail: Use your Gmail address (e.g., yourname@gmail.com)
      */
-    public string $fromEmail  = '';
+    public string $fromEmail  = 'carlvesteralbarina@gmail.com';
 
     /**
      * Name to display as sender
@@ -45,14 +45,14 @@ class Email extends BaseConfig
      * SMTP Username
      * For Gmail: Your full Gmail address (e.g., yourname@gmail.com)
      */
-    public string $SMTPUser = '';
+    public string $SMTPUser = 'carlvesteralbarina@gmail.com';
 
     /**
      * SMTP Password
      * For Gmail: Use an App Password (not your regular password)
      * To generate: Google Account > Security > 2-Step Verification > App passwords
      */
-    public string $SMTPPass = '';
+    public string $SMTPPass = 'wqvaubsveuecvydy';
 
     /**
      * SMTP Port
