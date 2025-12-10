@@ -11,20 +11,24 @@ function activeClass($path) {
 }
 ?>
 
-<aside class="fixed inset-y-0 left-0 w-64 bg-slate-800 shadow-xl z-50">
+<aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-800 shadow-xl z-50 sidebar-transition -translate-x-full lg:translate-x-0">
     <!-- Logo/Brand -->
-    <div class="flex items-center justify-center h-20 bg-slate-900 border-b border-slate-700">
-        <a href="<?= base_url('dashboard') ?>" class="flex flex-col items-center">
+    <div class="flex items-center justify-between h-20 bg-slate-900 border-b border-slate-700 px-4">
+        <a href="<?= base_url('dashboard') ?>" class="flex flex-col items-center flex-1">
             <div class="flex items-center space-x-2">
                 <i class="fas fa-link text-emerald-500 text-2xl"></i>
                 <span class="text-white font-bold text-xl">ChakaNoks'</span>
             </div>
             <span class="text-emerald-400 text-xs font-medium tracking-wider">SUPPLY CHAIN MANAGEMENT</span>
         </a>
+        <!-- Close button for mobile -->
+        <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-2">
+            <i class="fas fa-times text-xl"></i>
+        </button>
     </div>
     
     <!-- Navigation -->
-    <nav class="mt-4 px-3 space-y-1 overflow-y-auto h-[calc(100vh-5rem)] scrollbar-hide" style="-ms-overflow-style: none; scrollbar-width: none;">
+    <nav class="mt-4 px-3 space-y-1 overflow-y-auto h-[calc(100vh-5rem)]">
         
         <!-- Dashboard - All roles -->
         <a href="<?= base_url('dashboard') ?>" 
@@ -70,12 +74,7 @@ function activeClass($path) {
         
         <a href="<?= base_url('inventory') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory') ?>">
             <i class="fas fa-warehouse w-5"></i>
-            <span class="ml-3">Stock Levels</span>
-        </a>
-        
-        <a href="<?= base_url('inventory/alerts') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory/alerts') ?>">
-            <i class="fas fa-exclamation-triangle w-5"></i>
-            <span class="ml-3">Stock Alerts</span>
+            <span class="ml-3">Inventory</span>
         </a>
         
         <!-- Purchasing -->
@@ -103,39 +102,14 @@ function activeClass($path) {
             <span class="ml-3">Transfers</span>
         </a>
         
-        <!-- Reports & Tools -->
+        <!-- Tools -->
         <div class="pt-4">
-            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reports & Tools</p>
+            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tools</p>
         </div>
-        
-        <a href="<?= base_url('reports') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('reports') ?>">
-            <i class="fas fa-chart-bar w-5"></i>
-            <span class="ml-3">Reports</span>
-        </a>
         
         <a href="<?= base_url('barcode/scan') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('barcode') ?>">
             <i class="fas fa-barcode w-5"></i>
             <span class="ml-3">Barcode Scanner</span>
-        </a>
-        
-        <!-- System -->
-        <div class="pt-4">
-            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">System</p>
-        </div>
-        
-        <a href="<?= base_url('users') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('users') ?>">
-            <i class="fas fa-users w-5"></i>
-            <span class="ml-3">Users</span>
-        </a>
-        
-        <a href="<?= base_url('settings') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('settings') ?>">
-            <i class="fas fa-cog w-5"></i>
-            <span class="ml-3">Settings</span>
-        </a>
-        
-        <a href="<?= base_url('activity-logs') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('activity-logs') ?>">
-            <i class="fas fa-history w-5"></i>
-            <span class="ml-3">Activity Logs</span>
         </a>
 
         <?php elseif ($role === 'system_admin'): ?>
@@ -145,27 +119,8 @@ function activeClass($path) {
         <!-- ========================================== -->
         
         <div class="pt-4">
-            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">User Management</p>
-        </div>
-        
-        <a href="<?= base_url('users') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('users') ?>">
-            <i class="fas fa-users w-5"></i>
-            <span class="ml-3">Users</span>
-        </a>
-        
-        <div class="pt-4">
             <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">System</p>
         </div>
-        
-        <a href="<?= base_url('settings') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('settings') ?>">
-            <i class="fas fa-cog w-5"></i>
-            <span class="ml-3">Settings</span>
-        </a>
-        
-        <a href="<?= base_url('activity-logs') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('activity-logs') ?>">
-            <i class="fas fa-history w-5"></i>
-            <span class="ml-3">Activity Logs</span>
-        </a>
         
         <a href="<?= base_url('backups') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('backups') ?>">
             <i class="fas fa-database w-5"></i>
@@ -184,12 +139,7 @@ function activeClass($path) {
         
         <a href="<?= base_url('inventory') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory') ?>">
             <i class="fas fa-warehouse w-5"></i>
-            <span class="ml-3">Stock Levels</span>
-        </a>
-        
-        <a href="<?= base_url('inventory/alerts') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory/alerts') ?>">
-            <i class="fas fa-exclamation-triangle w-5"></i>
-            <span class="ml-3">Stock Alerts</span>
+            <span class="ml-3">Inventory</span>
         </a>
         
         <div class="pt-4">
@@ -227,17 +177,12 @@ function activeClass($path) {
         
         <a href="<?= base_url('inventory') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory') ?>">
             <i class="fas fa-warehouse w-5"></i>
-            <span class="ml-3">Stock Levels</span>
-        </a>
-        
-        <a href="<?= base_url('inventory/alerts') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory/alerts') ?>">
-            <i class="fas fa-exclamation-triangle w-5"></i>
-            <span class="ml-3">Stock Alerts</span>
+            <span class="ml-3">Inventory</span>
         </a>
         
         <a href="<?= base_url('inventory/history') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory/history') ?>">
             <i class="fas fa-history w-5"></i>
-            <span class="ml-3">Stock History</span>
+            <span class="ml-3">Inventory History</span>
         </a>
         
         <div class="pt-4">
@@ -263,6 +208,15 @@ function activeClass($path) {
         <!-- SUPPLIER -->
         <!-- View/manage their purchase orders, mark as prepared -->
         <!-- ========================================== -->
+        
+        <div class="pt-4">
+            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">My Catalog</p>
+        </div>
+        
+        <a href="<?= base_url('supplier/my-products') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('supplier/my-products') ?>">
+            <i class="fas fa-boxes w-5"></i>
+            <span class="ml-3">My Products</span>
+        </a>
         
         <div class="pt-4">
             <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">My Orders</p>

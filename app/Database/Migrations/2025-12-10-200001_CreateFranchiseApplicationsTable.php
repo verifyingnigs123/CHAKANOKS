@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateFranchiseApplicationsTable extends Migration
+class CreateFranchiseApplicationsTableV2 extends Migration
 {
     public function up()
     {

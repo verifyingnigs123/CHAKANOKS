@@ -78,6 +78,22 @@ $routes->group('suppliers', ['filter' => 'auth'], function($routes) {
     $routes->get('edit/(:num)', 'SupplierController::edit/$1');
     $routes->post('update/(:num)', 'SupplierController::update/$1');
     $routes->get('delete/(:num)', 'SupplierController::delete/$1');
+    $routes->post('create-account', 'SupplierController::createAccount');
+    // Supplier Products
+    $routes->get('(:num)/products', 'SupplierController::products/$1');
+    $routes->post('add-product', 'SupplierController::addProduct');
+    $routes->post('update-product/(:num)', 'SupplierController::updateProduct/$1');
+    $routes->get('remove-product/(:num)', 'SupplierController::removeProduct/$1');
+    $routes->get('(:num)/products-json', 'SupplierController::getProductsJson/$1');
+});
+
+// Supplier Portal (for logged-in suppliers)
+$routes->group('supplier', ['filter' => 'auth'], function($routes) {
+    $routes->get('my-products', 'SupplierController::myProducts');
+    $routes->post('add-product', 'SupplierController::storeMyProduct');
+    $routes->post('update-product/(:num)', 'SupplierController::updateMyProduct/$1');
+    $routes->get('delete-product/(:num)', 'SupplierController::deleteMyProduct/$1');
+    $routes->get('user/(:num)/products-json', 'SupplierController::getProductsByUserJson/$1');
 });
 
 // Purchase Orders
@@ -110,6 +126,7 @@ $routes->group('deliveries', ['filter' => 'auth'], function($routes) {
     $routes->post('(:num)/create-paypal-payment', 'DeliveryController::createPayPalPayment/$1');
     $routes->get('paypal-success', 'DeliveryController::paypalSuccess');
     $routes->get('paypal-cancel', 'DeliveryController::paypalCancel');
+    $routes->post('(:num)/delete', 'DeliveryController::delete/$1');
 });
 
 // Transfers
@@ -197,6 +214,7 @@ $routes->group('settings', ['filter' => 'auth'], function($routes) {
 // Franchise Management
 $routes->group('franchise', ['filter' => 'auth'], function($routes) {
     $routes->get('applications', 'FranchiseController::applications');
+    $routes->get('applications/data', 'FranchiseController::getApplicationsData');
     $routes->get('applications/view/(:num)', 'FranchiseController::viewApplication/$1');
     $routes->post('applications/(:num)/start-review', 'FranchiseController::startReview/$1');
     $routes->post('applications/(:num)/approve', 'FranchiseController::approve/$1');

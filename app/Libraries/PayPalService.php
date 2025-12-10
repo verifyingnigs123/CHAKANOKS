@@ -85,26 +85,49 @@ class PayPalService
                 ]
             ];
 
-            // Add items if provided
+            // Add items if provided - with proper breakdown
             if (!empty($items)) {
                 $paypalItems = [];
+                $itemTotal = 0;
                 foreach ($items as $item) {
+                    $itemPrice = number_format($item['price'], 2, '.', '');
+                    $itemQty = (int)$item['quantity'];
+                    $itemTotal += ($itemPrice * $itemQty);
+                    
                     $paypalItems[] = [
-                        'name' => $item['name'],
+                        'name' => substr($item['name'], 0, 127), // PayPal max 127 chars
                         'unit_amount' => [
                             'currency_code' => $currency,
-                            'value' => number_format($item['price'], 2, '.', '')
+                            'value' => $itemPrice
                         ],
-                        'quantity' => (string)$item['quantity']
+                        'quantity' => (string)$itemQty
                     ];
                 }
+                
+                // Update amount with breakdown (required when items are specified)
+                $orderBody['purchase_units'][0]['amount'] = [
+                    'currency_code' => $currency,
+                    'value' => number_format($amount, 2, '.', ''),
+                    'breakdown' => [
+                        'item_total' => [
+                            'currency_code' => $currency,
+                            'value' => number_format($itemTotal, 2, '.', '')
+                        ]
+                    ]
+                ];
                 $orderBody['purchase_units'][0]['items'] = $paypalItems;
             }
 
             $request->body = $orderBody;
 
+            // Log the request for debugging
+            log_message('info', 'PayPal Order Request: ' . json_encode($orderBody));
+
             // Execute request
             $response = $this->client->execute($request);
+
+            // Log the response for debugging
+            log_message('info', 'PayPal Order Response: ' . json_encode($response->result));
 
             // Get approval URL
             $approvalUrl = null;
@@ -114,6 +137,8 @@ class PayPalService
                     break;
                 }
             }
+
+            log_message('info', 'PayPal Approval URL: ' . $approvalUrl);
 
             return [
                 'success' => true,
@@ -275,6 +300,9 @@ class PayPalService
         // Simplified conversion rate (1 USD = 56 PHP approximately)
         // In production, use a real-time currency conversion API
         $conversionRate = 0.018; // 1 PHP = 0.018 USD (approximate)
-        return round($phpAmount * $conversionRate, 2);
+        $usdAmount = round($phpAmount * $conversionRate, 2);
+        
+        // PayPal requires minimum $1.00 for transactions
+        return max($usdAmount, 1.00);
     }
 }

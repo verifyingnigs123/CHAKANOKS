@@ -22,7 +22,7 @@ $title = 'Create Purchase Order';
                     <select name="supplier_id" class="form-select" required>
                         <option value="">Select Supplier</option>
                         <?php foreach ($suppliers as $supplier): ?>
-                            <option value="<?= $supplier['id'] ?>"><?= $supplier['name'] ?></option>
+                            <option value="<?= $supplier['supplier_id'] ?>"><?= esc($supplier['username']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -31,13 +31,13 @@ $title = 'Create Purchase Order';
                     <input type="date" name="expected_delivery_date" class="form-control">
                 </div>
                 <div class="col-md-4">
-                    <label>Payment Method *</label>
-                    <select name="payment_method" class="form-select" required>
-                        <option value="pending">Select Payment Method</option>
-                        <option value="cod">Cash on Delivery (COD)</option>
-                        <option value="paypal">PayPal</option>
-                    </select>
-                    <small class="text-muted">The branch can change this when receiving the delivery.</small>
+                    <label>Payment Method</label>
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 bg-primary bg-opacity-10 border border-primary rounded">
+                        <i class="fab fa-paypal text-primary fs-5"></i>
+                        <span class="fw-medium text-primary">PayPal</span>
+                    </div>
+                    <input type="hidden" name="payment_method" value="paypal">
+                    <small class="text-muted">Central Admin will process payment after delivery is received.</small>
                 </div>
             </div>
 

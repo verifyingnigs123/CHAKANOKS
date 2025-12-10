@@ -18,8 +18,59 @@ $title = 'Delivery Details';
            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
             <i class="fas fa-print mr-2"></i> Print
         </a>
+        <?php if ($delivery['status'] == 'scheduled' && in_array($role, ['central_admin', 'logistics_coordinator'])): ?>
+        <button type="button" onclick="confirmDelete()" 
+           class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+            <i class="fas fa-trash mr-2"></i> Delete
+        </button>
+        <?php endif; ?>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<?php if ($delivery['status'] == 'scheduled' && in_array($role, ['central_admin', 'logistics_coordinator'])): ?>
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <div class="text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Delete Delivery?</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to delete <span class="font-semibold"><?= esc($delivery['delivery_number']) ?></span>? This action cannot be undone.</p>
+            <div class="flex gap-3 justify-center">
+                <button type="button" onclick="closeDeleteModal()" class="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <form method="post" action="<?= base_url('deliveries/' . $delivery['id'] . '/delete') ?>" class="inline">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+                        <i class="fas fa-trash mr-2"></i> Yes, Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete() {
+    document.getElementById('deleteModal').classList.remove('hidden');
+    document.getElementById('deleteModal').classList.add('flex');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    document.getElementById('deleteModal').classList.remove('flex');
+}
+
+// Close modal when clicking outside
+document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+</script>
+<?php endif; ?>
 
 <?php
 // Delivery Progress Steps
@@ -136,7 +187,86 @@ if ($delivery['status'] == 'scheduled') {
             </div>
         </div>
     </div>
+    
+    <!-- Activity Timeline -->
+    <div class="mt-6 pt-4 border-t border-gray-100">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Activity Timeline</p>
+        <div class="space-y-3 text-sm">
+            <?php if ($delivery['created_at']): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+                <span class="text-gray-600">Delivery Scheduled</span>
+                <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($delivery['created_at'])) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if ($delivery['status'] == 'in_transit' || $delivery['status'] == 'delivered'): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-purple-400"></div>
+                <span class="text-gray-600">Dispatched (In Transit)</span>
+                <span class="text-gray-400 text-xs ml-auto"><?= $delivery['delivery_date'] ? date('M d, Y', strtotime($delivery['delivery_date'])) : '-' ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if ($delivery['status'] == 'delivered' && !empty($delivery['received_at'])): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                <span class="text-gray-600">Delivered & Received by <?= esc($delivery['received_by_name'] ?? 'Staff') ?></span>
+                <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($delivery['received_at'])) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($payment_transaction) && $payment_transaction['status'] == 'completed'): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                <span class="text-gray-600">Payment Completed via PayPal</span>
+                <span class="text-gray-400 text-xs ml-auto"><?= $payment_transaction['payment_date'] ? date('M d, Y h:i A', strtotime($payment_transaction['payment_date'])) : '-' ?></span>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
 </div>
+
+<!-- What's Next Action Card -->
+<?php 
+// Determine if there's a specific action for this user
+$hasDeliveryAction = false;
+$deliveryActionMessage = '';
+
+if ($currentDeliveryStep == 0 && in_array($role, ['logistics_coordinator', 'central_admin'])) {
+    $hasDeliveryAction = true;
+    $deliveryActionMessage = 'Click <strong>Dispatch Now</strong> when the driver leaves to pick up the goods from supplier.';
+} elseif ($currentDeliveryStep == 0) {
+    $hasDeliveryAction = false;
+    $deliveryActionMessage = 'Delivery is scheduled. Waiting for logistics to dispatch the driver.';
+} elseif ($currentDeliveryStep == 1 && in_array($role, ['branch_manager', 'inventory_staff', 'central_admin'])) {
+    $hasDeliveryAction = true;
+    $deliveryActionMessage = 'Delivery is on the way! <strong>Receive the delivery</strong> when it arrives and verify all items.';
+} elseif ($currentDeliveryStep == 1 && $role == 'logistics_coordinator') {
+    $hasDeliveryAction = true;
+    $deliveryActionMessage = 'Driver is on the way. You can mark as <strong>Delivered</strong> when goods arrive at branch.';
+} elseif ($currentDeliveryStep == 1) {
+    $hasDeliveryAction = false;
+    $deliveryActionMessage = 'Delivery is in transit to the branch.';
+} elseif ($currentDeliveryStep == 2 && $role == 'central_admin') {
+    $hasDeliveryAction = true;
+    $deliveryActionMessage = 'Delivery received! <strong>Process PayPal payment</strong> to complete the transaction.';
+} elseif ($currentDeliveryStep == 2) {
+    $hasDeliveryAction = false;
+    $deliveryActionMessage = 'Delivery received. Waiting for Central Admin to process payment to supplier.';
+}
+?>
+
+<?php if ($currentDeliveryStep < 3 && !empty($deliveryActionMessage)): ?>
+<div class="bg-gradient-to-r <?= $hasDeliveryAction ? 'from-blue-50 to-indigo-50 border-blue-200' : 'from-gray-50 to-slate-50 border-gray-200' ?> rounded-xl border p-4 mb-6">
+    <div class="flex items-start gap-4">
+        <div class="w-12 h-12 <?= $hasDeliveryAction ? 'bg-blue-100' : 'bg-gray-100' ?> rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="fas <?= $hasDeliveryAction ? 'fa-hand-point-right text-blue-600' : 'fa-clock text-gray-500' ?> text-xl"></i>
+        </div>
+        <div class="flex-1">
+            <h4 class="font-semibold <?= $hasDeliveryAction ? 'text-blue-800' : 'text-gray-700' ?> mb-1"><?= $hasDeliveryAction ? "What's Next?" : "Status Update" ?></h4>
+            <p class="text-sm <?= $hasDeliveryAction ? 'text-blue-700' : 'text-gray-600' ?>"><?= $deliveryActionMessage ?></p>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Delivery Information Card -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
@@ -200,7 +330,7 @@ if ($delivery['status'] == 'scheduled') {
                 </div>
                 <div class="flex justify-between py-2">
                     <span class="text-gray-500">Payment Method</span>
-                    <?php $pm = $delivery['payment_method'] ?? 'pending'; ?>
+                    <?php $pm = $delivery['payment_method'] ?? $delivery['po_payment_method'] ?? 'pending'; ?>
                     <?php if ($pm == 'cod'): ?>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">
                         <i class="fas fa-money-bill-wave mr-1"></i> COD
@@ -210,7 +340,9 @@ if ($delivery['status'] == 'scheduled') {
                         <i class="fab fa-paypal mr-1"></i> PayPal
                     </span>
                     <?php else: ?>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">Pending</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                        <i class="fas fa-clock mr-1"></i> Pending
+                    </span>
                     <?php endif; ?>
                 </div>
                 <?php if ($delivery['received_by_name']): ?>
@@ -335,23 +467,14 @@ if ($delivery['status'] == 'scheduled') {
         </h3>
     </div>
     <div class="p-6">
-        <?php if (!empty($po) && ($po['payment_method'] ?? 'pending') == 'pending'): ?>
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 flex items-start">
-            <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 mr-3"></i>
-            <div>
-                <p class="font-medium text-amber-800">Payment Method Not Selected</p>
-                <p class="text-amber-700 text-sm">Please update the payment method in the Purchase Order before receiving.</p>
-            </div>
-        </div>
-        <?php else: ?>
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-start">
-            <i class="fas fa-info-circle text-blue-500 mt-0.5 mr-3"></i>
+            <i class="fab fa-paypal text-blue-500 mt-0.5 mr-3 text-xl"></i>
             <div>
-                <p class="font-medium text-blue-800">Payment: <?= ($po['payment_method'] ?? 'pending') == 'cod' ? 'Cash on Delivery' : (($po['payment_method'] ?? 'pending') == 'paypal' ? 'PayPal' : 'Pending') ?></p>
+                <p class="font-medium text-blue-800">Payment via PayPal</p>
                 <p class="text-blue-700 text-sm">Total: <span class="font-semibold">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></span></p>
+                <p class="text-blue-600 text-xs mt-1">Central Admin will process payment after you receive this delivery.</p>
             </div>
         </div>
-        <?php endif; ?>
 
         <form method="post" action="<?= base_url('deliveries/' . $delivery['id'] . '/receive') ?>" id="receiveForm">
             <?= csrf_field() ?>
@@ -393,12 +516,75 @@ if ($delivery['status'] == 'scheduled') {
 </div>
 <?php endif; ?>
 
+<?php 
+// Check if payment is needed (delivery received but not yet paid)
+$needsPayment = $delivery['status'] == 'delivered' && (empty($payment_transaction) || $payment_transaction['status'] != 'completed');
+$isPaid = !empty($payment_transaction) && $payment_transaction['status'] == 'completed';
+?>
+
+<?php if ($needsPayment && $role == 'central_admin'): ?>
+<!-- Central Admin Payment Action Card -->
+<div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <i class="fab fa-paypal text-blue-600 mr-2"></i>Process Payment to Supplier
+    </h3>
+    
+    <div class="bg-white rounded-lg p-4 border border-blue-200">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <i class="fab fa-paypal text-blue-600 text-xl"></i>
+            </div>
+            <div class="flex-1">
+                <h4 class="font-semibold text-gray-800">Delivery Verified - Ready for Payment</h4>
+                <p class="text-sm text-gray-600 mt-1">The delivery has been received and verified. Process payment to supplier via PayPal.</p>
+                
+                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-gray-500">Supplier:</span>
+                        <span class="font-medium text-gray-800"><?= esc($delivery['supplier_name']) ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-gray-500">PO Number:</span>
+                        <span class="font-mono text-gray-800"><?= esc($delivery['po_number']) ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Amount to Pay:</span>
+                        <span class="font-bold text-lg text-emerald-600">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></span>
+                    </div>
+                </div>
+                
+                <form method="post" action="<?= base_url('deliveries/' . $delivery['id'] . '/create-paypal-payment') ?>" class="mt-4">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        <i class="fab fa-paypal mr-2"></i>Pay with PayPal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php elseif ($needsPayment && $role != 'central_admin'): ?>
+<!-- Waiting for Payment Notice (for non-admin users) -->
+<div class="bg-amber-50 rounded-xl border border-amber-200 p-6 mb-6">
+    <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-clock text-amber-600 text-xl"></i>
+        </div>
+        <div>
+            <h4 class="font-semibold text-amber-800">Awaiting Payment</h4>
+            <p class="text-sm text-amber-700 mt-1">Delivery has been received. Central Admin will process the payment to supplier.</p>
+            <p class="text-sm text-amber-600 mt-2">Amount: <span class="font-bold">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></span></p>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($payment_transaction)): ?>
 <!-- Payment Information Card -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-    <div class="px-6 py-4 border-b border-gray-100">
+<div class="bg-white rounded-xl shadow-sm border border-<?= $payment_transaction['status'] == 'completed' ? 'emerald' : 'amber' ?>-200 mb-6">
+    <div class="px-6 py-4 border-b border-gray-100 bg-<?= $payment_transaction['status'] == 'completed' ? 'emerald' : 'amber' ?>-50 rounded-t-xl">
         <h3 class="font-semibold text-gray-800 flex items-center">
-            <i class="fas fa-credit-card text-emerald-500 mr-2"></i> Payment Information
+            <i class="fas fa-credit-card text-<?= $payment_transaction['status'] == 'completed' ? 'emerald' : 'amber' ?>-500 mr-2"></i> Payment Information
         </h3>
     </div>
     <div class="p-6">
@@ -410,7 +596,9 @@ if ($delivery['status'] == 'scheduled') {
                 </div>
                 <div class="flex justify-between py-2 border-b border-gray-100">
                     <span class="text-gray-500">Method</span>
-                    <span class="text-gray-800"><?= $payment_transaction['payment_method'] == 'cod' ? 'Cash on Delivery' : 'PayPal' ?></span>
+                    <span class="inline-flex items-center text-gray-800">
+                        <i class="fab fa-paypal text-blue-600 mr-1"></i> PayPal
+                    </span>
                 </div>
                 <div class="flex justify-between py-2">
                     <span class="text-gray-500">Amount</span>
@@ -422,7 +610,7 @@ if ($delivery['status'] == 'scheduled') {
                     <span class="text-gray-500">Status</span>
                     <?php if ($payment_transaction['status'] == 'completed'): ?>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">
-                        <i class="fas fa-check-circle mr-1"></i> Completed
+                        <i class="fas fa-check-circle mr-1"></i> Paid
                     </span>
                     <?php else: ?>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-700">
@@ -431,9 +619,15 @@ if ($delivery['status'] == 'scheduled') {
                     <?php endif; ?>
                 </div>
                 <?php if ($payment_transaction['payment_date']): ?>
-                <div class="flex justify-between py-2">
+                <div class="flex justify-between py-2 border-b border-gray-100">
                     <span class="text-gray-500">Payment Date</span>
                     <span class="text-gray-800"><?= date('M d, Y H:i', strtotime($payment_transaction['payment_date'])) ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($payment_transaction['paypal_transaction_id'])): ?>
+                <div class="flex justify-between py-2">
+                    <span class="text-gray-500">PayPal ID</span>
+                    <span class="font-mono text-xs text-gray-600"><?= esc($payment_transaction['paypal_transaction_id']) ?></span>
                 </div>
                 <?php endif; ?>
             </div>
@@ -441,6 +635,60 @@ if ($delivery['status'] == 'scheduled') {
     </div>
 </div>
 <?php endif; ?>
+
+<!-- Purchase Order Details Card -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-800 flex items-center">
+            <i class="fas fa-file-invoice text-emerald-500 mr-2"></i> Purchase Order Details
+        </h3>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">PO Number</p>
+                <p class="font-semibold text-gray-800"><?= esc($po['po_number'] ?? $delivery['po_number']) ?></p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Order Date</p>
+                <p class="font-semibold text-gray-800"><?= isset($po['order_date']) ? date('M d, Y', strtotime($po['order_date'])) : '-' ?></p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">PO Status</p>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <?= 
+                    ($po['status'] ?? '') == 'completed' ? 'bg-emerald-100 text-emerald-700' : 
+                    (($po['status'] ?? '') == 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')
+                ?>">
+                    <?= ucfirst($po['status'] ?? 'N/A') ?>
+                </span>
+            </div>
+            <div class="bg-emerald-50 rounded-lg p-4">
+                <p class="text-xs text-emerald-600 uppercase tracking-wider mb-1">Total Amount</p>
+                <p class="font-bold text-lg text-emerald-700">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></p>
+            </div>
+        </div>
+        
+        <!-- Amount Breakdown -->
+        <div class="mt-4 pt-4 border-t border-gray-100">
+            <div class="flex justify-end">
+                <div class="w-full md:w-64 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Subtotal:</span>
+                        <span class="text-gray-800">₱<?= number_format($po['subtotal'] ?? 0, 2) ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Tax (12%):</span>
+                        <span class="text-gray-800">₱<?= number_format($po['tax'] ?? 0, 2) ?></span>
+                    </div>
+                    <div class="flex justify-between text-base font-semibold pt-2 border-t border-gray-200">
+                        <span class="text-gray-700">Total:</span>
+                        <span class="text-emerald-600">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Order Items Card -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
@@ -456,20 +704,24 @@ if ($delivery['status'] == 'scheduled') {
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Unit</th>
-                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Quantity</th>
+                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Ordered</th>
+                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Received</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Unit Price</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                <?php $grandTotal = 0; ?>
                 <?php foreach ($po_items as $item): ?>
-                <?php $grandTotal += $item['total_price']; ?>
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 font-medium text-gray-800"><?= esc($item['product_name']) ?></td>
                     <td class="px-6 py-4"><span class="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-0.5 rounded"><?= esc($item['sku']) ?></span></td>
                     <td class="px-6 py-4 text-gray-600"><?= esc($item['unit']) ?></td>
                     <td class="px-6 py-4 text-center text-gray-700"><?= $item['quantity'] ?></td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium <?= ($item['quantity_received'] ?? 0) == $item['quantity'] ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' ?>">
+                            <?= $item['quantity_received'] ?? 0 ?> / <?= $item['quantity'] ?>
+                        </span>
+                    </td>
                     <td class="px-6 py-4 text-right text-gray-700">₱<?= number_format($item['unit_price'], 2) ?></td>
                     <td class="px-6 py-4 text-right font-medium text-gray-800">₱<?= number_format($item['total_price'], 2) ?></td>
                 </tr>
@@ -477,8 +729,16 @@ if ($delivery['status'] == 'scheduled') {
             </tbody>
             <tfoot class="bg-gray-50 border-t border-gray-200">
                 <tr>
-                    <td colspan="5" class="px-6 py-4 text-right font-semibold text-gray-700">Grand Total</td>
-                    <td class="px-6 py-4 text-right font-bold text-lg text-emerald-600">₱<?= number_format($grandTotal, 2) ?></td>
+                    <td colspan="5" class="px-6 py-3 text-right text-sm text-gray-600">Subtotal:</td>
+                    <td colspan="2" class="px-6 py-3 text-right font-medium text-gray-800">₱<?= number_format($po['subtotal'] ?? 0, 2) ?></td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="px-6 py-3 text-right text-sm text-gray-600">Tax (12%):</td>
+                    <td colspan="2" class="px-6 py-3 text-right font-medium text-gray-800">₱<?= number_format($po['tax'] ?? 0, 2) ?></td>
+                </tr>
+                <tr class="border-t-2 border-gray-200">
+                    <td colspan="5" class="px-6 py-4 text-right font-bold text-gray-800">Total Amount:</td>
+                    <td colspan="2" class="px-6 py-4 text-right font-bold text-lg text-emerald-600">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></td>
                 </tr>
             </tfoot>
         </table>

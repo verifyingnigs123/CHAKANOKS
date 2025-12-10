@@ -2,16 +2,27 @@
 
 <?= $this->section('content') ?>
 <?php
-$page_title = 'Stock Alerts';
-$title = 'Stock Alerts';
+$page_title = 'Inventory Alerts';
+$title = 'Inventory Alerts';
+$role = session()->get('role');
 ?>
 
-<!-- Action Bar -->
-<div class="flex justify-end mb-6">
-    <a href="<?= base_url('inventory') ?>" 
-       class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-        <i class="fas fa-arrow-left mr-2"></i>Back to Inventory
-    </a>
+<!-- Header with Actions -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">Inventory Alerts</h2>
+        <p class="text-gray-500 text-sm mt-1">Monitor low stock, out of stock, and expiring items</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <?php if (in_array($role, ['central_admin', 'inventory_staff'])): ?>
+        <a href="<?= base_url('barcode/scan') ?>" class="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+            <i class="fas fa-barcode mr-2"></i>Scan Item
+        </a>
+        <?php endif; ?>
+        <a href="<?= base_url('inventory') ?>" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+            <i class="fas fa-warehouse mr-2"></i>View Inventory
+        </a>
+    </div>
 </div>
 
 <!-- Summary Cards -->

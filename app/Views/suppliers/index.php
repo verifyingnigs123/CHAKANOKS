@@ -34,20 +34,114 @@ $title = 'Suppliers';
     </div>
 </div>
 
-<!-- Table Card -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+<!-- Mobile Card View -->
+<div class="md:hidden space-y-4" id="mobileCards">
+    <?php if (!empty($suppliers)): ?>
+        <?php foreach ($suppliers as $supplier): ?>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 data-row"
+             data-code="<?= esc(strtolower($supplier['code'])) ?>"
+             data-name="<?= esc(strtolower($supplier['name'])) ?>"
+             data-contact="<?= esc(strtolower($supplier['contact_person'] ?? '')) ?>"
+             data-email="<?= esc(strtolower($supplier['email'] ?? '')) ?>"
+             data-phone="<?= esc(strtolower($supplier['phone'] ?? '')) ?>"
+             data-status="<?= esc($supplier['status']) ?>">
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-truck-loading text-cyan-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800"><?= esc($supplier['name']) ?></h3>
+                        <span class="font-mono text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded"><?= esc($supplier['code']) ?></span>
+                    </div>
+                </div>
+                <?php if ($supplier['status'] == 'active'): ?>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1"></span> Active
+                </span>
+                <?php else: ?>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1"></span> Inactive
+                </span>
+                <?php endif; ?>
+            </div>
+            
+            <div class="space-y-2 text-sm mb-3">
+                <?php if (!empty($supplier['contact_person'])): ?>
+                <div class="flex items-center text-gray-600">
+                    <i class="fas fa-user w-5 text-gray-400"></i>
+                    <span><?= esc($supplier['contact_person']) ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($supplier['email'])): ?>
+                <div class="flex items-center text-gray-600">
+                    <i class="fas fa-envelope w-5 text-gray-400"></i>
+                    <span class="truncate"><?= esc($supplier['email']) ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($supplier['phone'])): ?>
+                <div class="flex items-center text-gray-600">
+                    <i class="fas fa-phone w-5 text-gray-400"></i>
+                    <span><?= esc($supplier['phone']) ?></span>
+                </div>
+                <?php endif; ?>
+            </div>
+            
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div>
+                    <?php if (!empty($supplier['has_account'])): ?>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        <i class="fas fa-user-check mr-1"></i> <?= esc($supplier['user_account']['username'] ?? 'Has Login') ?>
+                    </span>
+                    <?php else: ?>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                        <i class="fas fa-user-times mr-1"></i> No Account
+                    </span>
+                    <?php endif; ?>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="<?= base_url('suppliers/' . $supplier['id'] . '/products') ?>"
+                       class="inline-flex items-center justify-center w-9 h-9 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors">
+                        <i class="fas fa-boxes"></i>
+                    </a>
+                    <?php if (empty($supplier['has_account'])): ?>
+                    <button type="button" 
+                       onclick="openCreateAccountModal(<?= $supplier['id'] ?>, '<?= esc($supplier['name']) ?>', '<?= esc($supplier['email'] ?? '') ?>', '<?= esc($supplier['contact_person'] ?? $supplier['name']) ?>')"
+                       class="inline-flex items-center justify-center w-9 h-9 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                    <?php endif; ?>
+                    <button type="button" 
+                       onclick="openEditModal(<?= $supplier['id'] ?>, '<?= esc($supplier['name']) ?>', '<?= esc($supplier['code']) ?>', '<?= esc($supplier['contact_person'] ?? '') ?>', '<?= esc($supplier['email'] ?? '') ?>', '<?= esc($supplier['phone'] ?? '') ?>', '<?= esc($supplier['address'] ?? '') ?>', '<?= esc($supplier['payment_terms'] ?? '') ?>', '<?= esc($supplier['delivery_terms'] ?? '') ?>', '<?= esc($supplier['status']) ?>')"
+                       class="inline-flex items-center justify-center w-9 h-9 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" 
+                       onclick="openDeleteModal(<?= $supplier['id'] ?>, '<?= esc($supplier['name']) ?>')"
+                       class="inline-flex items-center justify-center w-9 h-9 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
+
+<!-- Desktop Table View -->
+<div class="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full" id="dataTable">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Code</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Person</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rating</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Code</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Contact</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden xl:table-cell">Email</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden lg:table-cell">Phone</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Account</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100" id="tableBody">
@@ -60,53 +154,64 @@ $title = 'Suppliers';
                         data-email="<?= esc(strtolower($supplier['email'] ?? '')) ?>"
                         data-phone="<?= esc(strtolower($supplier['phone'] ?? '')) ?>"
                         data-status="<?= esc($supplier['status']) ?>">
-                        <td class="px-6 py-4">
-                            <span class="font-mono text-sm font-semibold text-gray-800 bg-gray-100 px-2 py-1 rounded"><?= esc($supplier['code']) ?></span>
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs font-semibold text-gray-800 bg-gray-100 px-2 py-1 rounded"><?= esc($supplier['code']) ?></span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-3">
                             <div class="flex items-center">
-                                <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-truck-loading text-cyan-600"></i>
+                                <div class="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center mr-2">
+                                    <i class="fas fa-truck-loading text-cyan-600 text-sm"></i>
                                 </div>
-                                <span class="font-medium text-gray-800"><?= esc($supplier['name']) ?></span>
+                                <span class="font-medium text-gray-800 text-sm"><?= esc($supplier['name']) ?></span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-gray-600"><?= esc($supplier['contact_person'] ?? '-') ?></td>
-                        <td class="px-6 py-4 text-gray-500 text-sm"><?= esc($supplier['email'] ?? '-') ?></td>
-                        <td class="px-6 py-4 text-gray-500"><?= esc($supplier['phone'] ?? '-') ?></td>
-                        <td class="px-6 py-4">
-                            <?php if ($supplier['rating'] > 0): ?>
-                            <div class="flex items-center">
-                                <?php for ($i = 0; $i < 5; $i++): ?>
-                                <i class="fas fa-star <?= ($i < $supplier['rating']) ? 'text-amber-400' : 'text-gray-200' ?> text-sm"></i>
-                                <?php endfor; ?>
-                            </div>
+                        <td class="px-4 py-3 text-gray-600 text-sm hidden lg:table-cell"><?= esc($supplier['contact_person'] ?? '-') ?></td>
+                        <td class="px-4 py-3 text-gray-500 text-xs hidden xl:table-cell"><?= esc($supplier['email'] ?? '-') ?></td>
+                        <td class="px-4 py-3 text-gray-500 text-sm hidden lg:table-cell"><?= esc($supplier['phone'] ?? '-') ?></td>
+                        <td class="px-4 py-3">
+                            <?php if (!empty($supplier['has_account'])): ?>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                <i class="fas fa-user-check mr-1"></i> <?= esc($supplier['user_account']['username'] ?? '') ?>
+                            </span>
                             <?php else: ?>
-                            <span class="text-gray-400 text-sm">No rating</span>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                <i class="fas fa-user-times mr-1"></i> No Account
+                            </span>
                             <?php endif; ?>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-3">
                             <?php if ($supplier['status'] == 'active'): ?>
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5"></span> Active
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1"></span> Active
                             </span>
                             <?php else: ?>
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1.5"></span> Inactive
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1"></span> Inactive
                             </span>
                             <?php endif; ?>
                         </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-2">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1">
+                                <a href="<?= base_url('suppliers/' . $supplier['id'] . '/products') ?>"
+                                   class="inline-flex items-center justify-center w-8 h-8 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors" title="Manage Products">
+                                    <i class="fas fa-boxes text-sm"></i>
+                                </a>
+                                <?php if (empty($supplier['has_account'])): ?>
+                                <button type="button" 
+                                   onclick="openCreateAccountModal(<?= $supplier['id'] ?>, '<?= esc($supplier['name']) ?>', '<?= esc($supplier['email'] ?? '') ?>', '<?= esc($supplier['contact_person'] ?? $supplier['name']) ?>')"
+                                   class="inline-flex items-center justify-center w-8 h-8 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors" title="Create Login Account">
+                                    <i class="fas fa-user-plus text-sm"></i>
+                                </button>
+                                <?php endif; ?>
                                 <button type="button" 
                                    onclick="openEditModal(<?= $supplier['id'] ?>, '<?= esc($supplier['name']) ?>', '<?= esc($supplier['code']) ?>', '<?= esc($supplier['contact_person'] ?? '') ?>', '<?= esc($supplier['email'] ?? '') ?>', '<?= esc($supplier['phone'] ?? '') ?>', '<?= esc($supplier['address'] ?? '') ?>', '<?= esc($supplier['payment_terms'] ?? '') ?>', '<?= esc($supplier['delivery_terms'] ?? '') ?>', '<?= esc($supplier['status']) ?>')"
                                    class="inline-flex items-center justify-center w-8 h-8 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="fas fa-edit text-sm"></i>
                                 </button>
                                 <button type="button" 
                                    onclick="openDeleteModal(<?= $supplier['id'] ?>, '<?= esc($supplier['name']) ?>')"
                                    class="inline-flex items-center justify-center w-8 h-8 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors" title="Delete">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash text-sm"></i>
                                 </button>
                             </div>
                         </td>
@@ -115,15 +220,15 @@ $title = 'Suppliers';
                 <?php endif; ?>
             </tbody>
         </table>
-        
-        <!-- No Results -->
-        <div id="noResults" class="hidden px-6 py-12 text-center">
-            <div class="flex flex-col items-center">
-                <i class="fas fa-truck-loading text-4xl text-gray-300 mb-3"></i>
-                <p class="text-gray-500 font-medium">No suppliers found</p>
-                <p class="text-gray-400 text-sm">Add a new supplier to get started</p>
-            </div>
-        </div>
+    </div>
+</div>
+
+<!-- No Results -->
+<div id="noResults" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-12 text-center">
+    <div class="flex flex-col items-center">
+        <i class="fas fa-truck-loading text-4xl text-gray-300 mb-3"></i>
+        <p class="text-gray-500 font-medium">No suppliers found</p>
+        <p class="text-gray-400 text-sm">Add a new supplier to get started</p>
     </div>
 </div>
 
@@ -202,6 +307,36 @@ $title = 'Suppliers';
                             <input type="text" name="delivery_terms"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                                    placeholder="e.g., FOB">
+                        </div>
+                        
+                        <!-- User Account Section -->
+                        <div class="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                            <div class="flex items-center mb-3">
+                                <input type="checkbox" name="create_account" id="createAccountCheckbox" value="1"
+                                       class="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                                       onchange="toggleAccountFields()">
+                                <label for="createAccountCheckbox" class="ml-2 text-sm font-medium text-gray-700">
+                                    <i class="fas fa-user-plus text-emerald-500 mr-1"></i>Create Login Account for Supplier
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-3">This will allow the supplier to login and manage their orders</p>
+                        </div>
+                        
+                        <div id="accountFields" class="md:col-span-2 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Username <span class="text-red-500">*</span></label>
+                                    <input type="text" name="username" id="supplierUsername"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                           placeholder="e.g., supplier_abc">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+                                    <input type="password" name="password" id="supplierPassword"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                           placeholder="Enter password">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -348,6 +483,71 @@ $title = 'Suppliers';
     </div>
 </div>
 
+<!-- Create Account Modal -->
+<div id="createAccountModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeCreateAccountModal()"></div>
+        
+        <div class="relative bg-white rounded-xl shadow-xl transform transition-all sm:max-w-md sm:w-full mx-auto">
+            <form method="post" action="<?= base_url('suppliers/create-account') ?>" id="createAccountForm">
+                <?= csrf_field() ?>
+                <input type="hidden" name="supplier_id" id="accountSupplierId">
+                
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-user-plus text-blue-500 mr-2"></i>Create Login Account
+                    </h3>
+                    <button type="button" onclick="closeCreateAccountModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="px-6 py-4">
+                    <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-sm text-blue-800">Creating account for: <strong id="accountSupplierName"></strong></p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Username <span class="text-red-500">*</span></label>
+                            <input type="text" name="username" id="newAccountUsername" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., supplier_abc">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" name="email" id="newAccountEmail"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" name="full_name" id="newAccountFullName"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+                            <input type="password" name="password" id="newAccountPassword" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter password">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                    <button type="button" onclick="closeCreateAccountModal()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i>Create Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -362,6 +562,27 @@ function closeCreateModal() {
     document.getElementById('createModal').classList.add('hidden');
     document.body.style.overflow = '';
     document.getElementById('createForm').reset();
+    document.getElementById('accountFields').classList.add('hidden');
+}
+
+// Toggle account fields visibility
+function toggleAccountFields() {
+    const checkbox = document.getElementById('createAccountCheckbox');
+    const accountFields = document.getElementById('accountFields');
+    const usernameField = document.getElementById('supplierUsername');
+    const passwordField = document.getElementById('supplierPassword');
+    
+    if (checkbox.checked) {
+        accountFields.classList.remove('hidden');
+        usernameField.required = true;
+        passwordField.required = true;
+    } else {
+        accountFields.classList.add('hidden');
+        usernameField.required = false;
+        passwordField.required = false;
+        usernameField.value = '';
+        passwordField.value = '';
+    }
 }
 
 // Edit Modal
@@ -398,22 +619,42 @@ function closeDeleteModal() {
     document.body.style.overflow = '';
 }
 
+// Create Account Modal
+function openCreateAccountModal(supplierId, supplierName, email, fullName) {
+    document.getElementById('accountSupplierId').value = supplierId;
+    document.getElementById('accountSupplierName').textContent = supplierName;
+    document.getElementById('newAccountEmail').value = email || '';
+    document.getElementById('newAccountFullName').value = fullName || '';
+    document.getElementById('newAccountUsername').value = '';
+    document.getElementById('newAccountPassword').value = '';
+    document.getElementById('createAccountModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCreateAccountModal() {
+    document.getElementById('createAccountModal').classList.add('hidden');
+    document.body.style.overflow = '';
+    document.getElementById('createAccountForm').reset();
+}
+
 // Close modals on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeCreateModal();
         closeEditModal();
         closeDeleteModal();
+        closeCreateAccountModal();
     }
 });
 
-// Table filtering
+// Table and Card filtering
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
     const rows = document.querySelectorAll('.data-row');
     const noResults = document.getElementById('noResults');
     const tbody = document.getElementById('tableBody');
+    const mobileCards = document.getElementById('mobileCards');
     
     function filterTable() {
         const searchTerm = searchInput.value.toLowerCase().trim();
@@ -447,10 +688,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (visibleCount === 0) {
             noResults.classList.remove('hidden');
-            tbody.classList.add('hidden');
+            if (tbody) tbody.classList.add('hidden');
+            if (mobileCards) mobileCards.classList.add('hidden');
         } else {
             noResults.classList.add('hidden');
-            tbody.classList.remove('hidden');
+            if (tbody) tbody.classList.remove('hidden');
+            if (mobileCards) mobileCards.classList.remove('hidden');
         }
     }
     

@@ -7,6 +7,7 @@ use App\Models\PurchaseRequestItemModel;
 use App\Models\ProductModel;
 use App\Models\BranchModel;
 use App\Models\ActivityLogModel;
+use App\Models\SupplierProductModel;
 use App\Libraries\NotificationService;
 
 class PurchaseRequestController extends BaseController
@@ -17,6 +18,7 @@ class PurchaseRequestController extends BaseController
     protected $branchModel;
     protected $activityLogModel;
     protected $notificationService;
+    protected $supplierProductModel;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class PurchaseRequestController extends BaseController
         $this->branchModel = new BranchModel();
         $this->activityLogModel = new ActivityLogModel();
         $this->notificationService = new NotificationService();
+        $this->supplierProductModel = new SupplierProductModel();
     }
 
     public function index()
@@ -37,6 +40,23 @@ class PurchaseRequestController extends BaseController
 
         $role = $session->get('role');
         $branchId = $session->get('branch_id');
+        
+        // If branch_id not in session, try to get from user record
+        if (empty($branchId) && $role !== 'central_admin') {
+            $userModel = new \App\Models\UserModel();
+            $user = $userModel->find($session->get('user_id'));
+            if ($user && !empty($user['branch_id'])) {
+                $branchId = $user['branch_id'];
+                $session->set('branch_id', $branchId);
+                
+                // Also set branch_name if available
+                $branchModel = new \App\Models\BranchModel();
+                $branch = $branchModel->find($branchId);
+                if ($branch) {
+                    $session->set('branch_name', $branch['name']);
+                }
+            }
+        }
 
         $builder = $this->purchaseRequestModel->select('purchase_requests.*, branches.name as branch_name, users.full_name as requested_by_name')
             ->join('branches', 'branches.id = purchase_requests.branch_id')
@@ -75,8 +95,36 @@ class PurchaseRequestController extends BaseController
 
         $data['requests'] = $builder->orderBy('purchase_requests.created_at', 'DESC')->findAll();
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
-        $data['products'] = $this->productModel->where('status', 'active')->findAll();
-        $data['suppliers'] = (new \App\Models\SupplierModel())->where('status', 'active')->findAll();
+        
+        // Get products with stock quantity from inventory (for branch user's branch)
+        $inventoryModel = new \App\Models\InventoryModel();
+        $products = $this->productModel->where('status', 'active')->findAll();
+        
+        // Add stock info for each product based on user's branch or total stock
+        foreach ($products as &$product) {
+            if ($branchId) {
+                // Get stock for specific branch
+                $inventory = $inventoryModel->where('product_id', $product['id'])
+                    ->where('branch_id', $branchId)
+                    ->first();
+                $product['stock_quantity'] = $inventory ? $inventory['quantity'] : 0;
+            } else {
+                // For central admin, show total stock across all branches
+                $totalStock = $inventoryModel->selectSum('quantity')
+                    ->where('product_id', $product['id'])
+                    ->first();
+                $product['stock_quantity'] = $totalStock ? $totalStock['quantity'] : 0;
+            }
+        }
+        $data['products'] = $products;
+        // Get supplier users with their supplier_id (display username in dropdown)
+        $userModel = new \App\Models\UserModel();
+        $data['suppliers'] = $userModel->select('users.*, suppliers.id as supplier_id, suppliers.name as supplier_name')
+            ->join('suppliers', 'suppliers.id = users.supplier_id')
+            ->where('users.role', 'supplier')
+            ->where('users.status', 'active')
+            ->where('users.supplier_id IS NOT NULL')
+            ->findAll();
         $data['branch_id'] = $branchId;
         $data['search'] = $search;
         $data['status'] = $status;
@@ -102,8 +150,14 @@ class PurchaseRequestController extends BaseController
         $branchIdFromQuery = $this->request->getGet('branch_id');
         $data['branch_id'] = $branchIdFromQuery ?: $session->get('branch_id');
         
-        // Load suppliers for supplier selection
-        $data['suppliers'] = (new \App\Models\SupplierModel())->where('status', 'active')->findAll();
+        // Get supplier users with their supplier_id (display username in dropdown)
+        $userModel = new \App\Models\UserModel();
+        $data['suppliers'] = $userModel->select('users.*, suppliers.id as supplier_id, suppliers.name as supplier_name')
+            ->join('suppliers', 'suppliers.id = users.supplier_id')
+            ->where('users.role', 'supplier')
+            ->where('users.status', 'active')
+            ->where('users.supplier_id IS NOT NULL')
+            ->findAll();
 
         return view('purchase_requests/create', $data);
     }
@@ -115,8 +169,29 @@ class PurchaseRequestController extends BaseController
             return redirect()->to('/login');
         }
         $requestNumber = $this->purchaseRequestModel->generateRequestNumber();
-        $branchId = $this->request->getPost('branch_id') ?? $session->get('branch_id');
         $requestedBy = $session->get('user_id');
+        
+        // Get branch_id from POST, session, or user record
+        $branchId = $this->request->getPost('branch_id');
+        if (empty($branchId)) {
+            $branchId = $session->get('branch_id');
+        }
+        
+        // If still empty, try to get from user record
+        if (empty($branchId)) {
+            $userModel = new \App\Models\UserModel();
+            $user = $userModel->find($requestedBy);
+            if ($user && !empty($user['branch_id'])) {
+                $branchId = $user['branch_id'];
+                // Also set it in session for future use
+                $session->set('branch_id', $branchId);
+            }
+        }
+
+        // Validate branch_id
+        if (empty($branchId)) {
+            return redirect()->back()->withInput()->with('error', 'Branch ID is required. Please ensure your account is assigned to a branch.');
+        }
 
         $requestData = [
             'request_number' => $requestNumber,
@@ -138,28 +213,79 @@ class PurchaseRequestController extends BaseController
 
         if (!$requestId) {
             $db->transComplete();
+            log_message('error', 'Failed to create purchase request. Insert returned: ' . json_encode($inserted) . ', Last query: ' . $this->purchaseRequestModel->db->getLastQuery());
             return redirect()->back()->withInput()->with('error', 'Failed to create purchase request.');
         }
 
-        // Add items
+        // Add items - handle both system products (Central Admin) and supplier products
         $products = $this->request->getPost('products');
         $quantities = $this->request->getPost('quantities');
+        $supplierId = $this->request->getPost('supplier_id');
+
+        // Validate that at least one product is selected
+        $hasValidProduct = false;
+        if ($products && $quantities) {
+            foreach ($products as $index => $productId) {
+                if (!empty($productId) && !empty($quantities[$index]) && $quantities[$index] > 0) {
+                    $hasValidProduct = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$hasValidProduct) {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('error', 'Please select at least one product.');
+        }
 
         if ($products && $quantities) {
             foreach ($products as $index => $productId) {
                 if (!empty($quantities[$index]) && $quantities[$index] > 0) {
-                    $product = $this->productModel->find($productId);
                     $quantity = (int) $quantities[$index];
-                    $unitPrice = $product['cost_price'] ?? 0;
-                    $totalPrice = $quantity * $unitPrice;
+                    
+                    if ($supplierId) {
+                        // Supplier selected - use supplier products
+                        $supplierProduct = $this->supplierProductModel->find($productId);
+                        if ($supplierProduct) {
+                            $unitPrice = $supplierProduct['supplier_price'] ?? 0;
+                            $totalPrice = $quantity * $unitPrice;
 
-                    $this->purchaseRequestItemModel->insert([
-                        'purchase_request_id' => $requestId,
-                        'product_id' => $productId,
-                        'quantity' => $quantity,
-                        'unit_price' => $unitPrice,
-                        'total_price' => $totalPrice,
-                    ]);
+                            $this->purchaseRequestItemModel->insert([
+                                'purchase_request_id' => $requestId,
+                                'product_id' => null,
+                                'supplier_product_id' => $productId,
+                                'product_name' => $supplierProduct['name'],
+                                'product_sku' => $supplierProduct['sku'],
+                                'product_unit' => $supplierProduct['unit'] ?? 'pcs',
+                                'quantity' => $quantity,
+                                'unit_price' => $unitPrice,
+                                'total_price' => $totalPrice,
+                            ]);
+                        } else {
+                            // Supplier product not found - skip this item
+                            log_message('warning', "Supplier product ID {$productId} not found for purchase request {$requestId}");
+                            continue;
+                        }
+                    } else {
+                        // No supplier - use Central Admin products (system products)
+                        $product = $this->productModel->find($productId);
+                        if ($product) {
+                            $unitPrice = $product['cost_price'] ?? 0;
+                            $totalPrice = $quantity * $unitPrice;
+
+                            $this->purchaseRequestItemModel->insert([
+                                'purchase_request_id' => $requestId,
+                                'product_id' => $productId,
+                                'supplier_product_id' => null,
+                                'product_name' => $product['name'],
+                                'product_sku' => $product['sku'],
+                                'product_unit' => $product['unit'] ?? 'pcs',
+                                'quantity' => $quantity,
+                                'unit_price' => $unitPrice,
+                                'total_price' => $totalPrice,
+                            ]);
+                        }
+                    }
                 }
             }
         }
@@ -239,7 +365,7 @@ class PurchaseRequestController extends BaseController
 
                     $poId = $poModel->insert($poData);
                     if ($poId) {
-                        // copy items
+                        // copy items - handle both supplier products and system products
                         $items = $reqItemModel->where('purchase_request_id', $id)->findAll();
                         $subtotal = 0;
                         foreach ($items as $it) {
@@ -247,6 +373,10 @@ class PurchaseRequestController extends BaseController
                             $poItemModel->insert([
                                 'purchase_order_id' => $poId,
                                 'product_id' => $it['product_id'],
+                                'supplier_product_id' => $it['supplier_product_id'] ?? null,
+                                'product_name' => $it['product_name'] ?? null,
+                                'product_sku' => $it['product_sku'] ?? null,
+                                'product_unit' => $it['product_unit'] ?? 'pcs',
                                 'quantity' => $it['quantity'],
                                 'quantity_received' => 0,
                                 'unit_price' => $it['unit_price'] ?? 0,
@@ -320,8 +450,13 @@ class PurchaseRequestController extends BaseController
             return redirect()->to('/purchase-requests')->with('error', 'Request not found');
         }
 
-        $items = $this->purchaseRequestItemModel->select('purchase_request_items.*, products.name as product_name, products.sku, products.unit')
-            ->join('products', 'products.id = purchase_request_items.product_id')
+        // Get items - handle both supplier products and system products
+        $items = $this->purchaseRequestItemModel
+            ->select('purchase_request_items.*, 
+                      COALESCE(purchase_request_items.product_name, products.name) as product_name, 
+                      COALESCE(purchase_request_items.product_sku, products.sku) as sku, 
+                      COALESCE(purchase_request_items.product_unit, products.unit) as unit')
+            ->join('products', 'products.id = purchase_request_items.product_id', 'left')
             ->where('purchase_request_items.purchase_request_id', $id)
             ->findAll();
 
@@ -348,8 +483,13 @@ class PurchaseRequestController extends BaseController
             return redirect()->to('/purchase-requests')->with('error', 'Request not found');
         }
 
-        $items = $this->purchaseRequestItemModel->select('purchase_request_items.*, products.name as product_name, products.sku, products.unit')
-            ->join('products', 'products.id = purchase_request_items.product_id')
+        // Get items - handle both supplier products and system products
+        $items = $this->purchaseRequestItemModel
+            ->select('purchase_request_items.*, 
+                      COALESCE(purchase_request_items.product_name, products.name) as product_name, 
+                      COALESCE(purchase_request_items.product_sku, products.sku) as sku, 
+                      COALESCE(purchase_request_items.product_unit, products.unit) as unit')
+            ->join('products', 'products.id = purchase_request_items.product_id', 'left')
             ->where('purchase_request_items.purchase_request_id', $id)
             ->findAll();
 

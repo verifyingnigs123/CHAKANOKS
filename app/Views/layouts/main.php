@@ -22,19 +22,38 @@
         }
     </script>
     
-    <!-- Heroicons (for icons) -->
+    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <style>
         [x-cloak] { display: none !important; }
         
-        /* Hide scrollbar for sidebar */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
+        /* Hide scrollbars globally but allow scrolling */
+        html, body, * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
         }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        
+        *::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+            width: 0;
+            height: 0;
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Mobile sidebar overlay */
+        .sidebar-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Sidebar transition */
+        .sidebar-transition {
+            transition: transform 0.3s ease;
         }
     </style>
 </head>
@@ -42,17 +61,20 @@
     <!-- Toast Notifications -->
     <?= $this->include('layouts/partials/toast') ?>
     
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 z-40 sidebar-overlay hidden lg:hidden" onclick="toggleSidebar()"></div>
+    
     <!-- Sidebar -->
     <?= $this->include('layouts/partials/sidebar') ?>
     
     <!-- Main Content Area -->
-    <div class="ml-64 min-h-screen flex flex-col">
+    <div class="lg:ml-64 min-h-screen flex flex-col">
         
         <!-- Header -->
         <?= $this->include('layouts/partials/header') ?>
         
         <!-- Page Content -->
-        <main class="flex-1 p-6 pb-20">
+        <main class="flex-1 p-4 md:p-6 pb-20 overflow-x-auto">
             <?= $this->renderSection('content') ?>
         </main>
         
@@ -66,6 +88,37 @@
     
     <!-- Chart.js (if needed) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Sidebar Toggle Script -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                // Open sidebar
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                // Close sidebar
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // Close sidebar on window resize to desktop
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        });
+    </script>
     
     <?= $this->renderSection('scripts') ?>
 </body>

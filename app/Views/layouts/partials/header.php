@@ -54,7 +54,7 @@ foreach ($pageTitles as $path => $title) {
         
         <!-- Left: Page Title / Breadcrumb -->
         <div class="flex items-center space-x-4">
-            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-gray-700 focus:outline-none">
+            <button onclick="toggleSidebar()" class="lg:hidden text-gray-500 hover:text-gray-700 focus:outline-none p-2">
                 <i class="fas fa-bars text-xl"></i>
             </button>
             <div>
@@ -84,7 +84,7 @@ foreach ($pageTitles as $path => $title) {
                     <div class="px-4 py-2 border-b border-gray-100">
                         <h3 class="font-semibold text-gray-800">Notifications</h3>
                     </div>
-                    <div class="max-h-64 overflow-y-auto">
+                    <div class="max-h-64 overflow-y-auto overflow-x-hidden">
                         <a href="#" class="block px-4 py-3 hover:bg-gray-50 transition-colors">
                             <div class="flex items-start space-x-3">
                                 <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -132,9 +132,9 @@ foreach ($pageTitles as $path => $title) {
                 <div x-show="open" 
                      @click.away="open = false"
                      x-cloak
-                     class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 max-h-80 flex flex-col">
-                    <!-- Scrollable Menu Items -->
-                    <div class="overflow-y-auto scrollbar-hide flex-1" style="-ms-overflow-style: none; scrollbar-width: none;">
+                     class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                    <!-- Menu Items -->
+                    <div>
                         <a href="<?= base_url('profile') ?>" 
                            class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                             <i class="fas fa-user w-5 text-gray-400"></i>

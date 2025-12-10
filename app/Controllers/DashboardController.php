@@ -111,6 +111,16 @@ class DashboardController extends BaseController
                 // Supplier dashboard: show orders assigned to this supplier
                 $supplierId = $session->get('supplier_id');
                 
+                // Fallback: get supplier_id from user record if not in session
+                if (!$supplierId) {
+                    $userModel = new \App\Models\UserModel();
+                    $user = $userModel->find($userId);
+                    if ($user && !empty($user['supplier_id'])) {
+                        $supplierId = $user['supplier_id'];
+                        $session->set('supplier_id', $supplierId);
+                    }
+                }
+                
                 // Get supplier info
                 $supplierModel = new SupplierModel();
                 $supplier = $supplierModel->find($supplierId);

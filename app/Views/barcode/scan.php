@@ -24,6 +24,13 @@ $title = 'Barcode Scanner';
         width: 100%;
         height: auto;
         display: block;
+        /* Remove mirror effect - important for barcode scanning */
+        transform: scaleX(1);
+        -webkit-transform: scaleX(1);
+    }
+    /* If using front camera, it may be mirrored - this ensures it's not */
+    .video-container video {
+        object-fit: cover;
     }
     .scanner-overlay {
         position: absolute;
@@ -74,6 +81,21 @@ $title = 'Barcode Scanner';
 
     <div class="card">
         <div class="card-body">
+            <?php if ($role === 'central_admin'): ?>
+            <div class="mb-4">
+                <label class="form-label fw-bold">Select Branch</label>
+                <select id="branchSelect" class="form-select">
+                    <option value="">-- Select Branch --</option>
+                    <?php foreach ($branches as $branch): ?>
+                    <option value="<?= $branch['id'] ?>"><?= esc($branch['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="text-muted">Select a branch to view and update inventory</small>
+            </div>
+            <?php else: ?>
+            <input type="hidden" id="branchSelect" value="<?= $user_branch_id ?>">
+            <?php endif; ?>
+            
             <div class="video-container" id="videoContainer" style="display: none;">
                 <video id="video" autoplay playsinline></video>
                 <div class="scanner-overlay"></div>
@@ -142,15 +164,29 @@ document.getElementById('toggleCamera').addEventListener('click', function() {
 });
 
 function startCamera() {
-    navigator.mediaDevices.getUserMedia({ 
+    // Try to use back camera first, fallback to any available camera
+    const constraints = {
         video: { 
-            facingMode: 'environment' // Use back camera on mobile
-        } 
-    })
+            facingMode: { ideal: 'environment' }, // Prefer back camera
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+        }
+    };
+    
+    navigator.mediaDevices.getUserMedia(constraints)
     .then(function(mediaStream) {
         stream = mediaStream;
         const video = document.getElementById('video');
         video.srcObject = stream;
+        
+        // Check if using front camera and apply un-mirror if needed
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        if (settings.facingMode === 'user') {
+            video.style.transform = 'scaleX(-1)';
+        } else {
+            video.style.transform = 'scaleX(1)';
+        }
         document.getElementById('videoContainer').style.display = 'block';
         document.getElementById('cameraStatus').textContent = 'Stop Camera';
         scanning = true;
@@ -215,18 +251,26 @@ function scanManualBarcode() {
     }
 }
 
+function getSelectedBranch() {
+    const branchSelect = document.getElementById('branchSelect');
+    return branchSelect ? branchSelect.value : '';
+}
+
 function scanBarcode(barcode) {
+    const branchId = getSelectedBranch();
+    
     fetch('<?= base_url('barcode/scan') ?>', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: 'barcode=' + encodeURIComponent(barcode)
+        body: 'barcode=' + encodeURIComponent(barcode) + '&branch_id=' + encodeURIComponent(branchId)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             currentProduct = data.product;
+            currentProduct.branch_id = data.branch_id || branchId;
             displayProduct(data);
         } else {
             document.getElementById('errorMessage').textContent = data.message || 'Product not found';
@@ -268,6 +312,12 @@ function displayProduct(data) {
 function updateInventory(action) {
     if (!currentProduct) return;
     
+    const branchId = getSelectedBranch() || currentProduct.branch_id;
+    if (!branchId) {
+        alert('Please select a branch first');
+        return;
+    }
+    
     const quantity = action === 'add' 
         ? parseInt(document.getElementById('addQuantity').value)
         : parseInt(document.getElementById('subtractQuantity').value);
@@ -284,7 +334,8 @@ function updateInventory(action) {
         },
         body: 'barcode=' + encodeURIComponent(currentProduct.barcode) +
               '&quantity=' + quantity +
-              '&action=' + action
+              '&action=' + action +
+              '&branch_id=' + encodeURIComponent(branchId)
     })
     .then(response => response.json())
     .then(data => {

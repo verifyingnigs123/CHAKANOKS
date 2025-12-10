@@ -18,81 +18,111 @@ if (!empty($deliveries)) {
 $stats['pending_schedule'] = count($prepared_pos ?? []);
 ?>
 
-<?php if (in_array($role, ['logistics_coordinator', 'central_admin'])): ?>
-<!-- Logistics Dashboard Summary -->
+<?php if ($role === 'supplier'): ?>
+<!-- Supplier Deliveries Summary - Clean Card Design with Left Border -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-4 text-white">
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-amber-400">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-amber-100 text-xs font-medium uppercase">Pending Schedule</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['pending_schedule'] ?></p>
+                <p class="text-gray-500 text-xs font-medium uppercase">Scheduled</p>
+                <p class="text-2xl font-bold text-amber-500 mt-1"><?= $stats['scheduled'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">Awaiting pickup</p>
             </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-clock text-lg"></i>
+            <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-calendar-check text-amber-500"></i>
             </div>
         </div>
-        <p class="text-amber-100 text-xs mt-2">POs ready for delivery</p>
     </div>
-    <div class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-4 text-white">
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-blue-400">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-blue-100 text-xs font-medium uppercase">Scheduled</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['scheduled'] ?></p>
+                <p class="text-gray-500 text-xs font-medium uppercase">In Transit</p>
+                <p class="text-2xl font-bold text-blue-500 mt-1"><?= $stats['in_transit'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">On the way</p>
             </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-calendar-check text-lg"></i>
+            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-truck text-blue-500"></i>
             </div>
         </div>
-        <p class="text-blue-100 text-xs mt-2">Awaiting dispatch</p>
     </div>
-    <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-4 text-white">
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-emerald-400">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-purple-100 text-xs font-medium uppercase">In Transit</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['in_transit'] ?></p>
+                <p class="text-gray-500 text-xs font-medium uppercase">Delivered</p>
+                <p class="text-2xl font-bold text-emerald-500 mt-1"><?= $stats['delivered'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">Completed</p>
             </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-truck text-lg"></i>
+            <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-emerald-500"></i>
             </div>
         </div>
-        <p class="text-purple-100 text-xs mt-2">On the way</p>
     </div>
-    <div class="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 text-white">
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-purple-400">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-emerald-100 text-xs font-medium uppercase">Delivered</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['delivered'] ?></p>
+                <p class="text-gray-500 text-xs font-medium uppercase">Total</p>
+                <p class="text-2xl font-bold text-purple-500 mt-1"><?= $stats['total'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">All deliveries</p>
             </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-check-circle text-lg"></i>
+            <div class="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-boxes text-purple-500"></i>
             </div>
         </div>
-        <p class="text-emerald-100 text-xs mt-2">Successfully completed</p>
     </div>
 </div>
 
-<!-- Quick Actions Alert -->
-<?php if ($stats['pending_schedule'] > 0 || $stats['scheduled'] > 0): ?>
-<div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
-    <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-            <i class="fas fa-bell text-amber-600"></i>
+<?php elseif (in_array($role, ['logistics_coordinator', 'central_admin'])): ?>
+<!-- Logistics Dashboard Summary - Clean Card Design with Left Border -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-amber-400">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-xs font-medium uppercase">Pending</p>
+                <p class="text-2xl font-bold text-amber-500 mt-1"><?= $stats['pending_schedule'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">Ready to schedule</p>
+            </div>
+            <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-amber-500"></i>
+            </div>
         </div>
-        <div class="flex-1">
-            <p class="font-medium text-gray-800">You have pending actions</p>
-            <p class="text-sm text-gray-600">
-                <?php if ($stats['pending_schedule'] > 0): ?>
-                    <span class="text-amber-600 font-medium"><?= $stats['pending_schedule'] ?> PO(s)</span> ready to schedule
-                <?php endif; ?>
-                <?php if ($stats['pending_schedule'] > 0 && $stats['scheduled'] > 0): ?> • <?php endif; ?>
-                <?php if ($stats['scheduled'] > 0): ?>
-                    <span class="text-blue-600 font-medium"><?= $stats['scheduled'] ?> delivery(s)</span> awaiting dispatch
-                <?php endif; ?>
-            </p>
+    </div>
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-blue-400">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-xs font-medium uppercase">Scheduled</p>
+                <p class="text-2xl font-bold text-blue-500 mt-1"><?= $stats['scheduled'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">Awaiting dispatch</p>
+            </div>
+            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-calendar-check text-blue-500"></i>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-cyan-400">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-xs font-medium uppercase">In Transit</p>
+                <p class="text-2xl font-bold text-cyan-500 mt-1"><?= $stats['in_transit'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">On the way</p>
+            </div>
+            <div class="w-10 h-10 bg-cyan-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-truck text-cyan-500"></i>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-emerald-400">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-xs font-medium uppercase">Delivered</p>
+                <p class="text-2xl font-bold text-emerald-500 mt-1"><?= $stats['delivered'] ?></p>
+                <p class="text-gray-400 text-xs mt-1">Completed</p>
+            </div>
+            <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-emerald-500"></i>
+            </div>
         </div>
     </div>
 </div>
-<?php endif; ?>
 <?php endif; ?>
 
 <?php if (!empty($prepared_pos) && in_array($role, ['logistics_coordinator', 'central_admin'])): ?>
@@ -171,7 +201,9 @@ $stats['pending_schedule'] = count($prepared_pos ?? []);
                 <tr>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Delivery #</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">PO Number</th>
+                    <?php if ($role !== 'supplier'): ?>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Supplier</th>
+                    <?php endif; ?>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Branch</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Scheduled</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Delivered</th>
@@ -187,7 +219,9 @@ $stats['pending_schedule'] = count($prepared_pos ?? []);
                     <tr class="hover:bg-gray-50 transition-colors data-row" data-delivery="<?= esc(strtolower($delivery['delivery_number'])) ?>" data-po="<?= esc(strtolower($delivery['po_number'])) ?>" data-supplier="<?= esc(strtolower($delivery['supplier_name'])) ?>" data-branch="<?= esc(strtolower($delivery['branch_name'])) ?>" data-status="<?= esc($delivery['status']) ?>" data-payment="<?= esc($pm) ?>">
                         <td class="px-6 py-4"><span class="font-semibold text-gray-800"><?= esc($delivery['delivery_number']) ?></span></td>
                         <td class="px-6 py-4"><span class="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded"><?= esc($delivery['po_number']) ?></span></td>
+                        <?php if ($role !== 'supplier'): ?>
                         <td class="px-6 py-4 text-gray-600"><?= esc($delivery['supplier_name']) ?></td>
+                        <?php endif; ?>
                         <td class="px-6 py-4 text-gray-600"><?= esc($delivery['branch_name']) ?></td>
                         <td class="px-6 py-4 text-gray-500 text-sm"><?= $delivery['scheduled_date'] ? date('M d, Y', strtotime($delivery['scheduled_date'])) : '-' ?></td>
                         <td class="px-6 py-4 text-gray-500 text-sm"><?= $delivery['delivery_date'] ? date('M d, Y', strtotime($delivery['delivery_date'])) : '-' ?></td>
@@ -237,6 +271,12 @@ $stats['pending_schedule'] = count($prepared_pos ?? []);
                                     </form>
                                     <?php endif; ?>
                                 <?php endif; ?>
+                                <?php if (in_array($role, ['central_admin', 'branch_manager', 'inventory_staff']) && $delivery['status'] == 'in_transit'): ?>
+                                <!-- Receive Delivery Button -->
+                                <a href="<?= base_url('deliveries/view/' . $delivery['id']) ?>" class="inline-flex items-center px-2.5 py-1 bg-emerald-500 text-white hover:bg-emerald-600 rounded text-xs font-medium transition-colors" title="Receive Delivery">
+                                    <i class="fas fa-box-open mr-1"></i>Receive
+                                </a>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>
@@ -244,10 +284,13 @@ $stats['pending_schedule'] = count($prepared_pos ?? []);
                 <?php endif; ?>
             </tbody>
         </table>
-        <div id="noResults" class="hidden px-6 py-12 text-center">
+        <div id="noResults" class="<?= empty($deliveries) ? '' : 'hidden' ?> px-6 py-12 text-center">
             <div class="flex flex-col items-center">
                 <i class="fas fa-truck text-4xl text-gray-300 mb-3"></i>
                 <p class="text-gray-500 font-medium">No deliveries found</p>
+                <?php if ($role === 'supplier'): ?>
+                <p class="text-gray-400 text-sm mt-1">Deliveries will appear here once your orders are scheduled for delivery</p>
+                <?php endif; ?>
             </div>
         </div>
     </div>

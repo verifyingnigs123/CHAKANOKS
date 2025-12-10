@@ -9,7 +9,9 @@ class PurchaseRequestItemModel extends Model
     protected $table = 'purchase_request_items';
     protected $primaryKey = 'id';
     protected $allowedFields = [
-        'purchase_request_id', 'product_id', 'quantity', 'unit_price', 'total_price', 'notes', 'created_at'
+        'purchase_request_id', 'product_id', 'supplier_product_id', 
+        'product_name', 'product_sku', 'product_unit',
+        'quantity', 'unit_price', 'total_price', 'notes', 'created_at'
     ];
     
     protected $useTimestamps = false;

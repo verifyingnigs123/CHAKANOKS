@@ -186,7 +186,121 @@ if (in_array($po['status'], ['completed', 'partial'])) {
             <?php endif; ?>
         </div>
     </div>
+    
+    <!-- Timeline with Timestamps -->
+    <div class="mt-6 pt-4 border-t border-gray-100">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Activity Timeline</p>
+        <div class="space-y-3 text-sm">
+            <?php if ($po['created_at']): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+                <span class="text-gray-600">Created</span>
+                <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($po['created_at'])) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($po['sent_at'])): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+                <span class="text-gray-600">Sent to Supplier</span>
+                <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($po['sent_at'])) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($po['confirmed_at'])): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-purple-400"></div>
+                <span class="text-gray-600">Confirmed by Supplier</span>
+                <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($po['confirmed_at'])) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($po['prepared_at'])): ?>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-cyan-400"></div>
+                <span class="text-gray-600">Prepared for Pickup</span>
+                <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($po['prepared_at'])) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if (isset($delivery) && $delivery): ?>
+                <?php if (!empty($delivery['created_at'])): ?>
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+                    <span class="text-gray-600">Delivery Scheduled</span>
+                    <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($delivery['created_at'])) ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if ($delivery['status'] == 'in_transit' || $delivery['status'] == 'delivered'): ?>
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-indigo-400"></div>
+                    <span class="text-gray-600">In Transit</span>
+                    <span class="text-gray-400 text-xs ml-auto"><?= $delivery['delivery_date'] ? date('M d, Y', strtotime($delivery['delivery_date'])) : '-' ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if ($delivery['status'] == 'delivered' && !empty($delivery['received_at'])): ?>
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                    <span class="text-gray-600">Delivered & Received</span>
+                    <span class="text-gray-400 text-xs ml-auto"><?= date('M d, Y h:i A', strtotime($delivery['received_at'])) ?></span>
+                </div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    </div>
 </div>
+
+<!-- What's Next Action Card - Shows clear next action for each role -->
+<?php 
+// Determine if there's a specific action for this user
+$hasAction = false;
+$actionMessage = '';
+
+if ($currentStep == 0 && $role == 'central_admin') {
+    $hasAction = true;
+    $actionMessage = 'Send this Purchase Order to the supplier for confirmation.';
+} elseif ($currentStep == 1 && $role == 'supplier') {
+    $hasAction = true;
+    $actionMessage = 'Review and <strong>Accept</strong> this order to start preparing the items.';
+} elseif ($currentStep == 1 && $role != 'supplier') {
+    $hasAction = false;
+    $actionMessage = 'Waiting for supplier to accept the order.';
+} elseif ($currentStep == 2 && $role == 'supplier') {
+    $hasAction = true;
+    $actionMessage = 'Pack all items and click <strong>Mark as Prepared</strong> when ready for pickup.';
+} elseif ($currentStep == 2 && $role != 'supplier') {
+    $hasAction = false;
+    $actionMessage = 'Supplier is preparing the items. Please wait.';
+} elseif ($currentStep == 3 && in_array($role, ['logistics_coordinator', 'central_admin'])) {
+    $hasAction = true;
+    $actionMessage = 'Items are ready! <strong>Schedule a delivery</strong> to pick up from supplier.';
+} elseif ($currentStep == 3) {
+    $hasAction = false;
+    $actionMessage = 'Items are prepared. Waiting for logistics to schedule delivery.';
+} elseif ($currentStep == 4 && in_array($role, ['logistics_coordinator', 'central_admin'])) {
+    $hasAction = true;
+    $actionMessage = 'Delivery is scheduled. Click <strong>Dispatch</strong> when driver leaves for pickup.';
+} elseif ($currentStep == 4) {
+    $hasAction = false;
+    $actionMessage = 'Delivery scheduled. Waiting for dispatch.';
+} elseif ($currentStep == 5 && in_array($role, ['branch_manager', 'inventory_staff', 'central_admin'])) {
+    $hasAction = true;
+    $actionMessage = 'Delivery is on the way! <strong>Receive the delivery</strong> when it arrives at your branch.';
+} elseif ($currentStep == 5) {
+    $hasAction = false;
+    $actionMessage = 'Delivery is in transit to the branch.';
+}
+?>
+
+<?php if ($currentStep < 6 && !empty($actionMessage)): ?>
+<div class="bg-gradient-to-r <?= $hasAction ? 'from-amber-50 to-orange-50 border-amber-200' : 'from-gray-50 to-slate-50 border-gray-200' ?> rounded-xl border p-4 mb-6">
+    <div class="flex items-start gap-4">
+        <div class="w-12 h-12 <?= $hasAction ? 'bg-amber-100' : 'bg-gray-100' ?> rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="fas <?= $hasAction ? 'fa-hand-point-right text-amber-600' : 'fa-clock text-gray-500' ?> text-xl"></i>
+        </div>
+        <div class="flex-1">
+            <h4 class="font-semibold <?= $hasAction ? 'text-amber-800' : 'text-gray-700' ?> mb-1"><?= $hasAction ? "What's Next?" : "Status Update" ?></h4>
+            <p class="text-sm <?= $hasAction ? 'text-amber-700' : 'text-gray-600' ?>"><?= $actionMessage ?></p>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Status Banner for Supplier -->
 <?php if ($role === 'supplier'): ?>

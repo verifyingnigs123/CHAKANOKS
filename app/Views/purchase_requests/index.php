@@ -98,11 +98,13 @@ $title = 'Purchase Requests';
                         </td>
                         <td class="px-6 py-4 text-gray-500 text-sm"><?= date('M d, Y', strtotime($request['created_at'])) ?></td>
                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <a href="<?= base_url('purchase-requests/view/' . $request['id']) ?>" class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-eye mr-1"></i> View</a>
                                 <?php if ($role == 'central_admin' && $request['status'] == 'pending'): ?>
                                 <form method="post" action="<?= base_url('purchase-requests/' . $request['id'] . '/approve') ?>" class="inline"><?= csrf_field() ?><button type="submit" class="inline-flex items-center px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-check mr-1"></i> Approve</button></form>
                                 <button onclick="showRejectModal(<?= $request['id'] ?>)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-times mr-1"></i> Reject</button>
+                                <?php elseif ($role == 'central_admin' && $request['status'] == 'approved'): ?>
+                                <a href="<?= base_url('purchase-orders/create-from-request/' . $request['id']) ?>" class="inline-flex items-center px-3 py-1.5 bg-purple-500 text-white hover:bg-purple-600 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-shopping-cart mr-1"></i> Create PO</a>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -138,20 +140,20 @@ $title = 'Purchase Requests';
                 </div>
                 <div class="px-6 py-4 space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="hidden" name="branch_id" value="<?= $branch_id ?>">
+                        <input type="hidden" name="branch_id" value="<?= $branch_id ?? '' ?>">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Requested By</label>
                             <div class="px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-700">
-                                <?= array_values(array_filter($branches, fn($b) => $b['id'] == $branch_id))[0]['name'] ?? 'N/A' ?>
+                                <?= esc(session()->get('username') ?? 'N/A') ?>
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
                             <select name="supplier_id" id="modalSupplierSelect" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all cursor-pointer">
-                                <option value="">-- Select Supplier (Optional) --</option>
+                                <option value="" data-user-id="">-- Central Admin Products --</option>
                                 <?php if (!empty($suppliers)): ?>
                                 <?php foreach ($suppliers as $sup): ?>
-                                <option value="<?= $sup['id'] ?>"><?= esc($sup['name']) ?></option>
+                                <option value="<?= $sup['supplier_id'] ?>" data-user-id="<?= $sup['id'] ?>"><?= esc($sup['username']) ?></option>
                                 <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
@@ -172,7 +174,9 @@ $title = 'Purchase Requests';
                                 <i class="fas fa-plus mr-1"></i>Add
                             </button>
                         </div>
-                        <div class="overflow-x-auto">
+                        <!-- Message for loading/errors -->
+                        <div id="noSupplierMessage" class="text-center py-4 text-gray-500 text-sm" style="display: none;"></div>
+                        <div class="overflow-x-auto" id="productsTableContainer">
                             <table class="w-full" id="modalProductsTable">
                                 <thead class="bg-gray-50 border-b border-gray-200">
                                     <tr>
@@ -186,9 +190,11 @@ $title = 'Purchase Requests';
                                         <td class="px-3 py-2">
                                             <select name="products[]" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all product-select text-sm" required>
                                                 <option value="">Select Product</option>
-                                                <?php foreach ($products as $product): ?>
-                                                <option value="<?= $product['id'] ?>" data-supplier="<?= $product['supplier_id'] ?? '' ?>"><?= esc($product['name']) ?> (<?= esc($product['sku']) ?>)</option>
+                                                <?php if (!empty($products)): ?>
+                                                <?php foreach ($products as $prod): ?>
+                                                <option value="<?= $prod['id'] ?>" data-price="<?= $prod['cost_price'] ?? 0 ?>" data-type="system"><?= esc($prod['name']) ?> (<?= esc($prod['sku']) ?>) - ₱<?= number_format($prod['cost_price'] ?? 0, 2) ?></option>
                                                 <?php endforeach; ?>
+                                                <?php endif; ?>
                                             </select>
                                         </td>
                                         <td class="px-3 py-2">
@@ -244,6 +250,23 @@ $title = 'Purchase Requests';
 <?= $this->section('scripts') ?>
 <script>
 <?php if ($role !== 'central_admin'): ?>
+// Central Admin products (default) with stock quantity
+const centralAdminProducts = `<?php 
+    $options = '<option value="">Select Product</option>';
+    if (!empty($products)) {
+        foreach ($products as $prod) {
+            $stock = $prod['stock_quantity'] ?? 0;
+            $stockLabel = $stock > 0 ? ' [Stock: ' . $stock . ']' : ' [Out of Stock]';
+            $options .= '<option value="' . $prod['id'] . '" data-price="' . ($prod['cost_price'] ?? 0) . '" data-stock="' . $stock . '" data-type="system">' . 
+                        htmlspecialchars($prod['name']) . ' (' . htmlspecialchars($prod['sku']) . ') - ₱' . number_format($prod['cost_price'] ?? 0, 2) . $stockLabel . '</option>';
+        }
+    }
+    echo $options;
+?>`;
+
+// Current product type: 'system' or 'supplier'
+let currentProductType = 'system';
+
 // Create Modal Functions
 function openCreateModal() {
     document.getElementById('createModal').classList.remove('hidden');
@@ -263,7 +286,6 @@ document.getElementById('addProductBtn').addEventListener('click', function() {
     newRow.querySelector('.product-select').value = '';
     newRow.querySelector('input[name="quantities[]"]').value = 1;
     tbody.appendChild(newRow);
-    applySupplierFilter();
 });
 
 // Remove Product Row
@@ -278,40 +300,108 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Supplier Filter
+// Load supplier products via AJAX or show Central Admin products
 const modalSupplierSelect = document.getElementById('modalSupplierSelect');
-function applySupplierFilter() {
-    const supplierId = modalSupplierSelect ? modalSupplierSelect.value : '';
+
+function loadProducts(userId) {
+    const noSupplierMsg = document.getElementById('noSupplierMessage');
+    const tableContainer = document.getElementById('productsTableContainer');
+    
+    if (!userId) {
+        // No supplier selected - show Central Admin products
+        currentProductType = 'system';
+        updateProductDropdownsWithOptions(centralAdminProducts);
+        noSupplierMsg.style.display = 'none';
+        tableContainer.style.display = 'block';
+        return;
+    }
+    
+    // Show loading
+    noSupplierMsg.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Loading supplier products...';
+    noSupplierMsg.style.display = 'block';
+    tableContainer.style.display = 'none';
+    
+    // Fetch supplier products via AJAX (by user ID)
+    fetch('<?= base_url('supplier/user') ?>/' + userId + '/products-json')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.products) {
+                if (data.products.length === 0) {
+                    noSupplierMsg.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i> This supplier has no products yet. Please select a different supplier or use Central Admin Products.';
+                    noSupplierMsg.style.display = 'block';
+                    tableContainer.style.display = 'none';
+                    // Clear product dropdowns to prevent form submission with invalid data
+                    updateProductDropdownsWithOptions('<option value="">No products available</option>');
+                } else {
+                    // Build options from supplier products with stock quantity
+                    currentProductType = 'supplier';
+                    let options = '<option value="">Select Product</option>';
+                    data.products.forEach(function(product) {
+                        let stock = product.stock || 0;
+                        let stockLabel = stock > 0 ? ' [Stock: ' + stock + ']' : ' [Out of Stock]';
+                        options += '<option value="' + product.id + '" data-price="' + (product.price || 0) + '" data-stock="' + stock + '" data-type="supplier">' + 
+                                   product.name + (product.sku ? ' (' + product.sku + ')' : '') + ' - ₱' + parseFloat(product.price || 0).toFixed(2) + stockLabel + '</option>';
+                    });
+                    updateProductDropdownsWithOptions(options);
+                    noSupplierMsg.style.display = 'none';
+                    tableContainer.style.display = 'block';
+                }
+            } else {
+                noSupplierMsg.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i> Failed to load products';
+                noSupplierMsg.style.display = 'block';
+                tableContainer.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+            noSupplierMsg.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i> Error loading products';
+            noSupplierMsg.style.display = 'block';
+            tableContainer.style.display = 'none';
+        });
+}
+
+function updateProductDropdownsWithOptions(optionsHtml) {
     const productSelects = document.querySelectorAll('#modalProductsBody .product-select');
     productSelects.forEach(function(sel) {
-        Array.from(sel.options).forEach(function(opt) {
-            const optSupplier = opt.getAttribute('data-supplier') || '';
-            if (!supplierId) {
-                opt.hidden = false;
-                opt.disabled = false;
-            } else {
-                if (opt.value === '') {
-                    opt.hidden = false;
-                    opt.disabled = false;
-                } else if (optSupplier === supplierId) {
-                    opt.hidden = false;
-                    opt.disabled = false;
-                } else {
-                    opt.hidden = true;
-                    opt.disabled = true;
-                }
-            }
-        });
-        const selectedOpt = sel.querySelector('option:checked');
-        if (selectedOpt && selectedOpt.hidden) {
-            sel.value = '';
-        }
+        sel.innerHTML = optionsHtml;
     });
 }
 
 if (modalSupplierSelect) {
-    modalSupplierSelect.addEventListener('change', applySupplierFilter);
+    modalSupplierSelect.addEventListener('change', function() {
+        // Get the user_id from the selected option's data attribute
+        const selectedOption = this.options[this.selectedIndex];
+        const userId = selectedOption.getAttribute('data-user-id');
+        loadProducts(userId);
+    });
 }
+
+// Form validation before submit
+document.getElementById('createForm').addEventListener('submit', function(e) {
+    const productSelects = document.querySelectorAll('#modalProductsBody .product-select');
+    let hasValidProduct = false;
+    
+    productSelects.forEach(function(sel) {
+        if (sel.value && sel.value !== '' && sel.value !== 'No products available') {
+            hasValidProduct = true;
+        }
+    });
+    
+    if (!hasValidProduct) {
+        e.preventDefault();
+        alert('Please select at least one valid product before submitting.');
+        return false;
+    }
+    
+    // Check if supplier is selected but no products are available
+    const supplierSelect = document.getElementById('modalSupplierSelect');
+    const tableContainer = document.getElementById('productsTableContainer');
+    if (supplierSelect.value && tableContainer.style.display === 'none') {
+        e.preventDefault();
+        alert('The selected supplier has no products. Please select a different supplier or use Central Admin Products.');
+        return false;
+    }
+});
 <?php endif; ?>
 
 // Reject Modal Functions
@@ -362,6 +452,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (branchFilter) branchFilter.addEventListener('change', filterTable);
     statusFilter.addEventListener('change', filterTable);
     priorityFilter.addEventListener('change', filterTable);
+    
+    // Auto-open create modal if ?create=1 is in URL (from dashboard)
+    <?php if ($role !== 'central_admin'): ?>
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('create') === '1') {
+        openCreateModal();
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    <?php endif; ?>
 });
 </script>
 <?= $this->endSection() ?>

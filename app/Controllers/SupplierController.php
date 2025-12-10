@@ -3,17 +3,26 @@
 namespace App\Controllers;
 
 use App\Models\SupplierModel;
+use App\Models\UserModel;
 use App\Models\ActivityLogModel;
+use App\Models\SupplierProductModel;
+use App\Models\ProductModel;
 
 class SupplierController extends BaseController
 {
     protected $supplierModel;
+    protected $userModel;
     protected $activityLogModel;
+    protected $supplierProductModel;
+    protected $productModel;
 
     public function __construct()
     {
         $this->supplierModel = new SupplierModel();
+        $this->userModel = new UserModel();
         $this->activityLogModel = new ActivityLogModel();
+        $this->supplierProductModel = new SupplierProductModel();
+        $this->productModel = new ProductModel();
     }
 
     public function index()
@@ -47,7 +56,22 @@ class SupplierController extends BaseController
             $builder->where('status', $status);
         }
 
-        $data['suppliers'] = $builder->orderBy('created_at', 'DESC')->findAll();
+        $suppliers = $builder->orderBy('created_at', 'DESC')->findAll();
+        
+        // Get user accounts linked to suppliers
+        $supplierUsers = $this->userModel->where('role', 'supplier')->where('supplier_id IS NOT NULL')->findAll();
+        $supplierUserMap = [];
+        foreach ($supplierUsers as $user) {
+            $supplierUserMap[$user['supplier_id']] = $user;
+        }
+        
+        // Add user account info to each supplier
+        foreach ($suppliers as &$supplier) {
+            $supplier['has_account'] = isset($supplierUserMap[$supplier['id']]);
+            $supplier['user_account'] = $supplierUserMap[$supplier['id']] ?? null;
+        }
+        
+        $data['suppliers'] = $suppliers;
         $data['search'] = $search;
         $data['status'] = $status;
         $data['role'] = $session->get('role');
@@ -94,7 +118,37 @@ class SupplierController extends BaseController
             'status' => $this->request->getPost('status') ?: 'active',
         ];
 
-        if ($this->supplierModel->insert($data)) {
+        $supplierId = $this->supplierModel->insert($data);
+        
+        if ($supplierId) {
+            // Check if user account should be created
+            $createAccount = $this->request->getPost('create_account');
+            $username = $this->request->getPost('username');
+            $password = $this->request->getPost('password');
+            
+            if ($createAccount && $username && $password) {
+                // Check if username already exists
+                $existingUser = $this->userModel->where('username', $username)->first();
+                if ($existingUser) {
+                    return redirect()->to('/suppliers')->with('warning', 'Supplier created but username already exists. Please create user account manually.');
+                }
+                
+                // Create supplier user account
+                $userData = [
+                    'username' => $username,
+                    'email' => $data['email'],
+                    'password' => password_hash($password, PASSWORD_DEFAULT),
+                    'full_name' => $data['contact_person'] ?: $data['name'],
+                    'role' => 'supplier',
+                    'supplier_id' => $supplierId,
+                    'status' => 'active',
+                ];
+                
+                $this->userModel->insert($userData);
+                $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'supplier', 'Created supplier: ' . $data['name'] . ' with user account: ' . $username);
+                return redirect()->to('/suppliers')->with('success', 'Supplier and user account created successfully');
+            }
+            
             $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'supplier', 'Created supplier: ' . $data['name']);
             return redirect()->to('/suppliers')->with('success', 'Supplier created successfully');
         } else {
@@ -177,6 +231,519 @@ class SupplierController extends BaseController
         } else {
             return redirect()->back()->with('error', 'Failed to delete supplier');
         }
+    }
+
+    public function createAccount()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        // Only central_admin can create supplier accounts
+        if (!$this->checkRoleAccess(['central_admin'])) {
+            return $this->unauthorized('Only administrators can create supplier accounts');
+        }
+
+        $supplierId = $this->request->getPost('supplier_id');
+        $username = $this->request->getPost('username');
+        $password = $this->request->getPost('password');
+        $email = $this->request->getPost('email');
+        $fullName = $this->request->getPost('full_name');
+
+        // Validate supplier exists
+        $supplier = $this->supplierModel->find($supplierId);
+        if (!$supplier) {
+            return redirect()->to('/suppliers')->with('error', 'Supplier not found');
+        }
+
+        // Check if supplier already has an account
+        $existingAccount = $this->userModel->where('supplier_id', $supplierId)->first();
+        if ($existingAccount) {
+            return redirect()->to('/suppliers')->with('error', 'Supplier already has a login account');
+        }
+
+        // Check if username already exists
+        $existingUser = $this->userModel->where('username', $username)->first();
+        if ($existingUser) {
+            return redirect()->to('/suppliers')->with('error', 'Username already exists. Please choose a different username.');
+        }
+
+        // Create user account
+        $userData = [
+            'username' => $username,
+            'email' => $email ?: $supplier['email'],
+            'password' => password_hash($password, PASSWORD_DEFAULT),
+            'full_name' => $fullName ?: $supplier['contact_person'] ?: $supplier['name'],
+            'role' => 'supplier',
+            'supplier_id' => $supplierId,
+            'status' => 'active',
+        ];
+
+        if ($this->userModel->insert($userData)) {
+            $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'user', 'Created supplier account for: ' . $supplier['name'] . ' (username: ' . $username . ')');
+            return redirect()->to('/suppliers')->with('success', 'Login account created successfully for ' . $supplier['name']);
+        } else {
+            return redirect()->to('/suppliers')->with('error', 'Failed to create login account');
+        }
+    }
+
+    /**
+     * View supplier products
+     */
+    public function products($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        
+        // Suppliers can only view their own products
+        if ($role === 'supplier') {
+            $supplierId = $session->get('supplier_id');
+            if (!$supplierId) {
+                $user = $this->userModel->find($session->get('user_id'));
+                $supplierId = $user['supplier_id'] ?? null;
+            }
+            if ($supplierId != $id) {
+                return redirect()->to('/suppliers')->with('error', 'Unauthorized access');
+            }
+        }
+
+        $supplier = $this->supplierModel->find($id);
+        if (!$supplier) {
+            return redirect()->to('/suppliers')->with('error', 'Supplier not found');
+        }
+
+        $data['supplier'] = $supplier;
+        $data['products'] = $this->supplierProductModel->getProductsBySupplier($id);
+        $data['available_products'] = $this->supplierProductModel->getUnassignedProducts($id);
+        $data['role'] = $role;
+
+        return view('suppliers/products', $data);
+    }
+
+    /**
+     * Add product to supplier
+     */
+    public function addProduct()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        if (!$this->checkRoleAccess(['central_admin', 'supplier'])) {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $supplierId = $this->request->getPost('supplier_id');
+        $productId = $this->request->getPost('product_id');
+        $supplierPrice = $this->request->getPost('supplier_price');
+        $minOrderQty = $this->request->getPost('min_order_qty') ?: 1;
+        $leadTimeDays = $this->request->getPost('lead_time_days');
+
+        // Suppliers can only add to their own catalog
+        $role = $session->get('role');
+        if ($role === 'supplier') {
+            $userSupplierId = $session->get('supplier_id');
+            if (!$userSupplierId) {
+                $user = $this->userModel->find($session->get('user_id'));
+                $userSupplierId = $user['supplier_id'] ?? null;
+            }
+            if ($userSupplierId != $supplierId) {
+                return redirect()->back()->with('error', 'Unauthorized');
+            }
+        }
+
+        $result = $this->supplierProductModel->addProductToSupplier($supplierId, $productId, [
+            'supplier_price' => $supplierPrice ?: null,
+            'min_order_qty' => $minOrderQty,
+            'lead_time_days' => $leadTimeDays ?: null,
+        ]);
+
+        if ($result) {
+            $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'supplier_product', "Added product ID: $productId to supplier ID: $supplierId");
+            return redirect()->back()->with('success', 'Product added to supplier catalog');
+        }
+
+        return redirect()->back()->with('error', 'Failed to add product');
+    }
+
+    /**
+     * Update supplier product details
+     */
+    public function updateProduct($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        if (!$this->checkRoleAccess(['central_admin', 'supplier'])) {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $supplierProduct = $this->supplierProductModel->find($id);
+        if (!$supplierProduct) {
+            return redirect()->back()->with('error', 'Record not found');
+        }
+
+        // Suppliers can only update their own products
+        $role = $session->get('role');
+        if ($role === 'supplier') {
+            $userSupplierId = $session->get('supplier_id');
+            if (!$userSupplierId) {
+                $user = $this->userModel->find($session->get('user_id'));
+                $userSupplierId = $user['supplier_id'] ?? null;
+            }
+            if ($userSupplierId != $supplierProduct['supplier_id']) {
+                return redirect()->back()->with('error', 'Unauthorized');
+            }
+        }
+
+        $data = [
+            'supplier_price' => $this->request->getPost('supplier_price') ?: null,
+            'min_order_qty' => $this->request->getPost('min_order_qty') ?: 1,
+            'lead_time_days' => $this->request->getPost('lead_time_days') ?: null,
+            'is_preferred' => $this->request->getPost('is_preferred') ? 1 : 0,
+        ];
+
+        if ($this->supplierProductModel->update($id, $data)) {
+            $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'supplier_product', "Updated supplier product ID: $id");
+            return redirect()->back()->with('success', 'Product details updated');
+        }
+
+        return redirect()->back()->with('error', 'Failed to update product');
+    }
+
+    /**
+     * Remove product from supplier
+     */
+    public function removeProduct($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        if (!$this->checkRoleAccess(['central_admin', 'supplier'])) {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $supplierProduct = $this->supplierProductModel->find($id);
+        if (!$supplierProduct) {
+            return redirect()->back()->with('error', 'Record not found');
+        }
+
+        // Suppliers can only remove their own products
+        $role = $session->get('role');
+        if ($role === 'supplier') {
+            $userSupplierId = $session->get('supplier_id');
+            if (!$userSupplierId) {
+                $user = $this->userModel->find($session->get('user_id'));
+                $userSupplierId = $user['supplier_id'] ?? null;
+            }
+            if ($userSupplierId != $supplierProduct['supplier_id']) {
+                return redirect()->back()->with('error', 'Unauthorized');
+            }
+        }
+
+        if ($this->supplierProductModel->delete($id)) {
+            $this->activityLogModel->logActivity($session->get('user_id'), 'delete', 'supplier_product', "Removed product from supplier ID: {$supplierProduct['supplier_id']}");
+            return redirect()->back()->with('success', 'Product removed from supplier catalog');
+        }
+
+        return redirect()->back()->with('error', 'Failed to remove product');
+    }
+
+    /**
+     * API: Get products by supplier (for AJAX calls)
+     * Returns supplier's own products for PO creation
+     * Now filters by user_id to get products created by specific supplier user
+     */
+    public function getProductsJson($supplierId)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        // Get the user_id for this supplier to filter their products
+        // Find the supplier user account linked to this supplier_id
+        $supplierUser = $this->userModel->where('supplier_id', $supplierId)
+            ->where('role', 'supplier')
+            ->where('status', 'active')
+            ->first();
+        
+        $userId = $supplierUser ? $supplierUser['id'] : null;
+        
+        // Get products created by this specific supplier user
+        if ($userId) {
+            $products = $this->supplierProductModel->getProductsByUser($userId);
+        } else {
+            // Fallback to supplier-wide products if no user found
+            $products = $this->supplierProductModel->getProductsBySupplier($supplierId);
+        }
+        
+        // Format products for PO creation - use supplier_product.id as the product identifier
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = [
+                'id' => $product['id'], // supplier_product id
+                'name' => $product['name'],
+                'sku' => $product['sku'] ?? '',
+                'unit' => $product['unit'] ?? 'pcs',
+                'price' => $product['supplier_price'] ?? 0,
+            ];
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'products' => $formattedProducts
+        ]);
+    }
+
+    /**
+     * API: Get products by user ID (for AJAX calls)
+     * Returns products created by a specific supplier user
+     */
+    public function getProductsByUserJson($userId)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        // Verify the user exists and is a supplier
+        $supplierUser = $this->userModel->find($userId);
+        if (!$supplierUser || $supplierUser['role'] !== 'supplier') {
+            return $this->response->setJSON(['error' => 'Invalid supplier user'])->setStatusCode(400);
+        }
+
+        // Get products created by this specific user
+        $products = $this->supplierProductModel->getProductsByUser($userId);
+        
+        // Format products for selection with stock quantity
+        $formattedProducts = [];
+        foreach ($products as $product) {
+            $formattedProducts[] = [
+                'id' => $product['id'],
+                'name' => $product['name'],
+                'sku' => $product['sku'] ?? '',
+                'unit' => $product['unit'] ?? 'pcs',
+                'price' => $product['supplier_price'] ?? 0,
+                'stock' => $product['stock_quantity'] ?? 0,
+            ];
+        }
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'products' => $formattedProducts
+        ]);
+    }
+
+    /**
+     * My Products - For logged-in suppliers to manage their own product catalog
+     */
+    public function myProducts()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        if ($role !== 'supplier') {
+            return redirect()->to('/dashboard')->with('error', 'Access denied');
+        }
+
+        // Get supplier_id from session or user record
+        $supplierId = $session->get('supplier_id');
+        $userId = $session->get('user_id');
+        
+        if (!$supplierId) {
+            $user = $this->userModel->find($userId);
+            $supplierId = $user['supplier_id'] ?? null;
+            if ($supplierId) {
+                $session->set('supplier_id', $supplierId);
+            }
+        }
+
+        if (!$supplierId) {
+            return redirect()->to('/dashboard')->with('error', 'Supplier account not properly configured');
+        }
+
+        $supplier = $this->supplierModel->find($supplierId);
+        if (!$supplier) {
+            return redirect()->to('/dashboard')->with('error', 'Supplier not found');
+        }
+
+        $data['supplier'] = $supplier;
+        // Get products for this supplier - either created by this user OR legacy products (created_by is null)
+        $data['products'] = $this->supplierProductModel
+            ->where('supplier_id', $supplierId)
+            ->where('status', 'active')
+            ->groupStart()
+                ->where('created_by', $userId)
+                ->orWhere('created_by IS NULL')
+            ->groupEnd()
+            ->orderBy('name', 'ASC')
+            ->findAll();
+        $data['role'] = $role;
+        $data['is_own_catalog'] = true; // Flag to indicate this is supplier's own view
+
+        return view('suppliers/my_products', $data);
+    }
+
+    /**
+     * Store new product for supplier
+     */
+    public function storeMyProduct()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'supplier') {
+            return redirect()->to('/login');
+        }
+
+        $supplierId = $this->getSupplierIdFromSession($session);
+        $userId = $session->get('user_id');
+        
+        if (!$supplierId) {
+            return redirect()->to('/dashboard')->with('error', 'Supplier account not configured');
+        }
+
+        $data = [
+            'name' => $this->request->getPost('name'),
+            'sku' => $this->request->getPost('sku'),
+            'description' => $this->request->getPost('description'),
+            'category' => $this->request->getPost('category'),
+            'unit' => $this->request->getPost('unit') ?: 'pcs',
+            'supplier_price' => $this->request->getPost('supplier_price'),
+            'stock_quantity' => $this->request->getPost('stock_quantity') ?: 0,
+            'min_order_qty' => $this->request->getPost('min_order_qty') ?: 1,
+            'lead_time_days' => $this->request->getPost('lead_time_days'),
+        ];
+
+        // Check if SKU already exists for this user (not supplier-wide)
+        if ($this->supplierProductModel->supplierHasProductSku($supplierId, $data['sku'], null, $userId)) {
+            return redirect()->back()->withInput()->with('error', 'SKU already exists in your catalog');
+        }
+
+        // Pass userId to track who created the product
+        if ($this->supplierProductModel->createSupplierProduct($supplierId, $data, $userId)) {
+            $this->activityLogModel->logActivity($userId, 'create', 'supplier_product', 'Added product: ' . $data['name']);
+            return redirect()->to('/supplier/my-products')->with('success', 'Product added successfully');
+        }
+
+        return redirect()->back()->withInput()->with('error', 'Failed to add product');
+    }
+
+    /**
+     * Update supplier's product
+     */
+    public function updateMyProduct($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'supplier') {
+            return redirect()->to('/login');
+        }
+
+        $supplierId = $this->getSupplierIdFromSession($session);
+        $userId = $session->get('user_id');
+        
+        if (!$supplierId) {
+            return redirect()->to('/dashboard')->with('error', 'Supplier account not configured');
+        }
+
+        // Verify product belongs to this supplier (check supplier_id, and created_by if set)
+        $product = $this->supplierProductModel->find($id);
+        if (!$product || $product['supplier_id'] != $supplierId) {
+            return redirect()->to('/supplier/my-products')->with('error', 'Product not found');
+        }
+        
+        // If created_by is set, verify it matches current user
+        if (!empty($product['created_by']) && $product['created_by'] != $userId) {
+            return redirect()->to('/supplier/my-products')->with('error', 'You can only edit your own products');
+        }
+
+        $data = [
+            'name' => $this->request->getPost('name'),
+            'sku' => $this->request->getPost('sku'),
+            'description' => $this->request->getPost('description'),
+            'category' => $this->request->getPost('category'),
+            'unit' => $this->request->getPost('unit') ?: 'pcs',
+            'supplier_price' => $this->request->getPost('supplier_price'),
+            'stock_quantity' => $this->request->getPost('stock_quantity') ?: 0,
+            'min_order_qty' => $this->request->getPost('min_order_qty') ?: 1,
+            'lead_time_days' => $this->request->getPost('lead_time_days'),
+        ];
+
+        // Check if SKU already exists for this user (excluding current product)
+        if ($this->supplierProductModel->supplierHasProductSku($supplierId, $data['sku'], $id, $userId)) {
+            return redirect()->back()->withInput()->with('error', 'SKU already exists in your catalog');
+        }
+
+        if ($this->supplierProductModel->updateSupplierProduct($id, $data)) {
+            $this->activityLogModel->logActivity($userId, 'update', 'supplier_product', 'Updated product: ' . $data['name']);
+            return redirect()->to('/supplier/my-products')->with('success', 'Product updated successfully');
+        }
+
+        return redirect()->back()->withInput()->with('error', 'Failed to update product');
+    }
+
+    /**
+     * Delete supplier's product
+     */
+    public function deleteMyProduct($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'supplier') {
+            return redirect()->to('/login');
+        }
+
+        $supplierId = $this->getSupplierIdFromSession($session);
+        $userId = $session->get('user_id');
+        
+        if (!$supplierId) {
+            return redirect()->to('/dashboard')->with('error', 'Supplier account not configured');
+        }
+
+        // Verify product belongs to this supplier (check supplier_id, and created_by if set)
+        $product = $this->supplierProductModel->find($id);
+        if (!$product || $product['supplier_id'] != $supplierId) {
+            return redirect()->to('/supplier/my-products')->with('error', 'Product not found');
+        }
+        
+        // If created_by is set, verify it matches current user
+        if (!empty($product['created_by']) && $product['created_by'] != $userId) {
+            return redirect()->to('/supplier/my-products')->with('error', 'You can only delete your own products');
+        }
+
+        if ($this->supplierProductModel->removeProduct($id)) {
+            $this->activityLogModel->logActivity($userId, 'delete', 'supplier_product', 'Deleted product: ' . $product['name']);
+            return redirect()->to('/supplier/my-products')->with('success', 'Product deleted successfully');
+        }
+
+        return redirect()->back()->with('error', 'Failed to delete product');
+    }
+
+    /**
+     * Helper to get supplier_id from session
+     */
+    private function getSupplierIdFromSession($session)
+    {
+        $supplierId = $session->get('supplier_id');
+        if (!$supplierId) {
+            $user = $this->userModel->find($session->get('user_id'));
+            $supplierId = $user['supplier_id'] ?? null;
+            if ($supplierId) {
+                $session->set('supplier_id', $supplierId);
+            }
+        }
+        return $supplierId;
     }
 }
 

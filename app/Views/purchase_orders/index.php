@@ -21,59 +21,7 @@ if (!empty($purchase_orders)) {
 ?>
 
 <?php if ($role === 'supplier'): ?>
-<!-- Supplier Dashboard Summary -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-amber-100 text-xs font-medium uppercase">Pending Orders</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['pending'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-inbox text-lg"></i>
-            </div>
-        </div>
-        <p class="text-amber-100 text-xs mt-2">Needs your confirmation</p>
-    </div>
-    <div class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-blue-100 text-xs font-medium uppercase">To Prepare</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['confirmed'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-box text-lg"></i>
-            </div>
-        </div>
-        <p class="text-blue-100 text-xs mt-2">Ready to pack</p>
-    </div>
-    <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-purple-100 text-xs font-medium uppercase">Prepared</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['prepared'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-truck-loading text-lg"></i>
-            </div>
-        </div>
-        <p class="text-purple-100 text-xs mt-2">Awaiting pickup</p>
-    </div>
-    <div class="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-emerald-100 text-xs font-medium uppercase">Completed</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['completed'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-check-circle text-lg"></i>
-            </div>
-        </div>
-        <p class="text-emerald-100 text-xs mt-2">Successfully delivered</p>
-    </div>
-</div>
-
-<!-- Quick Actions for Supplier -->
+<!-- Quick Actions for Supplier (Stats are on Dashboard) -->
 <?php if ($stats['pending'] > 0 || $stats['confirmed'] > 0): ?>
 <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-6">
     <div class="flex items-center gap-3">
@@ -98,59 +46,7 @@ if (!empty($purchase_orders)) {
 <?php endif; ?>
 
 <?php if ($role === 'logistics_coordinator'): ?>
-<!-- Logistics Coordinator Dashboard Summary -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-purple-100 text-xs font-medium uppercase">Prepared</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['prepared'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-box text-lg"></i>
-            </div>
-        </div>
-        <p class="text-purple-100 text-xs mt-2">Ready for delivery</p>
-    </div>
-    <div class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-blue-100 text-xs font-medium uppercase">Confirmed</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['confirmed'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-check text-lg"></i>
-            </div>
-        </div>
-        <p class="text-blue-100 text-xs mt-2">Being prepared</p>
-    </div>
-    <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-amber-100 text-xs font-medium uppercase">Sent</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['pending'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-paper-plane text-lg"></i>
-            </div>
-        </div>
-        <p class="text-amber-100 text-xs mt-2">Awaiting supplier</p>
-    </div>
-    <div class="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-emerald-100 text-xs font-medium uppercase">Completed</p>
-                <p class="text-2xl font-bold mt-1"><?= $stats['completed'] ?></p>
-            </div>
-            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <i class="fas fa-check-circle text-lg"></i>
-            </div>
-        </div>
-        <p class="text-emerald-100 text-xs mt-2">Delivered</p>
-    </div>
-</div>
-
-<!-- Quick Actions for Logistics -->
+<!-- Quick Actions for Logistics (Stats are on Dashboard) -->
 <?php if ($stats['prepared'] > 0): ?>
 <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4 mb-6">
     <div class="flex items-center gap-3">
@@ -364,13 +260,14 @@ if (!empty($purchase_orders)) {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Supplier <span class="text-red-500">*</span></label>
                             <select name="supplier_id" id="supplier_id" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all cursor-pointer">
-                                <option value="">Select Supplier</option>
+                                <option value="" data-user-id="">Select Supplier</option>
                                 <?php if (!empty($suppliers)): ?>
                                 <?php foreach ($suppliers as $supplier): ?>
-                                <option value="<?= $supplier['id'] ?>"><?= esc($supplier['name']) ?></option>
+                                <option value="<?= $supplier['supplier_id'] ?>" data-user-id="<?= $supplier['id'] ?>"><?= esc($supplier['username']) ?></option>
                                 <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
+                            <p class="text-xs text-gray-500 mt-1">Products will load based on selected supplier</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Branch <span class="text-red-500">*</span></label>
@@ -384,12 +281,12 @@ if (!empty($purchase_orders)) {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method <span class="text-red-500">*</span></label>
-                            <select name="payment_method" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all cursor-pointer">
-                                <option value="pending">Select Payment</option>
-                                <option value="cod">Cash on Delivery</option>
-                                <option value="paypal">PayPal</option>
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                            <div class="flex items-center gap-3 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+                                <i class="fab fa-paypal text-blue-600 text-xl"></i>
+                                <span class="font-medium text-blue-800">PayPal</span>
+                            </div>
+                            <input type="hidden" name="payment_method" value="paypal">
                         </div>
                     </div>
 
@@ -403,7 +300,11 @@ if (!empty($purchase_orders)) {
                                 <i class="fas fa-plus mr-1"></i>Add
                             </button>
                         </div>
-                        <div class="overflow-x-auto">
+                        <!-- Message for supplier selection -->
+                        <div id="supplierMessage" class="text-center py-4 text-gray-500 text-sm bg-gray-50 rounded-lg mb-3">
+                            <i class="fas fa-info-circle mr-1"></i> Please select a supplier first to load their products
+                        </div>
+                        <div class="overflow-x-auto" id="itemsTableContainer" style="display: none;">
                             <table class="w-full" id="itemsTable">
                                 <thead class="bg-gray-50 border-b border-gray-200">
                                     <tr>
@@ -415,30 +316,6 @@ if (!empty($purchase_orders)) {
                                     </tr>
                                 </thead>
                                 <tbody id="itemsBody" class="divide-y divide-gray-100">
-                                    <tr class="item-row">
-                                        <td class="px-3 py-2">
-                                            <select name="products[]" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all product-select text-sm" required>
-                                                <option value="">Select Product</option>
-                                                <?php if (!empty($allProducts)): ?>
-                                                <?php foreach ($allProducts as $product): ?>
-                                                <option value="<?= $product['id'] ?>" data-price="<?= $product['cost_price'] ?? 0 ?>"><?= esc($product['name']) ?> (<?= esc($product['sku']) ?>)</option>
-                                                <?php endforeach; ?>
-                                                <?php endif; ?>
-                                            </select>
-                                        </td>
-                                        <td class="px-3 py-2">
-                                            <input type="number" name="quantities[]" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all text-center quantity-input text-sm" min="1" value="1" required>
-                                        </td>
-                                        <td class="px-3 py-2">
-                                            <input type="number" name="unit_prices[]" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all text-center price-input text-sm" step="0.01" min="0" value="0" required>
-                                        </td>
-                                        <td class="px-3 py-2 text-right font-medium text-gray-800 item-total text-sm">₱0.00</td>
-                                        <td class="px-3 py-2 text-center">
-                                            <button type="button" class="remove-item inline-flex items-center justify-center w-8 h-8 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
                                 </tbody>
                                 <tfoot class="bg-gray-50 border-t border-gray-200">
                                     <tr>
@@ -481,6 +358,10 @@ if (!empty($purchase_orders)) {
 
 <?= $this->section('scripts') ?>
 <script>
+// Current product options (will be updated when supplier is selected)
+let productOptionsTemplate = '';
+let supplierSelected = false;
+
 // Modal functions
 function openCreateModal() {
     document.getElementById('createModal').classList.remove('hidden');
@@ -538,32 +419,144 @@ function attachRowListeners(row) {
         calculateItemTotal(row);
         calculateTotals();
     });
+    
+    // Remove item button
+    const removeBtn = row.querySelector('.remove-item');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            const rows = document.querySelectorAll('#itemsBody .item-row');
+            if (rows.length > 1) {
+                row.remove();
+                calculateTotals();
+            } else {
+                alert('You must have at least one item');
+            }
+        });
+    }
 }
 
-// Add item row
-document.getElementById('addItemBtn')?.addEventListener('click', function() {
+// Create new item row
+function createItemRow(productId = '', quantity = 1, unitPrice = 0) {
     const tbody = document.getElementById('itemsBody');
-    const firstRow = tbody.querySelector('.item-row');
-    const newRow = firstRow.cloneNode(true);
-    newRow.querySelector('.product-select').value = '';
-    newRow.querySelector('.quantity-input').value = 1;
-    newRow.querySelector('.price-input').value = 0;
-    newRow.querySelector('.item-total').textContent = '₱0.00';
+    
+    const newRow = document.createElement('tr');
+    newRow.className = 'item-row';
+    newRow.innerHTML = `
+        <td class="px-3 py-2">
+            <select name="products[]" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all product-select text-sm" required>
+                <option value="">Select Product</option>
+                ${productOptionsTemplate}
+            </select>
+        </td>
+        <td class="px-3 py-2">
+            <input type="number" name="quantities[]" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all text-center quantity-input text-sm" min="1" value="${quantity}" required>
+        </td>
+        <td class="px-3 py-2">
+            <input type="number" name="unit_prices[]" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all text-center price-input text-sm" step="0.01" min="0" value="${unitPrice}" required>
+        </td>
+        <td class="px-3 py-2 text-right font-medium text-gray-800 item-total text-sm">₱0.00</td>
+        <td class="px-3 py-2 text-center">
+            <button type="button" class="remove-item inline-flex items-center justify-center w-8 h-8 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    const productSelect = newRow.querySelector('.product-select');
+    if (productId) productSelect.value = productId;
+    
     tbody.appendChild(newRow);
     attachRowListeners(newRow);
+    calculateItemTotal(newRow);
+    calculateTotals();
+    return newRow;
+}
+
+// Clear all items
+function clearAllItems() {
+    const tbody = document.getElementById('itemsBody');
+    tbody.innerHTML = '';
+    calculateTotals();
+}
+
+// Show/hide items table
+function showItemsTable() {
+    document.getElementById('supplierMessage').style.display = 'none';
+    document.getElementById('itemsTableContainer').style.display = 'block';
+}
+
+function hideItemsTable() {
+    document.getElementById('supplierMessage').style.display = 'block';
+    document.getElementById('itemsTableContainer').style.display = 'none';
+}
+
+// Add item row button
+document.getElementById('addItemBtn')?.addEventListener('click', function() {
+    if (!supplierSelected) {
+        alert('Please select a supplier first');
+        return;
+    }
+    createItemRow();
 });
 
-// Remove item row
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
-        const rows = document.querySelectorAll('#itemsBody .item-row');
-        if (rows.length > 1) {
-            e.target.closest('.item-row').remove();
-            calculateTotals();
-        } else {
-            alert('You must have at least one product');
-        }
+// Supplier selection - load products
+document.getElementById('supplier_id')?.addEventListener('change', function() {
+    const supplierId = this.value;
+    const selectedOption = this.options[this.selectedIndex];
+    const userId = selectedOption.getAttribute('data-user-id');
+    
+    if (!supplierId || !userId) {
+        supplierSelected = false;
+        productOptionsTemplate = '';
+        clearAllItems();
+        hideItemsTable();
+        return;
     }
+    
+    // Show loading
+    document.getElementById('supplierMessage').innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Loading supplier products...';
+    document.getElementById('supplierMessage').style.display = 'block';
+    document.getElementById('itemsTableContainer').style.display = 'none';
+    
+    // Fetch products for this supplier user (by user ID)
+    fetch(`<?= base_url('supplier/user/') ?>${userId}/products-json`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.products.length > 0) {
+                supplierSelected = true;
+                // Build options from supplier's own products with stock info
+                let options = '';
+                data.products.forEach(product => {
+                    const price = product.price || 0;
+                    const sku = product.sku || '';
+                    const stock = product.stock || 0;
+                    const stockLabel = stock > 0 ? ` [Stock: ${stock}]` : ' [Out of Stock]';
+                    options += `<option value="${product.id}" data-price="${price}">${product.name}${sku ? ' (' + sku + ')' : ''} - ₱${parseFloat(price).toFixed(2)}${stockLabel}</option>`;
+                });
+                productOptionsTemplate = options;
+                
+                // Clear existing items and show table
+                clearAllItems();
+                showItemsTable();
+                
+                // Add first item row
+                createItemRow();
+            } else {
+                // No products for this supplier
+                supplierSelected = false;
+                productOptionsTemplate = '';
+                document.getElementById('supplierMessage').innerHTML = '<i class="fas fa-exclamation-circle text-amber-500 mr-1"></i> This supplier has no products yet. Please select a different supplier.';
+                document.getElementById('supplierMessage').style.display = 'block';
+                document.getElementById('itemsTableContainer').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching supplier products:', error);
+            supplierSelected = false;
+            document.getElementById('supplierMessage').innerHTML = '<i class="fas fa-exclamation-circle text-red-500 mr-1"></i> Error loading products. Please try again.';
+            document.getElementById('supplierMessage').style.display = 'block';
+            document.getElementById('itemsTableContainer').style.display = 'none';
+        });
 });
 
 // Purchase request selection - auto-fill branch
@@ -575,8 +568,29 @@ document.getElementById('purchase_request_id')?.addEventListener('change', funct
     }
 });
 
-// Initialize row listeners
-document.querySelectorAll('.item-row').forEach(row => attachRowListeners(row));
+// Form validation
+document.getElementById('createForm')?.addEventListener('submit', function(e) {
+    const productSelects = document.querySelectorAll('#itemsBody .product-select');
+    let hasValidProduct = false;
+    
+    productSelects.forEach(function(sel) {
+        if (sel.value && sel.value !== '') {
+            hasValidProduct = true;
+        }
+    });
+    
+    if (!hasValidProduct) {
+        e.preventDefault();
+        alert('Please add at least one product to the order.');
+        return false;
+    }
+    
+    if (!document.getElementById('supplier_id').value) {
+        e.preventDefault();
+        alert('Please select a supplier.');
+        return false;
+    }
+});
 
 // Table filtering
 document.addEventListener('DOMContentLoaded', function() {

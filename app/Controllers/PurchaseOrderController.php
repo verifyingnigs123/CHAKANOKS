@@ -53,6 +53,18 @@ class PurchaseOrderController extends BaseController
         $role = $session->get('role');
         $branchId = $session->get('branch_id');
         $supplierId = $session->get('supplier_id');
+        
+        // For supplier role, ensure we have supplier_id
+        if ($role === 'supplier' && !$supplierId) {
+            // Try to get supplier_id from user record
+            $userModel = new \App\Models\UserModel();
+            $user = $userModel->find($session->get('user_id'));
+            if ($user && !empty($user['supplier_id'])) {
+                $supplierId = $user['supplier_id'];
+                // Update session for future requests
+                $session->set('supplier_id', $supplierId);
+            }
+        }
 
         $builder = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, branches.name as branch_name, users.full_name as created_by_name')
             ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
@@ -66,8 +78,13 @@ class PurchaseOrderController extends BaseController
         }
         
         // Filter by supplier for supplier role - they only see their own orders
-        if ($role === 'supplier' && $supplierId) {
-            $builder->where('purchase_orders.supplier_id', $supplierId);
+        if ($role === 'supplier') {
+            if ($supplierId) {
+                $builder->where('purchase_orders.supplier_id', $supplierId);
+            } else {
+                // No supplier_id means show nothing (supplier not properly linked)
+                $builder->where('purchase_orders.supplier_id', 0);
+            }
         }
 
         $data['purchase_orders'] = $builder->findAll();
@@ -79,7 +96,14 @@ class PurchaseOrderController extends BaseController
             ->where('purchase_requests.status', 'approved')
             ->where('purchase_requests.id NOT IN (SELECT purchase_request_id FROM purchase_orders WHERE purchase_request_id IS NOT NULL)', null, false)
             ->findAll();
-        $data['suppliers'] = $this->supplierModel->where('status', 'active')->findAll();
+        // Get supplier users with their supplier_id (display username in dropdown)
+        $userModel = new \App\Models\UserModel();
+        $data['suppliers'] = $userModel->select('users.*, suppliers.id as supplier_id, suppliers.name as supplier_name')
+            ->join('suppliers', 'suppliers.id = users.supplier_id')
+            ->where('users.role', 'supplier')
+            ->where('users.status', 'active')
+            ->where('users.supplier_id IS NOT NULL')
+            ->findAll();
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['allProducts'] = $this->productModel->where('status', 'active')->findAll();
 
@@ -105,7 +129,14 @@ class PurchaseOrderController extends BaseController
             ->where('purchase_requests.id NOT IN (SELECT purchase_request_id FROM purchase_orders WHERE purchase_request_id IS NOT NULL)', null, false)
             ->findAll();
 
-        $data['suppliers'] = $this->supplierModel->where('status', 'active')->findAll();
+        // Get supplier users with their supplier_id (display username in dropdown)
+        $userModel = new \App\Models\UserModel();
+        $data['suppliers'] = $userModel->select('users.*, suppliers.id as supplier_id, suppliers.name as supplier_name')
+            ->join('suppliers', 'suppliers.id = users.supplier_id')
+            ->where('users.role', 'supplier')
+            ->where('users.status', 'active')
+            ->where('users.supplier_id IS NOT NULL')
+            ->findAll();
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['allProducts'] = $this->productModel->where('status', 'active')->findAll();
 
@@ -155,7 +186,7 @@ class PurchaseOrderController extends BaseController
         }
 
         // Load request items and determine supplier mapping
-        $items = $this->purchaseRequestItemModel->select('purchase_request_items.*, products.name as product_name, products.sku, products.supplier_id, products.cost_price')
+        $items = $this->purchaseRequestItemModel->select('purchase_request_items.*, products.name as product_name, products.sku, products.unit, products.supplier_id, products.cost_price')
             ->join('products', 'products.id = purchase_request_items.product_id')
             ->where('purchase_request_items.purchase_request_id', $requestId)
             ->findAll();
@@ -187,7 +218,7 @@ class PurchaseOrderController extends BaseController
                     'tax' => 0,
                     'total_amount' => 0,
                     'notes' => null,
-                    'payment_method' => 'pending',
+                    'payment_method' => 'paypal',
                 ];
 
                 $poId = $this->purchaseOrderModel->insert($poData);
@@ -200,6 +231,9 @@ class PurchaseOrderController extends BaseController
                         $this->purchaseOrderItemModel->insert([
                             'purchase_order_id' => $poId,
                             'product_id' => $it['product_id'],
+                            'product_name' => $it['product_name'] ?? 'Unknown Product',
+                            'product_sku' => $it['sku'] ?? '',
+                            'product_unit' => $it['unit'] ?? 'pcs',
                             'quantity' => $quantity,
                             'quantity_received' => 0,
                             'unit_price' => $unitPrice,
@@ -235,7 +269,14 @@ class PurchaseOrderController extends BaseController
         // Fallback: show manual create-from-request view so admin can pick supplier or edit
         $data['request'] = $request;
         $data['request_items'] = $items;
-        $data['suppliers'] = $this->supplierModel->where('status', 'active')->findAll();
+        // Get supplier users with their supplier_id (display username in dropdown)
+        $userModel = new \App\Models\UserModel();
+        $data['suppliers'] = $userModel->select('users.*, suppliers.id as supplier_id, suppliers.name as supplier_name')
+            ->join('suppliers', 'suppliers.id = users.supplier_id')
+            ->where('users.role', 'supplier')
+            ->where('users.status', 'active')
+            ->where('users.supplier_id IS NOT NULL')
+            ->findAll();
 
         return view('purchase_orders/create_from_request', $data);
     }
@@ -270,10 +311,8 @@ class PurchaseOrderController extends BaseController
         $poNumber = $this->purchaseOrderModel->generatePONumber();
         $purchaseRequestId = $this->request->getPost('purchase_request_id');
 
-        $paymentMethod = $this->request->getPost('payment_method') ?: 'pending';
-        if (!in_array($paymentMethod, ['cod', 'paypal', 'pending'])) {
-            $paymentMethod = 'pending';
-        }
+        // Default to PayPal - Central Admin pays supplier after delivery
+        $paymentMethod = 'paypal';
 
         $poData = [
             'po_number' => $poNumber,
@@ -297,9 +336,13 @@ class PurchaseOrderController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Failed to create purchase order. Please try again.');
         }
 
-        // Add items
+        // Add items - products array can contain either supplier_product IDs or system product IDs
+        // If from purchase request, they are system product IDs
+        // If from direct create with supplier selected, they are supplier_product IDs
         $subtotal = 0;
         $itemsAdded = 0;
+        $supplierProductModel = new \App\Models\SupplierProductModel();
+        $isFromRequest = !empty($purchaseRequestId);
         
         foreach ($products as $index => $productId) {
             if (!empty($productId) && !empty($quantities[$index]) && $quantities[$index] > 0 && !empty($unitPrices[$index])) {
@@ -310,14 +353,44 @@ class PurchaseOrderController extends BaseController
                     $totalPrice = $quantity * $unitPrice;
                     $subtotal += $totalPrice;
 
-                    $this->purchaseOrderItemModel->insert([
+                    $itemData = [
                         'purchase_order_id' => $poId,
-                        'product_id' => $productId,
                         'quantity' => $quantity,
                         'quantity_received' => 0,
                         'unit_price' => $unitPrice,
                         'total_price' => $totalPrice,
-                    ]);
+                    ];
+                    
+                    if ($isFromRequest) {
+                        // From purchase request - productId is system product ID
+                        $itemData['product_id'] = $productId;
+                        // Get product details from system products
+                        $product = $this->productModel->find($productId);
+                        if ($product) {
+                            $itemData['product_name'] = $product['name'];
+                            $itemData['product_sku'] = $product['sku'];
+                            $itemData['product_unit'] = $product['unit'] ?? 'pcs';
+                        }
+                    } else {
+                        // Direct create - productId is supplier_product ID
+                        $supplierProduct = $supplierProductModel->find($productId);
+                        if ($supplierProduct) {
+                            $itemData['supplier_product_id'] = $productId;
+                            $itemData['product_name'] = $supplierProduct['name'];
+                            $itemData['product_sku'] = $supplierProduct['sku'] ?? '';
+                            $itemData['product_unit'] = $supplierProduct['unit'] ?? 'pcs';
+                            // If supplier product is linked to system product, include that too
+                            if (!empty($supplierProduct['product_id'])) {
+                                $itemData['product_id'] = $supplierProduct['product_id'];
+                            }
+                        } else {
+                            $itemData['product_name'] = 'Unknown Product';
+                            $itemData['product_sku'] = '';
+                            $itemData['product_unit'] = 'pcs';
+                        }
+                    }
+
+                    $this->purchaseOrderItemModel->insert($itemData);
                     $itemsAdded++;
                 }
             }
@@ -368,6 +441,16 @@ class PurchaseOrderController extends BaseController
         $role = $session->get('role');
         $supplierId = $session->get('supplier_id');
         $branchId = $session->get('branch_id');
+        
+        // For supplier role, ensure we have supplier_id
+        if ($role === 'supplier' && !$supplierId) {
+            $userModel = new \App\Models\UserModel();
+            $user = $userModel->find($session->get('user_id'));
+            if ($user && !empty($user['supplier_id'])) {
+                $supplierId = $user['supplier_id'];
+                $session->set('supplier_id', $supplierId);
+            }
+        }
 
         $po = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, suppliers.email as supplier_email, suppliers.phone as supplier_phone, branches.name as branch_name, users.full_name as created_by_name')
             ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id', 'left')
@@ -380,8 +463,10 @@ class PurchaseOrderController extends BaseController
         }
         
         // Supplier can only view their own orders
-        if ($role === 'supplier' && $supplierId && $po['supplier_id'] != $supplierId) {
-            return redirect()->to('/purchase-orders')->with('error', 'Unauthorized access');
+        if ($role === 'supplier') {
+            if (!$supplierId || $po['supplier_id'] != $supplierId) {
+                return redirect()->to('/purchase-orders')->with('error', 'Unauthorized access');
+            }
         }
         
         // Branch users can only view their branch orders
@@ -389,10 +474,8 @@ class PurchaseOrderController extends BaseController
             return redirect()->to('/purchase-orders')->with('error', 'Unauthorized access');
         }
 
-        $items = $this->purchaseOrderItemModel->select('purchase_order_items.*, products.name as product_name, products.sku, products.unit')
-            ->join('products', 'products.id = purchase_order_items.product_id')
-            ->where('purchase_order_items.purchase_order_id', $id)
-            ->findAll();
+        // Get items - supports both new supplier products and legacy system products
+        $items = $this->purchaseOrderItemModel->getByPurchaseOrder($id);
 
         // Find an active delivery for this PO (scheduled or in_transit)
         $delivery = $this->deliveryModel->where('purchase_order_id', $id)
@@ -548,10 +631,8 @@ class PurchaseOrderController extends BaseController
             return redirect()->to('/purchase-orders')->with('error', 'Purchase order not found');
         }
 
-        $items = $this->purchaseOrderItemModel->select('purchase_order_items.*, products.name as product_name, products.sku, products.unit')
-            ->join('products', 'products.id = purchase_order_items.product_id')
-            ->where('purchase_order_items.purchase_order_id', $id)
-            ->findAll();
+        // Get items - supports both new supplier products and legacy system products
+        $items = $this->purchaseOrderItemModel->getByPurchaseOrder($id);
 
         $data['po'] = $po;
         $data['items'] = $items;

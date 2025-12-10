@@ -140,7 +140,7 @@ $title = 'Dashboard';
             </div>
         </div>
         <div class="mt-4 md:mt-0 flex flex-wrap gap-3">
-            <a href="<?= base_url('purchase-requests/create') ?>" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+            <a href="<?= base_url('purchase-requests?create=1') ?>" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
                 <i class="fas fa-plus mr-2"></i>New Request
             </a>
             <a href="<?= base_url('inventory') ?>" class="inline-flex items-center px-4 py-2 bg-white text-emerald-600 rounded-lg text-sm font-medium hover:bg-emerald-50 transition-colors">
@@ -533,6 +533,189 @@ $title = 'Dashboard';
             <div class="text-center py-8">
                 <i class="fas fa-clipboard-check text-4xl text-gray-300 mb-3"></i>
                 <p class="text-gray-500 text-sm">No completed orders yet</p>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php elseif ($role == 'logistics_coordinator'): ?>
+<!-- Logistics Coordinator Dashboard -->
+
+<!-- Logistics Info Header -->
+<div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl p-6 mb-8 text-white relative overflow-hidden">
+    <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-truck text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold">Logistics Dashboard</h2>
+                    <p class="text-purple-100 text-sm">Manage deliveries and shipments</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 flex flex-wrap gap-3">
+            <a href="<?= base_url('deliveries') ?>" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-calendar-check mr-2"></i>Schedule Delivery
+            </a>
+            <a href="<?= base_url('purchase-orders') ?>" class="inline-flex items-center px-4 py-2 bg-white text-purple-600 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors">
+                <i class="fas fa-shopping-cart mr-2"></i>View Orders
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <!-- Ready for Shipment -->
+    <a href="<?= base_url('purchase-orders') ?>" class="group">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-purple-300 transition-all border-l-4 border-l-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Ready to Ship</p>
+                    <p class="text-2xl font-bold text-purple-600 mt-1"><?= count($ready_for_shipment ?? []) ?></p>
+                </div>
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                    <i class="fas fa-box text-purple-600"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- Scheduled -->
+    <a href="<?= base_url('deliveries') ?>" class="group">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition-all border-l-4 border-l-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Scheduled</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-1"><?= count(array_filter($shipment_schedules ?? [], fn($d) => $d['status'] == 'scheduled')) ?></p>
+                </div>
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <i class="fas fa-calendar-check text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- In Transit -->
+    <a href="<?= base_url('deliveries') ?>" class="group">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-amber-300 transition-all border-l-4 border-l-amber-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">In Transit</p>
+                    <p class="text-2xl font-bold text-amber-600 mt-1"><?= count($active_deliveries ?? []) ?></p>
+                </div>
+                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <i class="fas fa-truck text-amber-600"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- Delivered -->
+    <a href="<?= base_url('deliveries') ?>" class="group">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-emerald-300 transition-all border-l-4 border-l-emerald-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Delivered</p>
+                    <p class="text-2xl font-bold text-emerald-600 mt-1"><?= count($delivery_history ?? []) ?></p>
+                </div>
+                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                    <i class="fas fa-check-circle text-emerald-600"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+</div>
+
+<!-- Quick Action Alert -->
+<?php if (count($ready_for_shipment ?? []) > 0): ?>
+<div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4 mb-6">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-bell text-purple-600"></i>
+        </div>
+        <div class="flex-1">
+            <p class="font-medium text-gray-800">Orders Ready for Delivery</p>
+            <p class="text-sm text-gray-600">
+                <span class="text-purple-600 font-medium"><?= count($ready_for_shipment ?? []) ?> PO(s)</span> are prepared and waiting for delivery scheduling
+            </p>
+        </div>
+        <a href="<?= base_url('deliveries') ?>" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
+            <i class="fas fa-calendar-check mr-2"></i>Schedule Now
+        </a>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Deliveries Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Ready for Shipment -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100 bg-purple-50 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-box text-purple-500 mr-2"></i>
+                Ready for Shipment
+            </h3>
+            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"><?= count($ready_for_shipment ?? []) ?></span>
+        </div>
+        <div class="p-4 max-h-80 overflow-y-auto">
+            <?php if (!empty($ready_for_shipment)): ?>
+            <div class="space-y-3">
+                <?php foreach (array_slice($ready_for_shipment, 0, 5) as $po): ?>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-colors border border-transparent hover:border-purple-200">
+                    <div>
+                        <p class="font-medium text-gray-800 text-sm"><?= $po['po_number'] ?? 'N/A' ?></p>
+                        <p class="text-xs text-gray-500"><?= isset($po['prepared_at']) ? date('M d, Y', strtotime($po['prepared_at'])) : 'N/A' ?></p>
+                    </div>
+                    <a href="<?= base_url('deliveries?schedule=' . $po['id']) ?>" 
+                       class="px-3 py-1.5 bg-purple-500 text-white hover:bg-purple-600 rounded-lg text-xs font-medium transition-colors">
+                        Schedule
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <div class="text-center py-8">
+                <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm">No orders ready for shipment</p>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Active Deliveries -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-truck text-amber-500 mr-2"></i>
+                Active Deliveries
+            </h3>
+            <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"><?= count($active_deliveries ?? []) ?></span>
+        </div>
+        <div class="p-4 max-h-80 overflow-y-auto">
+            <?php if (!empty($active_deliveries)): ?>
+            <div class="space-y-3">
+                <?php foreach ($active_deliveries as $delivery): ?>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-amber-50 transition-colors border border-transparent hover:border-amber-200">
+                    <div>
+                        <p class="font-medium text-gray-800 text-sm"><?= $delivery['delivery_number'] ?? 'N/A' ?></p>
+                        <p class="text-xs text-gray-500"><?= isset($delivery['scheduled_date']) ? date('M d, Y', strtotime($delivery['scheduled_date'])) : 'N/A' ?></p>
+                    </div>
+                    <a href="<?= base_url('deliveries/view/' . $delivery['id']) ?>" 
+                       class="px-3 py-1.5 bg-amber-500 text-white hover:bg-amber-600 rounded-lg text-xs font-medium transition-colors">
+                        Track
+                    </a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <div class="text-center py-8">
+                <i class="fas fa-truck text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm">No active deliveries</p>
             </div>
             <?php endif; ?>
         </div>

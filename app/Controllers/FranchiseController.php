@@ -38,10 +38,18 @@ class FranchiseController extends BaseController
         }
 
         $status = $this->request->getGet('status');
-        $data['applications'] = $this->franchiseModel->getApplicationsWithDetails($status);
+        
+        try {
+            $data['applications'] = $this->franchiseModel->getApplicationsWithDetails($status);
+            $data['pending_count'] = $this->franchiseModel->getPendingCount();
+        } catch (\Exception $e) {
+            // If table doesn't exist or query fails, return empty data
+            $data['applications'] = [];
+            $data['pending_count'] = 0;
+        }
+        
         $data['role'] = $role;
         $data['current_status'] = $status;
-        $data['pending_count'] = $this->franchiseModel->getPendingCount();
 
         return view('franchise/applications', $data);
     }
@@ -230,6 +238,32 @@ class FranchiseController extends BaseController
         }
 
         return redirect()->back()->with('error', 'Failed to create branch');
+    }
+
+    /**
+     * Get applications data for real-time updates (AJAX)
+     */
+    public function getApplicationsData()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $role = $session->get('role');
+        if (!in_array($role, ['franchise_manager', 'central_admin'])) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(403);
+        }
+
+        $status = $this->request->getGet('status');
+        $applications = $this->franchiseModel->getApplicationsWithDetails($status);
+        $pendingCount = $this->franchiseModel->getPendingCount();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'applications' => $applications,
+            'pending_count' => $pendingCount
+        ]);
     }
 
     /**

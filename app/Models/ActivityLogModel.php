@@ -17,15 +17,26 @@ class ActivityLogModel extends Model
     
     public function logActivity($userId, $action, $module, $description = null)
     {
-        $this->insert([
-            'user_id' => $userId,
-            'action' => $action,
-            'module' => $module,
-            'description' => $description,
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            'created_at' => date('Y-m-d H:i:s')
-        ]);
+        // Skip logging if user_id is null or invalid
+        if (empty($userId)) {
+            return false;
+        }
+        
+        try {
+            return $this->insert([
+                'user_id' => $userId,
+                'action' => $action,
+                'module' => $module,
+                'description' => $description,
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+        } catch (\Exception $e) {
+            // Log error silently - don't break the main operation
+            log_message('error', 'Activity log failed: ' . $e->getMessage());
+            return false;
+        }
     }
 }
 

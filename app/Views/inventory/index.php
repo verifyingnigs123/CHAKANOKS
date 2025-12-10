@@ -35,6 +35,10 @@ $title = 'Inventory';
                 </select>
             </div>
             <?php endif; ?>
+            <a href="<?= base_url('inventory/alerts') ?>" 
+               class="inline-flex items-center justify-center px-4 py-2.5 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 font-medium rounded-lg transition-colors whitespace-nowrap">
+                <i class="fas fa-exclamation-triangle mr-2"></i> Alerts
+            </a>
             <a href="<?= base_url('inventory/history' . ($current_branch_id ? '?branch_id=' . $current_branch_id : '')) ?>" 
                class="inline-flex items-center justify-center px-4 py-2.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 font-medium rounded-lg transition-colors whitespace-nowrap">
                 <i class="fas fa-history mr-2"></i> History
@@ -201,6 +205,20 @@ $title = 'Inventory';
                 </button>
             </div>
             <div class="p-6">
+                <?php if ($role === 'central_admin'): ?>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Branch</label>
+                    <select id="scanBranchSelect" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all">
+                        <option value="">-- Select Branch --</option>
+                        <?php foreach ($branches as $branch): ?>
+                        <option value="<?= $branch['id'] ?>" <?= ($current_branch_id == $branch['id']) ? 'selected' : '' ?>><?= esc($branch['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php else: ?>
+                <input type="hidden" id="scanBranchSelect" value="<?= session()->get('branch_id') ?>">
+                <?php endif; ?>
+                
                 <div class="text-center mb-4">
                     <button id="toggleCameraBtn" onclick="toggleCamera()"
                             class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
@@ -209,7 +227,7 @@ $title = 'Inventory';
                 </div>
 
                 <div id="videoContainer" class="hidden relative w-full max-w-lg mx-auto mb-4 bg-black rounded-lg overflow-hidden">
-                    <video id="scannerVideo" autoplay playsinline class="w-full"></video>
+                    <video id="scannerVideo" autoplay playsinline class="w-full" style="transform: scaleX(1); -webkit-transform: scaleX(1);"></video>
                     <div class="absolute inset-0 flex items-center justify-center">
                         <div class="w-64 h-64 border-2 border-blue-500 rounded-lg" style="box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);"></div>
                     </div>
@@ -311,11 +329,30 @@ function toggleCamera() {
 }
 
 function startCamera() {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    // Try to use back camera first, fallback to any available camera
+    const constraints = {
+        video: { 
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+        }
+    };
+    
+    navigator.mediaDevices.getUserMedia(constraints)
     .then(function(mediaStream) {
         scannerStream = mediaStream;
         const video = document.getElementById('scannerVideo');
         video.srcObject = mediaStream;
+        
+        // Check if using front camera and apply un-mirror if needed
+        const track = mediaStream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        if (settings.facingMode === 'user') {
+            video.style.transform = 'scaleX(-1)';
+        } else {
+            video.style.transform = 'scaleX(1)';
+        }
+        
         document.getElementById('videoContainer').classList.remove('hidden');
         document.getElementById('cameraStatus').textContent = 'Stop Camera';
         scannerScanning = true;
@@ -352,16 +389,24 @@ function scanManualBarcode() {
     if (barcode) { scanBarcode(barcode); } else { alert('Please enter a barcode'); }
 }
 
+function getScanBranchId() {
+    const branchSelect = document.getElementById('scanBranchSelect');
+    return branchSelect ? branchSelect.value : '';
+}
+
 function scanBarcode(barcode) {
+    const branchId = getScanBranchId();
+    
     fetch('<?= base_url('barcode/scan') ?>', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'barcode=' + encodeURIComponent(barcode)
+        body: 'barcode=' + encodeURIComponent(barcode) + '&branch_id=' + encodeURIComponent(branchId)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             currentScannedProduct = data.product;
+            currentScannedProduct.branch_id = data.branch_id || branchId;
             displayScannedProduct(data);
         } else {
             document.getElementById('scanErrorMessage').textContent = data.message || 'Product not found';
@@ -391,13 +436,20 @@ function displayScannedProduct(data) {
 
 function updateInventoryFromScan(action) {
     if (!currentScannedProduct) return;
+    
+    const branchId = getScanBranchId() || currentScannedProduct.branch_id;
+    if (!branchId) {
+        alert('Please select a branch first');
+        return;
+    }
+    
     const quantity = action === 'add' ? parseInt(document.getElementById('addQuantityInput').value) : parseInt(document.getElementById('subtractQuantityInput').value);
     if (quantity <= 0) { alert('Quantity must be greater than 0'); return; }
 
     fetch('<?= base_url('barcode/update-inventory') ?>', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'barcode=' + encodeURIComponent(currentScannedProduct.barcode) + '&quantity=' + quantity + '&action=' + action
+        body: 'barcode=' + encodeURIComponent(currentScannedProduct.barcode) + '&quantity=' + quantity + '&action=' + action + '&branch_id=' + encodeURIComponent(branchId)
     })
     .then(response => response.json())
     .then(data => {
