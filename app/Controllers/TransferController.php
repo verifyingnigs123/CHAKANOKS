@@ -60,6 +60,11 @@ class TransferController extends BaseController
         $data['transfers'] = $builder->findAll();
         $data['role'] = $role;
 
+        // Data for Create Transfer Modal
+        $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
+        $data['products'] = $this->productModel->where('status', 'active')->findAll();
+        $data['from_branch_id'] = $branchId;
+
         return view('transfers/index', $data);
     }
 
@@ -70,8 +75,13 @@ class TransferController extends BaseController
             return redirect()->to('/login');
         }
 
-        $branchId = $session->get('branch_id');
+        // Only central_admin and branch_manager can create transfers
         $role = $session->get('role');
+        if (!in_array($role, ['central_admin', 'branch_manager'])) {
+            return redirect()->to('/transfers')->with('error', 'Only Central Admin and Branch Managers can create transfers');
+        }
+
+        $branchId = $session->get('branch_id');
 
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['products'] = $this->productModel->where('status', 'active')->findAll();
@@ -85,6 +95,12 @@ class TransferController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only central_admin and branch_manager can create transfers
+        $role = $session->get('role');
+        if (!in_array($role, ['central_admin', 'branch_manager'])) {
+            return redirect()->to('/transfers')->with('error', 'Only Central Admin and Branch Managers can create transfers');
         }
 
         $transferNumber = $this->transferModel->generateTransferNumber();

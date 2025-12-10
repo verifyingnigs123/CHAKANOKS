@@ -39,6 +39,11 @@
             <div>
                 <strong>Status:</strong> <?= ucfirst(str_replace('_', ' ', $delivery['status'])) ?><br>
                 <strong>Scheduled Date:</strong> <?= $delivery['scheduled_date'] ? date('M d, Y', strtotime($delivery['scheduled_date'])) : 'N/A' ?><br>
+                <strong>Payment Method:</strong> <?php 
+                    $paymentMethod = $delivery['payment_method'] ?? $delivery['po_payment_method'] ?? 'pending';
+                    echo $paymentMethod == 'cod' ? 'Cash on Delivery (COD)' : 
+                         ($paymentMethod == 'paypal' ? 'PayPal' : 'Pending');
+                ?><br>
                 <?php if ($delivery['driver_name']): ?>
                     <strong>Driver:</strong> <?= esc($delivery['driver_name']) ?><br>
                     <strong>Vehicle:</strong> <?= esc($delivery['vehicle_number']) ?>

@@ -1,658 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title><?= esc($title ?? 'About - ChakaNoks SCMS') ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-blue: #1e40af;
-      --dark-blue: #1e3a8a;
-      --light-blue: #3b82f6;
-      --primary-green: #10b981;
-      --accent-orange: #f97316;
-      --text-dark: #0f172a;
-      --text-light: #64748b;
-      --bg-light: #ffffff;
-      --bg-section: #f8fafc;
-    }
-    
-    * {
-      font-family: 'Inter', 'Poppins', system-ui, sans-serif;
-    }
-    
-    body {
-      background: var(--bg-light);
-      color: var(--text-dark);
-      line-height: 1.7;
-    }
-    
-    /* Navigation */
-    .navbar {
-      background: var(--dark-blue) !important;
-      padding: 1.2rem 0;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    
-    .navbar-brand {
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: white !important;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      letter-spacing: -0.5px;
-    }
-    
-    .navbar-brand i {
-      font-size: 1.6rem;
-      color: #60a5fa;
-    }
-    
-    .nav-link {
-      color: rgba(255,255,255,0.9) !important;
-      font-weight: 500;
-      font-size: 0.95rem;
-      margin: 0 0.3rem;
-      transition: all 0.3s ease;
-      padding: 0.5rem 1rem !important;
-      position: relative;
-    }
-    
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 2px;
-      background: #60a5fa;
-      transition: width 0.3s ease;
-    }
-    
-    .nav-link:hover, .nav-link.active {
-      color: white !important;
-    }
-    
-    .nav-link:hover::after, .nav-link.active::after {
-      width: 80%;
-    }
-    
-    .btn-login {
-      background: white;
-      color: var(--dark-blue) !important;
-      font-weight: 600;
-      padding: 0.6rem 1.8rem;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      border: none;
-      font-size: 0.95rem;
-    }
-    
-    .btn-login:hover {
-      background: #e0e7ff;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    /* Hero Section */
-    .hero-section {
-      background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
-      padding: 140px 0 80px;
-      text-align: center;
-      color: white;
-    }
-    
-    .hero-title {
-      font-size: 3rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: white;
-      letter-spacing: -1px;
-    }
-    
-    .hero-subtitle {
-      font-size: 1.15rem;
-      color: rgba(255,255,255,0.9);
-      max-width: 700px;
-      margin: 0 auto;
-      line-height: 1.8;
-      font-weight: 400;
-    }
-    
-    /* Content Section */
-    .content-section {
-      padding: 100px 0;
-      background: var(--bg-light);
-    }
-    
-    .section-header {
-      text-align: center;
-      margin-bottom: 4rem;
-    }
-    
-    .section-title {
-      font-size: 2.4rem;
-      font-weight: 800;
-      color: var(--text-dark);
-      margin-bottom: 1rem;
-      letter-spacing: -0.5px;
-    }
-    
-    .section-content {
-      color: var(--text-light);
-      line-height: 1.8;
-      font-size: 1.05rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    .mission-vision-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-      margin: 3rem 0;
-    }
-    
-    .mission-card {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 20px;
-      padding: 2.5rem;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.06);
-      transition: all 0.4s ease;
-    }
-    
-    .mission-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-    }
-    
-    .mission-card h4 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      color: var(--text-dark);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    
-    .mission-card h4 i {
-      color: var(--primary-blue);
-      font-size: 1.8rem;
-    }
-    
-    .mission-card p {
-      color: var(--text-light);
-      line-height: 1.8;
-      margin: 0;
-    }
-    
-    .info-box {
-      background: var(--bg-section);
-      border-radius: 20px;
-      padding: 2.5rem;
-      margin: 3rem 0;
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-    
-    .info-box h4 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-      color: var(--text-dark);
-    }
-    
-    .info-box ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    .info-box ul li {
-      padding: 1rem 0;
-      border-bottom: 1px solid rgba(0,0,0,0.05);
-      display: flex;
-      align-items: start;
-      gap: 1rem;
-    }
-    
-    .info-box ul li:last-child {
-      border-bottom: none;
-    }
-    
-    .info-box ul li i {
-      color: var(--primary-green);
-      font-size: 1.3rem;
-      margin-top: 0.25rem;
-      flex-shrink: 0;
-    }
-    
-    .info-box ul li div {
-      color: var(--text-light);
-      line-height: 1.8;
-    }
-    
-    .info-box ul li strong {
-      color: var(--text-dark);
-      display: block;
-      margin-bottom: 0.25rem;
-    }
-    
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2rem;
-      margin: 3rem 0;
-    }
-    
-    .feature-card {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 20px;
-      padding: 2rem;
-      transition: all 0.4s ease;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.06);
-    }
-    
-    .feature-card:hover {
-      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-      transform: translateY(-5px);
-    }
-    
-    .feature-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, var(--primary-blue), var(--primary-green));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1.75rem;
-      margin-bottom: 1.25rem;
-    }
-    
-    .feature-card h5 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      color: var(--text-dark);
-    }
-    
-    .feature-card p {
-      color: var(--text-light);
-      line-height: 1.7;
-      margin: 0;
-      font-size: 0.95rem;
-    }
-    
-    .cta-section {
-      background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
-      border-radius: 24px;
-      padding: 4rem 3rem;
-      text-align: center;
-      color: white;
-      margin: 4rem 0;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
-    }
-    
-    .cta-section h3 {
-      font-size: 2.4rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: white;
-      letter-spacing: -0.5px;
-    }
-    
-    .cta-section p {
-      font-size: 1.1rem;
-      color: rgba(255,255,255,0.9);
-      margin-bottom: 2rem;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      font-weight: 400;
-    }
-    
-    .btn-cta {
-      background: white;
-      color: var(--dark-blue);
-      font-weight: 600;
-      padding: 1rem 3rem;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      display: inline-block;
-      font-size: 1rem;
-    }
-    
-    .btn-cta:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-      color: var(--dark-blue);
-    }
-    
-    /* Footer */
-    footer {
-      background: var(--dark-blue);
-      color: white;
-      padding: 4rem 0 2rem;
-    }
-    
-    .footer-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 3rem;
-      margin-bottom: 3rem;
-    }
-    
-    .footer-section h5 {
-      font-weight: 700;
-      margin-bottom: 1.25rem;
-      color: white;
-      font-size: 1.1rem;
-    }
-    
-    .footer-section p {
-      color: rgba(255,255,255,0.8);
-      line-height: 1.8;
-      font-size: 0.95rem;
-    }
-    
-    .footer-section a {
-      color: rgba(255,255,255,0.75);
-      text-decoration: none;
-      display: block;
-      margin-bottom: 0.75rem;
-      transition: all 0.3s ease;
-      font-size: 0.95rem;
-    }
-    
-    .footer-section a:hover {
-      color: white;
-      transform: translateX(5px);
-    }
-    
-    .footer-bottom {
-      text-align: center;
-      padding-top: 2.5rem;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.7);
-      font-size: 0.9rem;
-    }
-    
-    @media (max-width: 768px) {
-      .hero-title {
-        font-size: 2.2rem;
-      }
-      .section-title {
-        font-size: 2rem;
-      }
-      .mission-vision-grid {
-        grid-template-columns: 1fr;
-      }
-      .cta-section {
-        padding: 3rem 2rem;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | ChakaNoks' SCMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .float-animation { animation: float 3s ease-in-out infinite; }
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
-<body>
-  <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg fixed-top">
-    <div class="container">
-      <a class="navbar-brand" href="<?= base_url('/') ?>">
-        <i class="bi bi-shop"></i>
-        <span>ChakaNoks SCMS</span>
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto align-items-center">
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('/') ?>">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link active" href="<?= base_url('about') ?>">About</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('contact') ?>">Contact</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('login') ?>">Login</a>
-          </li>
-        </ul>
-      </div>
+<body class="bg-slate-900" x-data="{ showLoginModal: false }">
+    <!-- Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl float-animation"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
     </div>
-  </nav>
 
-  <!-- Hero Section -->
-  <div class="hero-section">
-    <div class="container">
-      <h1 class="hero-title">About ChakaNoks & Our Future Plans</h1>
-      <p class="hero-subtitle">
-        Delivering quality Filipino food through innovative supply chain management and strategic growth.
-      </p>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="<?= base_url('/') ?>" class="flex items-center space-x-2">
+                    <div class="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <i class="fas fa-link text-white text-sm"></i>
+                    </div>
+                    <span class="text-white font-bold text-lg">ChakaNoks' <span class="text-emerald-400">SCMS</span></span>
+                </a>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="<?= base_url('/') ?>" class="text-slate-400 hover:text-white transition-colors text-sm font-medium">Home</a>
+                    <a href="<?= base_url('about') ?>" class="text-white font-medium text-sm">About</a>
+                    <a href="<?= base_url('contact') ?>" class="text-slate-400 hover:text-white transition-colors text-sm font-medium">Contact</a>
+                    <button @click="showLoginModal = true" class="px-5 py-2 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/25">
+                        Login
+                    </button>
+                </div>
+                <button @click="showLoginModal = true" class="md:hidden px-4 py-2 bg-emerald-500 text-white font-medium rounded-lg">
+                    Login
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-16 relative z-10">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">About ChakaNoks'</h1>
+            <p class="text-xl text-slate-400">Delivering quality Filipino food through innovative supply chain management</p>
+        </div>
+    </section>
+
+    <!-- Content -->
+    <section class="py-12 relative z-10">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- History -->
+            <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-8 mb-8">
+                <h2 class="text-2xl font-bold text-white mb-4">Our Story</h2>
+                <p class="text-slate-400 leading-relaxed">ChakaNoks began as a local food business in Davao City, committed to delivering authentic Filipino flavors to our community. Over the years, we've grown from a single location to multiple branches, building a reputation for quality, consistency, and customer satisfaction.</p>
+            </div>
+
+            <!-- Mission & Vision -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-8">
+                    <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-eye text-emerald-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Our Vision</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">To become the leading Filipino food brand nationwide, recognized for consistent quality, operational excellence, and sustainable growth through innovative supply chain management.</p>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-8">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fas fa-bullseye text-blue-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Our Mission</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">To deliver exceptional food quality and customer experiences through centralized supply chain management, ensuring consistency across all branches and franchise locations.</p>
+                </div>
+            </div>
+
+            <!-- CTA -->
+            <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-10 text-center">
+                <h2 class="text-2xl font-bold text-white mb-3">Ready to Join ChakaNoks'?</h2>
+                <p class="text-emerald-100 mb-6">Take the first step toward becoming a franchise partner.</p>
+                <a href="<?= base_url('contact') ?>" class="inline-flex items-center px-6 py-3 bg-white text-emerald-600 font-semibold rounded-xl hover:bg-emerald-50 transition-all">
+                    <i class="fas fa-rocket mr-2"></i>Apply for Franchise
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800/50 border-t border-slate-700/50 py-8 mt-12 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
+            © <?= date('Y') ?> ChakaNoks' SCMS. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Login Modal Popup -->
+    <div x-show="showLoginModal" x-cloak class="fixed inset-0 z-[100] overflow-y-auto"
+         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showLoginModal = false"></div>
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div x-show="showLoginModal"
+                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                 class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden" @click.away="showLoginModal = false">
+                <button @click="showLoginModal = false" class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center text-white/80 hover:text-white bg-black/20 hover:bg-black/30 rounded-full transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-6 text-center">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-link text-white text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Welcome Back</h2>
+                    <p class="text-emerald-100 text-sm mt-1">Sign in to your account</p>
+                </div>
+                <div class="px-8 py-8" x-data="{ showPassword: false }">
+                    <form action="<?= base_url('auth/login') ?>" method="post" class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fas fa-envelope text-gray-400"></i></div>
+                                <input type="email" name="email" required class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="name@company.com">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400"></i></div>
+                                <input :type="showPassword ? 'text' : 'password'" name="password" required class="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="Enter your password">
+                                <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600">
+                                    <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" name="remember" class="w-4 h-4 text-emerald-500 border-gray-300 rounded"><span class="ml-2 text-sm text-gray-600">Remember me</span></label>
+                            <a href="#" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/30">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                        </button>
+                    </form>
+                    <div class="relative my-6"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div><div class="relative flex justify-center text-sm"><span class="px-3 bg-white text-gray-500">New to ChakaNoks'?</span></div></div>
+                    <a href="<?= base_url('contact') ?>" class="w-full flex items-center justify-center px-4 py-3 border-2 border-emerald-500 text-emerald-600 font-medium rounded-xl hover:bg-emerald-50 transition-all">
+                        <i class="fas fa-handshake mr-2"></i>Apply for Franchise
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Content Section -->
-  <div class="content-section">
-    <div class="container">
-      <!-- Company Overview -->
-      <div class="section-header">
-        <h2 class="section-title">Company Overview</h2>
-      </div>
-      
-      <div class="section-content">
-        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-dark);">History of ChakaNoks</h3>
-        <p style="margin-bottom: 3rem;">
-          ChakaNoks began as a local food business in Davao City, committed to delivering authentic Filipino flavors 
-          to our community. Over the years, we've grown from a single location to multiple branches, building a reputation 
-          for quality, consistency, and customer satisfaction.
-        </p>
-      </div>
-      
-      <div class="mission-vision-grid">
-        <div class="mission-card">
-          <h4>
-            <i class="bi bi-eye-fill"></i>
-            Our Vision
-          </h4>
-          <p>
-            To become the leading Filipino food brand nationwide, recognized for consistent quality, operational excellence, 
-            and sustainable growth through innovative supply chain management.
-          </p>
-        </div>
-        <div class="mission-card">
-          <h4>
-            <i class="bi bi-bullseye"></i>
-            Our Mission
-          </h4>
-          <p>
-            To deliver exceptional food quality and customer experiences through centralized supply chain management, 
-            ensuring consistency across all branches and franchise locations.
-          </p>
-        </div>
-      </div>
-      
-      <div class="section-content" style="margin-top: 3rem;">
-        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-dark);">Commitment to Quality</h3>
-        <p>
-          At ChakaNoks, consistent food quality is the foundation of our brand. We ensure that every customer, 
-          whether at our flagship branch or a franchise location, receives the same high-quality experience.
-        </p>
-      </div>
-
-      <!-- SCMS Explanation -->
-      <div class="section-header" style="margin-top: 5rem;">
-        <h2 class="section-title">Why Our SCMS is Essential</h2>
-      </div>
-      
-      <div class="info-box">
-        <h4>How SCMS Supports Branches and Franchise Partners</h4>
-        <ul>
-          <li>
-            <i class="bi bi-check-circle-fill"></i>
-            <div>
-              <strong>Real-time Inventory Visibility</strong>
-              All branches and franchise partners have instant access to inventory levels, enabling better planning and reducing stockouts.
-            </div>
-          </li>
-          <li>
-            <i class="bi bi-check-circle-fill"></i>
-            <div>
-              <strong>Automated Procurement</strong>
-              Streamlined purchase request and approval workflows ensure timely ordering while maintaining quality standards.
-            </div>
-          </li>
-          <li>
-            <i class="bi bi-check-circle-fill"></i>
-            <div>
-              <strong>Centralized Quality Control</strong>
-              The system tracks product quality, expiration dates, and supplier performance, ensuring all locations maintain high standards.
-            </div>
-          </li>
-          <li>
-            <i class="bi bi-check-circle-fill"></i>
-            <div>
-              <strong>Inter-Branch Coordination</strong>
-              Efficient transfer management allows branches to support each other, optimizing inventory distribution.
-            </div>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Future Plans -->
-      <div class="section-header" style="margin-top: 5rem;">
-        <h2 class="section-title">Future Plans & Expansion</h2>
-      </div>
-      
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="bi bi-geo-alt-fill"></i>
-          </div>
-          <h5>New Branch Expansion</h5>
-          <p>Opening a new branch outside Davao City to extend our reach and serve more customers nationwide.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="bi bi-building-fill"></i>
-          </div>
-          <h5>Central Office</h5>
-          <p>Establishing a Central Office to oversee transactions, manage franchising, and coordinate multi-branch activities.</p>
-        </div>
-      </div>
-
-      <!-- Franchise Opportunity -->
-      <div class="section-header" style="margin-top: 5rem;">
-        <h2 class="section-title">Franchise Opportunity</h2>
-      </div>
-      
-      <div class="section-content">
-        <p style="margin-bottom: 3rem;">
-          Join the ChakaNoks family and become part of a growing Filipino food brand. Our franchise model is designed to 
-          support your success while maintaining the quality and consistency that customers expect.
-        </p>
-      </div>
-      
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="bi bi-gear"></i>
-          </div>
-          <h5>Operations Support</h5>
-          <p>Comprehensive operational guidance and standard operating procedures for smooth daily operations.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="bi bi-truck"></i>
-          </div>
-          <h5>Supply Chain Management</h5>
-          <p>Access to our centralized SCMS, automated procurement, and supplier coordination.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="bi bi-people"></i>
-          </div>
-          <h5>HR & Training</h5>
-          <p>Staff training programs, recruitment support, and human resources guidance.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="bi bi-megaphone"></i>
-          </div>
-          <h5>Marketing Support</h5>
-          <p>Brand marketing materials, promotional campaigns, and marketing strategies.</p>
-        </div>
-      </div>
-
-      <!-- CTA Section -->
-      <div class="cta-section">
-        <h3>Ready to Start Your ChakaNoks Journey?</h3>
-        <p>
-          Take the first step toward becoming a ChakaNoks franchise partner. Our team is ready to guide you.
-        </p>
-        <a href="<?= base_url('franchise-application') ?>" class="btn-cta">
-          <i class="bi bi-rocket-takeoff"></i> Apply for a ChakaNoks Franchise
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <h5>ChakaNoks SCMS</h5>
-          <p>
-            Empowering food businesses with efficient supply chain management solutions.
-          </p>
-        </div>
-        <div class="footer-section">
-          <h5>Quick Links</h5>
-          <a href="<?= base_url('/') ?>">Home</a>
-          <a href="<?= base_url('about') ?>">About Us</a>
-          <a href="<?= base_url('contact') ?>">Contact</a>
-          <a href="<?= base_url('franchise-application') ?>">Franchise Application</a>
-        </div>
-        <div class="footer-section">
-          <h5>Resources</h5>
-          <a href="<?= base_url('about') ?>">Our Mission</a>
-          <a href="<?= base_url('about') ?>">Future Plans</a>
-          <a href="<?= base_url('contact') ?>">Support</a>
-        </div>
-        <div class="footer-section">
-          <h5>Contact Info</h5>
-          <p style="margin-bottom: 0.5rem;">
-            <i class="bi bi-envelope"></i> info@chakanoks.com
-          </p>
-          <p style="margin-bottom: 0.5rem;">
-            <i class="bi bi-telephone"></i> +63 (82) 123-4567
-          </p>
-          <p>
-            <i class="bi bi-geo-alt"></i> Davao City, Philippines
-          </p>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p class="mb-0">&copy; <?= date('Y') ?> ChakaNoks SCMS. All rights reserved.</p>
-      </div>
-    </div>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>

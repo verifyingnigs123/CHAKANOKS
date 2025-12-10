@@ -47,48 +47,50 @@ class Home extends Controller
         $validation = \Config\Services::validation();
         
         $rules = [
-            'full_name' => 'required|min_length[3]|max_length[100]',
-            'email' => 'required|valid_email|max_length[100]',
+            'full_name' => 'required|min_length[3]|max_length[150]',
+            'email' => 'required|valid_email|max_length[150]',
             'phone_number' => 'required|max_length[20]',
-            'address' => 'required|min_length[10]|max_length[500]'
+            'address' => 'required|min_length[10]|max_length[500]',
+            'city' => 'required|max_length[100]',
+            'province' => 'required|max_length[100]',
         ];
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $validation->getErrors());
         }
 
-        // Get form data
+        // Use FranchiseApplicationModel
+        $franchiseModel = new \App\Models\FranchiseApplicationModel();
+        
         $data = [
-            'full_name' => $this->request->getPost('full_name'),
+            'application_number' => $franchiseModel->generateApplicationNumber(),
+            'applicant_name' => $this->request->getPost('full_name'),
             'email' => $this->request->getPost('email'),
-            'phone_number' => $this->request->getPost('phone_number'),
-            'address' => $this->request->getPost('address'),
+            'phone' => $this->request->getPost('phone_number'),
+            'business_name' => $this->request->getPost('business_name'),
+            'proposed_location' => $this->request->getPost('address'),
+            'city' => $this->request->getPost('city'),
+            'province' => $this->request->getPost('province'),
+            'investment_capital' => $this->request->getPost('investment_capital') ?: null,
+            'business_experience' => $this->request->getPost('business_experience'),
+            'motivation' => $this->request->getPost('motivation'),
             'status' => 'pending',
-            'created_at' => date('Y-m-d H:i:s')
         ];
 
-        // Try to save to database
-        // Note: You may need to create a franchise_applications table
-        // For now, we'll store it in a way that works with or without the table
         try {
-            $db = \Config\Database::connect();
+            $franchiseModel->insert($data);
             
-            // Check if franchise_applications table exists
-            if ($db->tableExists('franchise_applications')) {
-                $db->table('franchise_applications')->insert($data);
-            } else {
-                // If table doesn't exist, log the application for manual processing
-                // In production, you should create the table or send an email notification
-                log_message('info', 'Franchise Application Received: ' . json_encode($data));
-            }
+            // Notify franchise manager
+            $notificationService = new \App\Libraries\NotificationService();
+            $notificationService->sendToRole('franchise_manager', 'info', 'New Franchise Application', "New application {$data['application_number']} from {$data['applicant_name']}", base_url('franchise/applications'));
+            
+            session()->setFlashdata('success', 'Your franchise application has been successfully submitted! Application Number: ' . $data['application_number']);
         } catch (\Exception $e) {
-            // Log error but don't fail the submission
             log_message('error', 'Franchise application submission error: ' . $e->getMessage());
+            session()->setFlashdata('error', 'There was an error submitting your application. Please try again.');
+            return redirect()->back()->withInput();
         }
 
-        // Set success message
-        session()->setFlashdata('success', 'Your franchise application has been successfully submitted!');
-
-        return redirect()->to('contact');
+        return redirect()->to('franchise-application');
     }
 }

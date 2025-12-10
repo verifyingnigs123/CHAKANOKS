@@ -17,7 +17,7 @@ $title = 'Create Purchase Order';
             <input type="hidden" name="branch_id" value="<?= $request['branch_id'] ?>">
             
             <div class="row mb-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label>Supplier *</label>
                     <select name="supplier_id" class="form-select" required>
                         <option value="">Select Supplier</option>
@@ -26,9 +26,18 @@ $title = 'Create Purchase Order';
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label>Expected Delivery Date</label>
                     <input type="date" name="expected_delivery_date" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label>Payment Method *</label>
+                    <select name="payment_method" class="form-select" required>
+                        <option value="pending">Select Payment Method</option>
+                        <option value="cod">Cash on Delivery (COD)</option>
+                        <option value="paypal">PayPal</option>
+                    </select>
+                    <small class="text-muted">The branch can change this when receiving the delivery.</small>
                 </div>
             </div>
 

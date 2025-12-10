@@ -11,7 +11,7 @@ class InventoryHistoryModel extends Model
     protected $allowedFields = [
         'branch_id', 'product_id', 'purchase_order_id', 'delivery_id', 
         'po_number', 'delivery_number', 'quantity_added', 'previous_quantity', 
-        'new_quantity', 'transaction_type', 'received_by', 'notes', 'created_at'
+        'new_quantity', 'transaction_type', 'payment_method', 'received_by', 'notes', 'created_at'
     ];
     
     protected $useTimestamps = false;

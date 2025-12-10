@@ -9,7 +9,7 @@ class BranchModel extends Model
     protected $table = 'branches';
     protected $primaryKey = 'id';
     protected $allowedFields = [
-        'name', 'code', 'address', 'city', 'phone', 'email', 'manager_id', 'status', 'is_franchise', 'created_at', 'updated_at'
+        'name', 'code', 'address', 'city', 'phone', 'email', 'manager_id', 'manager_name', 'status', 'type', 'is_franchise', 'created_at', 'updated_at'
     ];
     
     protected $useTimestamps = true;

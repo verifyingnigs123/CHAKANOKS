@@ -103,6 +103,10 @@ class BranchController extends BaseController
             $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'branch', 'Created branch: ' . $data['name']);
             return redirect()->to('/branches')->with('success', 'Branch created successfully');
         } else {
+            $errors = $this->branchModel->errors();
+            if (!empty($errors)) {
+                return redirect()->back()->withInput()->with('errors', $errors);
+            }
             return redirect()->back()->withInput()->with('error', 'Failed to create branch');
         }
     }

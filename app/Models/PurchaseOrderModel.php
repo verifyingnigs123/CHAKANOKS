@@ -11,7 +11,11 @@ class PurchaseOrderModel extends Model
     protected $allowedFields = [
         'po_number', 'purchase_request_id', 'supplier_id', 'branch_id', 'created_by', 'status', 
         'order_date', 'expected_delivery_date', 'subtotal', 'tax', 'total_amount', 'notes', 'created_at', 'updated_at',
-        'prepared_at', 'prepared_by', 'sent_at', 'confirmed_at'
+        'prepared_at', 'prepared_by', 'sent_at', 'confirmed_at', 'completed_at', 'payment_method',
+        // Delivery tracking fields
+        'delivery_status', 'tracking_number', 'delivery_notes', 'delivery_status_updated_at', 'delivery_status_updated_by',
+        // Invoice fields
+        'invoice_number', 'invoice_date', 'invoice_amount', 'invoice_notes', 'invoice_submitted_at', 'invoice_submitted_by'
     ];
     
     protected $useTimestamps = true;

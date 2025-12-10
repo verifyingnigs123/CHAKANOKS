@@ -1,548 +1,356 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title><?= esc($title ?? 'Franchise Application - ChakaNoks SCMS') ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-blue: #1e40af;
-      --dark-blue: #1e3a8a;
-      --light-blue: #3b82f6;
-      --primary-green: #10b981;
-      --accent-orange: #f97316;
-      --text-dark: #0f172a;
-      --text-light: #64748b;
-      --bg-light: #ffffff;
-      --bg-section: #f8fafc;
-    }
-    
-    * {
-      font-family: 'Inter', 'Poppins', system-ui, sans-serif;
-    }
-    
-    body {
-      background: var(--bg-section);
-      color: var(--text-dark);
-      line-height: 1.7;
-    }
-    
-    /* Navigation */
-    .navbar {
-      background: var(--dark-blue) !important;
-      padding: 1.2rem 0;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    
-    .navbar-brand {
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: white !important;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      letter-spacing: -0.5px;
-    }
-    
-    .navbar-brand i {
-      font-size: 1.6rem;
-      color: #60a5fa;
-    }
-    
-    .nav-link {
-      color: rgba(255,255,255,0.9) !important;
-      font-weight: 500;
-      font-size: 0.95rem;
-      margin: 0 0.3rem;
-      transition: all 0.3s ease;
-      padding: 0.5rem 1rem !important;
-      position: relative;
-    }
-    
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 2px;
-      background: #60a5fa;
-      transition: width 0.3s ease;
-    }
-    
-    .nav-link:hover, .nav-link.active {
-      color: white !important;
-    }
-    
-    .nav-link:hover::after, .nav-link.active::after {
-      width: 80%;
-    }
-    
-    .btn-login {
-      background: white;
-      color: var(--dark-blue) !important;
-      font-weight: 600;
-      padding: 0.6rem 1.8rem;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      border: none;
-      font-size: 0.95rem;
-    }
-    
-    .btn-login:hover {
-      background: #e0e7ff;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    /* Hero Section */
-    .hero-section {
-      background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
-      padding: 140px 0 80px;
-      text-align: center;
-      color: white;
-    }
-    
-    .hero-title {
-      font-size: 3rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: white;
-      letter-spacing: -1px;
-    }
-    
-    .hero-subtitle {
-      font-size: 1.15rem;
-      color: rgba(255,255,255,0.9);
-      max-width: 700px;
-      margin: 0 auto;
-      line-height: 1.8;
-      font-weight: 400;
-    }
-    
-    /* Content Section */
-    .content-section {
-      padding: 100px 0;
-      background: var(--bg-section);
-    }
-    
-    /* Info Box */
-    .info-box {
-      background: white;
-      border-left: 4px solid var(--primary-blue);
-      border-radius: 16px;
-      padding: 2rem;
-      margin-bottom: 3rem;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.06);
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-    
-    .info-box h5 {
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      color: var(--text-dark);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 1.1rem;
-    }
-    
-    .info-box h5 i {
-      color: var(--primary-blue);
-      font-size: 1.4rem;
-    }
-    
-    .info-box p {
-      color: var(--text-light);
-      line-height: 1.8;
-      margin: 0;
-      font-size: 0.95rem;
-    }
-    
-    /* Form Section */
-    .form-section {
-      background: white;
-      border-radius: 24px;
-      padding: 3.5rem;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.06);
-      margin-bottom: 3rem;
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-    
-    .form-section h2 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 2.5rem;
-      color: var(--text-dark);
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      letter-spacing: -0.5px;
-    }
-    
-    .form-section h2 i {
-      color: var(--primary-blue);
-      font-size: 2rem;
-    }
-    
-    .form-control, .form-select {
-      border-radius: 12px;
-      border: 2px solid #e5e7eb;
-      padding: 0.875rem 1.25rem;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-    }
-    
-    .form-control:focus, .form-select:focus {
-      border-color: var(--primary-blue);
-      box-shadow: 0 0 0 0.2rem rgba(30, 64, 175, 0.15);
-      outline: none;
-    }
-    
-    .form-label {
-      font-weight: 600;
-      color: var(--text-dark);
-      margin-bottom: 0.75rem;
-      font-size: 0.95rem;
-    }
-    
-    .form-label .required {
-      color: #dc3545;
-    }
-    
-    .btn-submit {
-      background: var(--primary-blue);
-      border: none;
-      color: white;
-      font-weight: 600;
-      padding: 1rem 3rem;
-      border-radius: 12px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
-      font-size: 1rem;
-    }
-    
-    .btn-submit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(30, 64, 175, 0.4);
-      background: var(--dark-blue);
-      color: white;
-    }
-    
-    /* Success Message */
-    .success-message {
-      background: white;
-      border: 2px solid var(--primary-green);
-      border-radius: 24px;
-      padding: 5rem 3rem;
-      text-align: center;
-      margin: 2rem 0;
-      box-shadow: 0 8px 40px rgba(16, 185, 129, 0.15);
-    }
-    
-    .success-message i {
-      font-size: 5rem;
-      color: var(--primary-green);
-      margin-bottom: 1.5rem;
-      animation: scaleIn 0.5s ease;
-    }
-    
-    @keyframes scaleIn {
-      from { transform: scale(0); }
-      to { transform: scale(1); }
-    }
-    
-    .success-message h3 {
-      font-size: 2.4rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: var(--text-dark);
-      letter-spacing: -0.5px;
-    }
-    
-    .success-message p {
-      font-size: 1.15rem;
-      color: var(--text-light);
-      line-height: 1.8;
-      max-width: 700px;
-      margin: 0 auto 2rem;
-    }
-    
-    .btn-return {
-      background: var(--primary-blue);
-      color: white;
-      font-weight: 600;
-      padding: 1rem 3rem;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
-      display: inline-block;
-      font-size: 1rem;
-    }
-    
-    .btn-return:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(30, 64, 175, 0.4);
-      background: var(--dark-blue);
-      color: white;
-    }
-    
-    /* Footer */
-    footer {
-      background: var(--dark-blue);
-      color: white;
-      padding: 4rem 0 2rem;
-    }
-    
-    .footer-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 3rem;
-      margin-bottom: 3rem;
-    }
-    
-    .footer-section h5 {
-      font-weight: 700;
-      margin-bottom: 1.25rem;
-      color: white;
-      font-size: 1.1rem;
-    }
-    
-    .footer-section p {
-      color: rgba(255,255,255,0.8);
-      line-height: 1.8;
-      font-size: 0.95rem;
-    }
-    
-    .footer-section a {
-      color: rgba(255,255,255,0.75);
-      text-decoration: none;
-      display: block;
-      margin-bottom: 0.75rem;
-      transition: all 0.3s ease;
-      font-size: 0.95rem;
-    }
-    
-    .footer-section a:hover {
-      color: white;
-      transform: translateX(5px);
-    }
-    
-    .footer-bottom {
-      text-align: center;
-      padding-top: 2.5rem;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.7);
-      font-size: 0.9rem;
-    }
-    
-    @media (max-width: 768px) {
-      .hero-title {
-        font-size: 2.2rem;
-      }
-      .form-section {
-        padding: 2.5rem 2rem;
-      }
-      .success-message {
-        padding: 4rem 2rem;
-      }
-      .success-message h3 {
-        font-size: 2rem;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Franchise Application | ChakaNoks' SCMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .float-animation { animation: float 3s ease-in-out infinite; }
+        .float-delay { animation: float 3s ease-in-out infinite; animation-delay: 1.5s; }
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
-<body>
-  <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg fixed-top">
-    <div class="container">
-      <a class="navbar-brand" href="<?= base_url('/') ?>">
-        <i class="bi bi-shop"></i>
-        <span>ChakaNoks SCMS</span>
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto align-items-center">
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('/') ?>">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('about') ?>">About</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('contact') ?>">Contact</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('login') ?>">Login</a>
-          </li>
-        </ul>
-      </div>
+<body class="bg-slate-900" x-data="{ showLoginModal: false }">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl float-animation"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl float-delay"></div>
+        <div class="absolute top-1/2 left-1/3 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl"></div>
     </div>
-  </nav>
 
-  <!-- Hero Section -->
-  <div class="hero-section">
-    <div class="container">
-      <h1 class="hero-title">Start Your Partnership With ChakaNoks</h1>
-      <p class="hero-subtitle">
-        Join us in bringing quality Filipino food to communities nationwide. 
-        Fill out the form below to begin your franchise application.
-      </p>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="<?= base_url('/') ?>" class="flex items-center space-x-2">
+                    <div class="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <i class="fas fa-link text-white text-sm"></i>
+                    </div>
+                    <span class="text-white font-bold text-lg">ChakaNoks' <span class="text-emerald-400">SCMS</span></span>
+                </a>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="<?= base_url('/') ?>" class="text-slate-400 hover:text-white transition-colors text-sm font-medium">Home</a>
+                    <a href="<?= base_url('about') ?>" class="text-slate-400 hover:text-white transition-colors text-sm font-medium">About</a>
+                    <a href="<?= base_url('contact') ?>" class="text-slate-400 hover:text-white transition-colors text-sm font-medium">Contact</a>
+                    <button @click="showLoginModal = true" class="px-5 py-2 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/25">
+                        Login
+                    </button>
+                </div>
+                <button @click="showLoginModal = true" class="md:hidden px-4 py-2 bg-emerald-500 text-white font-medium rounded-lg">
+                    Login
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-28 pb-12 relative z-10">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <div class="w-20 h-20 bg-emerald-500/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-6 float-animation">
+                <i class="fas fa-handshake text-emerald-400 text-3xl"></i>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Franchise Application</h1>
+            <p class="text-xl text-slate-400 max-w-2xl mx-auto">Join the ChakaNoks' family and bring quality Filipino food to your community</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-8 relative z-10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Benefits Section -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-5 text-center">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-graduation-cap text-blue-400 text-lg"></i>
+                    </div>
+                    <h4 class="text-white font-semibold text-sm mb-1">Training</h4>
+                    <p class="text-slate-400 text-xs">Complete support</p>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-5 text-center">
+                    <div class="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-truck text-emerald-400 text-lg"></i>
+                    </div>
+                    <h4 class="text-white font-semibold text-sm mb-1">Supply Chain</h4>
+                    <p class="text-slate-400 text-xs">Centralized system</p>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-5 text-center">
+                    <div class="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-bullhorn text-amber-400 text-lg"></i>
+                    </div>
+                    <h4 class="text-white font-semibold text-sm mb-1">Marketing</h4>
+                    <p class="text-slate-400 text-xs">Brand support</p>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-5 text-center">
+                    <div class="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-headset text-purple-400 text-lg"></i>
+                    </div>
+                    <h4 class="text-white font-semibold text-sm mb-1">Support</h4>
+                    <p class="text-slate-400 text-xs">24/7 assistance</p>
+                </div>
+            </div>
+
+            <?php if (session()->getFlashdata('success')): ?>
+            <!-- Success Message -->
+            <div class="bg-slate-800/50 backdrop-blur border border-emerald-500/50 rounded-2xl p-10 text-center">
+                <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check-circle text-emerald-400 text-4xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
+                <p class="text-slate-400 mb-6">Thank you for your interest in becoming a ChakaNoks' franchise partner. Our team will review your application and contact you within 5-7 business days.</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="<?= base_url('/') ?>" class="inline-flex items-center justify-center px-6 py-3 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-all">
+                        <i class="fas fa-home mr-2"></i>Back to Home
+                    </a>
+                    <a href="<?= base_url('contact') ?>" class="inline-flex items-center justify-center px-6 py-3 bg-slate-700 text-white font-semibold rounded-xl hover:bg-slate-600 transition-all">
+                        <i class="fas fa-envelope mr-2"></i>Contact Us
+                    </a>
+                </div>
+            </div>
+            <?php else: ?>
+            
+            <!-- Error Messages -->
+            <?php if (session()->getFlashdata('errors')): ?>
+            <div class="bg-red-500/10 border border-red-500/50 rounded-xl p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-exclamation-circle text-red-400 mt-0.5"></i>
+                    <div>
+                        <p class="text-red-400 font-medium mb-2">Please fix the following errors:</p>
+                        <ul class="text-red-300 text-sm space-y-1">
+                            <?php foreach (session()->getFlashdata('errors') as $error): ?>
+                            <li>• <?= esc($error) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Application Form -->
+            <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl overflow-hidden">
+                <!-- Form Header -->
+                <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-6">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-file-alt"></i>Application Form
+                    </h2>
+                    <p class="text-emerald-100 text-sm mt-1">Fill out the form below to start your franchise journey</p>
+                </div>
+                
+                <!-- Form Body -->
+                <div class="p-8">
+                    <form method="post" action="<?= base_url('franchise-application/submit') ?>" class="space-y-6">
+                        <?= csrf_field() ?>
+                        
+                        <!-- Personal Information -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-user text-emerald-400"></i>Personal Information
+                            </h3>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Full Name <span class="text-red-400">*</span></label>
+                                    <input type="text" name="full_name" required 
+                                           value="<?= old('full_name') ?>"
+                                           placeholder="Enter your full name"
+                                           class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Email Address <span class="text-red-400">*</span></label>
+                                    <input type="email" name="email" required 
+                                           value="<?= old('email') ?>"
+                                           placeholder="your.email@example.com"
+                                           class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-phone text-emerald-400"></i>Contact Information
+                            </h3>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Phone Number <span class="text-red-400">*</span></label>
+                                <input type="tel" name="phone_number" required 
+                                       value="<?= old('phone_number') ?>"
+                                       placeholder="+63 XXX XXX XXXX"
+                                       class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Business Information -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-store text-emerald-400"></i>Business Information
+                            </h3>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Business Name (if any)</label>
+                                    <input type="text" name="business_name" 
+                                           value="<?= old('business_name') ?>"
+                                           placeholder="Your existing business name"
+                                           class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Investment Capital (PHP)</label>
+                                    <input type="number" name="investment_capital" 
+                                           value="<?= old('investment_capital') ?>"
+                                           placeholder="e.g., 500000"
+                                           class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Information -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-location-dot text-emerald-400"></i>Proposed Location
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Complete Address <span class="text-red-400">*</span></label>
+                                    <textarea name="address" rows="3" required 
+                                              placeholder="Street, Barangay, Building/Landmark"
+                                              class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none"><?= old('address') ?></textarea>
+                                </div>
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-300 mb-2">City/Municipality <span class="text-red-400">*</span></label>
+                                        <input type="text" name="city" required 
+                                               value="<?= old('city') ?>"
+                                               placeholder="e.g., Davao City"
+                                               class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-300 mb-2">Province <span class="text-red-400">*</span></label>
+                                        <input type="text" name="province" required 
+                                               value="<?= old('province') ?>"
+                                               placeholder="e.g., Davao del Sur"
+                                               class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-clipboard-list text-emerald-400"></i>Additional Information
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Business Experience</label>
+                                    <textarea name="business_experience" rows="3" 
+                                              placeholder="Describe your previous business experience (if any)"
+                                              class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none"><?= old('business_experience') ?></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Why do you want to franchise with ChakaNoks'?</label>
+                                    <textarea name="motivation" rows="3" 
+                                              placeholder="Tell us your motivation for becoming a franchise partner"
+                                              class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none"><?= old('motivation') ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms -->
+                        <div class="bg-slate-700/30 rounded-xl p-4">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" required class="w-5 h-5 mt-0.5 text-emerald-500 border-slate-500 rounded focus:ring-emerald-500 bg-slate-700">
+                                <span class="text-slate-400 text-sm">I agree to the <a href="#" class="text-emerald-400 hover:underline">Terms and Conditions</a> and <a href="#" class="text-emerald-400 hover:underline">Privacy Policy</a>. I understand that submitting this application does not guarantee franchise approval.</span>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="text-center pt-4">
+                            <button type="submit" class="inline-flex items-center px-10 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5">
+                                <i class="fas fa-paper-plane mr-2"></i>Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Contact Info -->
+            <div class="mt-10 text-center">
+                <p class="text-slate-400 mb-4">Have questions? Contact our franchise team</p>
+                <div class="flex flex-wrap justify-center gap-6">
+                    <a href="mailto:franchise@chakanoks.com" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors">
+                        <i class="fas fa-envelope"></i>
+                        <span>franchise@chakanoks.com</span>
+                    </a>
+                    <a href="tel:+63821234567" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors">
+                        <i class="fas fa-phone"></i>
+                        <span>+63 (82) 123-4567</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800/50 border-t border-slate-700/50 py-8 mt-12 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
+            © <?= date('Y') ?> ChakaNoks' SCMS. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Login Modal Popup -->
+    <div x-show="showLoginModal" x-cloak class="fixed inset-0 z-[100] overflow-y-auto"
+         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showLoginModal = false"></div>
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div x-show="showLoginModal"
+                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                 class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden" @click.away="showLoginModal = false">
+                <button @click="showLoginModal = false" class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center text-white/80 hover:text-white bg-black/20 hover:bg-black/30 rounded-full transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-6 text-center">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-link text-white text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Welcome Back</h2>
+                    <p class="text-emerald-100 text-sm mt-1">Sign in to your account</p>
+                </div>
+                <div class="px-8 py-8" x-data="{ showPassword: false }">
+                    <form action="<?= base_url('auth/login') ?>" method="post" class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fas fa-envelope text-gray-400"></i></div>
+                                <input type="email" name="email" required class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="name@company.com">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400"></i></div>
+                                <input :type="showPassword ? 'text' : 'password'" name="password" required class="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="Enter your password">
+                                <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600">
+                                    <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" name="remember" class="w-4 h-4 text-emerald-500 border-gray-300 rounded"><span class="ml-2 text-sm text-gray-600">Remember me</span></label>
+                            <a href="#" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/30">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Content Section -->
-  <div class="content-section">
-    <div class="container">
-      <?php if (session()->getFlashdata('success')): ?>
-        <div class="success-message">
-          <i class="bi bi-check-circle-fill"></i>
-          <h3>Application Submitted Successfully!</h3>
-          <p>
-            Your franchise application has been successfully sent. Our central admin will contact you soon 
-            to discuss the next steps in your ChakaNoks journey.
-          </p>
-          <a href="<?= base_url('/') ?>" class="btn-return">
-            <i class="bi bi-house"></i> Return to Home
-          </a>
-        </div>
-      <?php else: ?>
-        <div class="info-box">
-          <h5>
-            <i class="bi bi-info-circle"></i>
-            Application Information
-          </h5>
-          <p>
-            Please fill out all required fields accurately. Our team will review your application and contact you 
-            within 5-7 business days. All information provided will be kept confidential and used solely for 
-            franchise evaluation purposes.
-          </p>
-        </div>
-
-        <!-- Application Form -->
-        <div class="form-section">
-          <h2>
-            <i class="bi bi-file-earmark-text"></i>
-            Franchise Application Form
-          </h2>
-          <form method="post" action="<?= base_url('franchise-application/submit') ?>" id="franchiseForm">
-            <?= csrf_field() ?>
-            
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="full_name" class="form-label">
-                  Full Name <span class="required">*</span>
-                </label>
-                <input type="text" class="form-control" id="full_name" name="full_name" required placeholder="Enter your full name">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="email" class="form-label">
-                  Email Address <span class="required">*</span>
-                </label>
-                <input type="email" class="form-control" id="email" name="email" required placeholder="your.email@example.com">
-              </div>
-            </div>
-            
-            <div class="mb-3">
-              <label for="phone_number" class="form-label">
-                Phone Number <span class="required">*</span>
-              </label>
-              <input type="tel" class="form-control" id="phone_number" name="phone_number" required placeholder="+63 XXX XXX XXXX">
-            </div>
-            
-            <div class="mb-4">
-              <label for="address" class="form-label">
-                Address / Location of Proposed Branch <span class="required">*</span>
-              </label>
-              <textarea class="form-control" id="address" name="address" rows="3" required placeholder="Enter the proposed location address for your franchise branch"></textarea>
-            </div>
-            
-            <div class="text-center">
-              <button type="submit" class="btn btn-submit">
-                <i class="bi bi-send-fill"></i> Submit Application
-              </button>
-            </div>
-          </form>
-        </div>
-      <?php endif; ?>
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <h5>ChakaNoks SCMS</h5>
-          <p>
-            Empowering food businesses with efficient supply chain management solutions.
-          </p>
-        </div>
-        <div class="footer-section">
-          <h5>Quick Links</h5>
-          <a href="<?= base_url('/') ?>">Home</a>
-          <a href="<?= base_url('about') ?>">About Us</a>
-          <a href="<?= base_url('contact') ?>">Contact</a>
-          <a href="<?= base_url('franchise-application') ?>">Franchise Application</a>
-        </div>
-        <div class="footer-section">
-          <h5>Resources</h5>
-          <a href="<?= base_url('about') ?>">Our Mission</a>
-          <a href="<?= base_url('about') ?>">Future Plans</a>
-          <a href="<?= base_url('contact') ?>">Support</a>
-        </div>
-        <div class="footer-section">
-          <h5>Contact Info</h5>
-          <p style="margin-bottom: 0.5rem;">
-            <i class="bi bi-envelope"></i> info@chakanoks.com
-          </p>
-          <p style="margin-bottom: 0.5rem;">
-            <i class="bi bi-telephone"></i> +63 (82) 123-4567
-          </p>
-          <p>
-            <i class="bi bi-geo-alt"></i> Davao City, Philippines
-          </p>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p class="mb-0">&copy; <?= date('Y') ?> ChakaNoks SCMS. All rights reserved.</p>
-      </div>
-    </div>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // Form validation
-    const form = document.getElementById('franchiseForm');
-    if (form) {
-      form.addEventListener('submit', function(e) {
-        const requiredFields = this.querySelectorAll('[required]');
-        let isValid = true;
-        
-        requiredFields.forEach(field => {
-          if (!field.value.trim()) {
-            isValid = false;
-            field.classList.add('is-invalid');
-          } else {
-            field.classList.remove('is-invalid');
-          }
-        });
-        
-        if (!isValid) {
-          e.preventDefault();
-          alert('Please fill in all required fields.');
-        }
-      });
-    }
-  </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>

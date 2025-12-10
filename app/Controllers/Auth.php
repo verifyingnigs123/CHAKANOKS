@@ -43,6 +43,7 @@ class Auth extends Controller
                     'user_id'   => $user['id'],
                     'username'  => $user['username'],
                     'email'     => $user['email'],
+                    'full_name' => $user['full_name'] ?? $user['username'],
                     'role'      => $user['role'],
                     'branch_id' => $user['branch_id'] ?? null,
                     'branch_name' => $branchName,

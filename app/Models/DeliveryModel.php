@@ -11,7 +11,7 @@ class DeliveryModel extends Model
     protected $allowedFields = [
         'delivery_number', 'purchase_order_id', 'supplier_id', 'branch_id', 'status', 
         'scheduled_date', 'delivery_date', 'received_by', 'received_at', 
-        'driver_name', 'vehicle_number', 'notes', 'created_at', 'updated_at'
+        'driver_name', 'vehicle_number', 'notes', 'payment_method', 'created_at', 'updated_at'
     ];
     
     protected $useTimestamps = true;

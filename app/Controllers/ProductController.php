@@ -23,33 +23,41 @@ class ProductController extends BaseController
             return redirect()->to('/login');
         }
 
-        $builder = $this->productModel;
+        // Get products with category names
+        $db = \Config\Database::connect();
+        $builder = $db->table('products p');
+        $builder->select('p.*, c.name as category_name');
+        $builder->join('categories c', 'c.id = p.category_id', 'left');
 
         // Search functionality
         $search = $this->request->getGet('search');
         if ($search) {
             $builder->groupStart()
-                ->like('name', $search)
-                ->orLike('sku', $search)
-                ->orLike('barcode', $search)
-                ->orLike('category', $search)
+                ->like('p.name', $search)
+                ->orLike('p.sku', $search)
+                ->orLike('p.barcode', $search)
+                ->orLike('c.name', $search)
                 ->groupEnd();
         }
 
         // Filter by category
         $category = $this->request->getGet('category');
         if ($category) {
-            $builder->where('category', $category);
+            $builder->where('p.category_id', $category);
         }
 
         // Filter by status
         $status = $this->request->getGet('status');
         if ($status) {
-            $builder->where('status', $status);
+            $builder->where('p.status', $status);
         }
 
-        $data['products'] = $builder->orderBy('created_at', 'DESC')->findAll();
-        $data['categories'] = $this->productModel->select('category')->distinct()->where('category IS NOT NULL')->where('category !=', '')->findAll();
+        $data['products'] = $builder->orderBy('p.created_at', 'DESC')->get()->getResultArray();
+        
+        // Get active categories for filter dropdown
+        $categoryModel = new \App\Models\CategoryModel();
+        $data['categories'] = $categoryModel->getActiveCategories();
+        
         $data['search'] = $search;
         $data['category'] = $category;
         $data['status'] = $status;
@@ -65,7 +73,11 @@ class ProductController extends BaseController
             return redirect()->to('/login');
         }
 
-        return view('products/create');
+        // Get active categories for dropdown
+        $categoryModel = new \App\Models\CategoryModel();
+        $data['categories'] = $categoryModel->getActiveCategories();
+
+        return view('products/create', $data);
     }
 
     public function store()
@@ -107,7 +119,7 @@ class ProductController extends BaseController
             'sku' => $this->request->getPost('sku'),
             'barcode' => $this->request->getPost('barcode') ?: null,
             'description' => $this->request->getPost('description') ?: null,
-            'category' => $this->request->getPost('category') ?: null,
+            'category_id' => $this->request->getPost('category_id') ?: null,
             'unit' => $this->request->getPost('unit') ?: 'pcs',
             'is_perishable' => $this->request->getPost('is_perishable') ? 1 : 0,
             'shelf_life_days' => $this->request->getPost('shelf_life_days') ?: null,
@@ -143,6 +155,10 @@ class ProductController extends BaseController
             return redirect()->to('/products')->with('error', 'Product not found');
         }
 
+        // Get active categories for dropdown
+        $categoryModel = new \App\Models\CategoryModel();
+        $data['categories'] = $categoryModel->getActiveCategories();
+
         return view('products/edit', $data);
     }
 
@@ -158,7 +174,7 @@ class ProductController extends BaseController
             'sku' => $this->request->getPost('sku'),
             'barcode' => $this->request->getPost('barcode'),
             'description' => $this->request->getPost('description'),
-            'category' => $this->request->getPost('category'),
+            'category_id' => $this->request->getPost('category_id') ?: null,
             'unit' => $this->request->getPost('unit'),
             'is_perishable' => $this->request->getPost('is_perishable') ? 1 : 0,
             'shelf_life_days' => $this->request->getPost('shelf_life_days'),

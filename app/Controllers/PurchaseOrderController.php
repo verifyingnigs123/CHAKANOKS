@@ -11,6 +11,7 @@ use App\Models\BranchModel;
 use App\Models\ProductModel;
 use App\Models\DeliveryModel;
 use App\Models\ActivityLogModel;
+use App\Models\PaymentTransactionModel;
 use App\Libraries\NotificationService;
 
 class PurchaseOrderController extends BaseController
@@ -25,6 +26,7 @@ class PurchaseOrderController extends BaseController
     protected $deliveryModel;
     protected $activityLogModel;
     protected $notificationService;
+    protected $paymentTransactionModel;
 
     public function __construct()
     {
@@ -38,6 +40,7 @@ class PurchaseOrderController extends BaseController
         $this->deliveryModel = new DeliveryModel();
         $this->activityLogModel = new ActivityLogModel();
         $this->notificationService = new NotificationService();
+        $this->paymentTransactionModel = new PaymentTransactionModel();
     }
 
     public function index()
@@ -49,6 +52,7 @@ class PurchaseOrderController extends BaseController
 
         $role = $session->get('role');
         $branchId = $session->get('branch_id');
+        $supplierId = $session->get('supplier_id');
 
         $builder = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, branches.name as branch_name, users.full_name as created_by_name')
             ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
@@ -56,12 +60,28 @@ class PurchaseOrderController extends BaseController
             ->join('users', 'users.id = purchase_orders.created_by')
             ->orderBy('purchase_orders.created_at', 'DESC');
 
-        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
+        // Filter by branch for branch-based roles
+        if ($branchId && !in_array($role, ['central_admin', 'supplier', 'logistics_coordinator'])) {
             $builder->where('purchase_orders.branch_id', $branchId);
+        }
+        
+        // Filter by supplier for supplier role - they only see their own orders
+        if ($role === 'supplier' && $supplierId) {
+            $builder->where('purchase_orders.supplier_id', $supplierId);
         }
 
         $data['purchase_orders'] = $builder->findAll();
         $data['role'] = $role;
+
+        // Data for Create PO Modal
+        $data['approved_requests'] = $this->purchaseRequestModel->select('purchase_requests.*, branches.name as branch_name')
+            ->join('branches', 'branches.id = purchase_requests.branch_id')
+            ->where('purchase_requests.status', 'approved')
+            ->where('purchase_requests.id NOT IN (SELECT purchase_request_id FROM purchase_orders WHERE purchase_request_id IS NOT NULL)', null, false)
+            ->findAll();
+        $data['suppliers'] = $this->supplierModel->where('status', 'active')->findAll();
+        $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
+        $data['allProducts'] = $this->productModel->where('status', 'active')->findAll();
 
         return view('purchase_orders/index', $data);
     }
@@ -71,6 +91,11 @@ class PurchaseOrderController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only central_admin can create PO
+        if ($session->get('role') !== 'central_admin') {
+            return redirect()->to('/purchase-orders')->with('error', 'Only Central Admin can create Purchase Orders');
         }
 
         // Get approved purchase requests
@@ -162,6 +187,7 @@ class PurchaseOrderController extends BaseController
                     'tax' => 0,
                     'total_amount' => 0,
                     'notes' => null,
+                    'payment_method' => 'pending',
                 ];
 
                 $poId = $this->purchaseOrderModel->insert($poData);
@@ -221,6 +247,11 @@ class PurchaseOrderController extends BaseController
             return redirect()->to('/login');
         }
 
+        // Only central_admin can create PO
+        if ($session->get('role') !== 'central_admin') {
+            return redirect()->to('/purchase-orders')->with('error', 'Only Central Admin can create Purchase Orders');
+        }
+
         // Validate required fields
         $supplierId = $this->request->getPost('supplier_id');
         $branchId = $this->request->getPost('branch_id');
@@ -239,6 +270,11 @@ class PurchaseOrderController extends BaseController
         $poNumber = $this->purchaseOrderModel->generatePONumber();
         $purchaseRequestId = $this->request->getPost('purchase_request_id');
 
+        $paymentMethod = $this->request->getPost('payment_method') ?: 'pending';
+        if (!in_array($paymentMethod, ['cod', 'paypal', 'pending'])) {
+            $paymentMethod = 'pending';
+        }
+
         $poData = [
             'po_number' => $poNumber,
             'purchase_request_id' => $purchaseRequestId ?: null,
@@ -252,6 +288,7 @@ class PurchaseOrderController extends BaseController
             'tax' => 0,
             'total_amount' => 0,
             'notes' => $this->request->getPost('notes') ?: null,
+            'payment_method' => $paymentMethod,
         ];
 
         $poId = $this->purchaseOrderModel->insert($poData);
@@ -328,6 +365,10 @@ class PurchaseOrderController extends BaseController
             return redirect()->to('/login');
         }
 
+        $role = $session->get('role');
+        $supplierId = $session->get('supplier_id');
+        $branchId = $session->get('branch_id');
+
         $po = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, suppliers.email as supplier_email, suppliers.phone as supplier_phone, branches.name as branch_name, users.full_name as created_by_name')
             ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id', 'left')
             ->join('branches', 'branches.id = purchase_orders.branch_id', 'left')
@@ -336,6 +377,16 @@ class PurchaseOrderController extends BaseController
 
         if (!$po) {
             return redirect()->to('/purchase-orders')->with('error', 'Purchase order not found');
+        }
+        
+        // Supplier can only view their own orders
+        if ($role === 'supplier' && $supplierId && $po['supplier_id'] != $supplierId) {
+            return redirect()->to('/purchase-orders')->with('error', 'Unauthorized access');
+        }
+        
+        // Branch users can only view their branch orders
+        if ($branchId && !in_array($role, ['central_admin', 'supplier', 'logistics_coordinator']) && $po['branch_id'] != $branchId) {
+            return redirect()->to('/purchase-orders')->with('error', 'Unauthorized access');
         }
 
         $items = $this->purchaseOrderItemModel->select('purchase_order_items.*, products.name as product_name, products.sku, products.unit')
@@ -349,9 +400,13 @@ class PurchaseOrderController extends BaseController
             ->orderBy('created_at', 'DESC')
             ->first();
 
+        // Get payment transaction if exists
+        $paymentTransaction = $this->paymentTransactionModel->getByPurchaseOrder($id);
+
         $data['po'] = $po;
         $data['items'] = $items;
         $data['delivery'] = $delivery;
+        $data['payment_transaction'] = $paymentTransaction;
         $data['role'] = $session->get('role');
 
         return view('purchase_orders/view', $data);
@@ -443,6 +498,39 @@ class PurchaseOrderController extends BaseController
         return redirect()->back()->with('success', 'Purchase order marked as prepared');
     }
 
+    public function updatePaymentMethod($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $po = $this->purchaseOrderModel->find($id);
+        if (!$po) {
+            return redirect()->back()->with('error', 'Purchase order not found');
+        }
+
+        // Only branch users or central admin can update payment method
+        $role = $session->get('role');
+        $branchId = $session->get('branch_id');
+        if ($role !== 'central_admin' && ($role !== 'branch_manager' || $po['branch_id'] != $branchId)) {
+            return redirect()->back()->with('error', 'Unauthorized to update payment method');
+        }
+
+        $paymentMethod = $this->request->getPost('payment_method');
+        if (!in_array($paymentMethod, ['cod', 'paypal'])) {
+            return redirect()->back()->with('error', 'Invalid payment method');
+        }
+
+        $this->purchaseOrderModel->update($id, [
+            'payment_method' => $paymentMethod
+        ]);
+
+        $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'purchase_order', "Updated payment method to {$paymentMethod} for PO: {$po['po_number']}");
+
+        return redirect()->back()->with('success', 'Payment method updated successfully');
+    }
+
     public function print($id)
     {
         $session = session();
@@ -469,6 +557,123 @@ class PurchaseOrderController extends BaseController
         $data['items'] = $items;
 
         return view('purchase_orders/print', $data);
+    }
+
+    /**
+     * Supplier updates delivery status
+     */
+    public function updateDeliveryStatus($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        if ($role !== 'supplier') {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $po = $this->purchaseOrderModel->find($id);
+        if (!$po) {
+            return redirect()->back()->with('error', 'Purchase order not found');
+        }
+
+        // Verify supplier owns this PO
+        $supplierId = $session->get('supplier_id');
+        if ($po['supplier_id'] != $supplierId) {
+            return redirect()->back()->with('error', 'Unauthorized access');
+        }
+
+        $deliveryStatus = $this->request->getPost('delivery_status');
+        $trackingNumber = $this->request->getPost('tracking_number');
+        $deliveryNotes = $this->request->getPost('delivery_notes');
+
+        $updateData = [
+            'delivery_status' => $deliveryStatus,
+            'tracking_number' => $trackingNumber,
+            'delivery_notes' => $deliveryNotes,
+            'delivery_status_updated_at' => date('Y-m-d H:i:s'),
+            'delivery_status_updated_by' => $session->get('user_id'),
+        ];
+
+        // If delivered, mark PO as completed
+        if ($deliveryStatus === 'delivered') {
+            $updateData['status'] = 'completed';
+            $updateData['completed_at'] = date('Y-m-d H:i:s');
+        }
+
+        $this->purchaseOrderModel->update($id, $updateData);
+
+        $this->activityLogModel->logActivity($session->get('user_id'), 'update_delivery', 'purchase_order', "Updated delivery status to {$deliveryStatus} for PO: {$po['po_number']}");
+
+        // Notify branch about delivery status
+        $branch = $this->branchModel->find($po['branch_id']);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        
+        $statusMessages = [
+            'preparing' => 'is being prepared for shipment',
+            'shipped' => 'has been shipped',
+            'out_for_delivery' => 'is out for delivery',
+            'delivered' => 'has been delivered',
+        ];
+        $statusMsg = $statusMessages[$deliveryStatus] ?? 'status updated';
+        
+        $this->notificationService->sendToRole('branch_manager', 'info', 'Delivery Update', "Purchase Order {$po['po_number']} {$statusMsg}.", base_url("purchase-orders/view/{$id}"));
+
+        return redirect()->back()->with('success', 'Delivery status updated successfully');
+    }
+
+    /**
+     * Supplier submits invoice
+     */
+    public function submitInvoice($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        if ($role !== 'supplier') {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $po = $this->purchaseOrderModel->find($id);
+        if (!$po) {
+            return redirect()->back()->with('error', 'Purchase order not found');
+        }
+
+        // Verify supplier owns this PO
+        $supplierId = $session->get('supplier_id');
+        if ($po['supplier_id'] != $supplierId) {
+            return redirect()->back()->with('error', 'Unauthorized access');
+        }
+
+        $invoiceNumber = $this->request->getPost('invoice_number');
+        $invoiceDate = $this->request->getPost('invoice_date');
+        $invoiceAmount = $this->request->getPost('invoice_amount');
+        $invoiceNotes = $this->request->getPost('invoice_notes');
+
+        if (empty($invoiceNumber) || empty($invoiceDate) || empty($invoiceAmount)) {
+            return redirect()->back()->with('error', 'Please fill in all required fields');
+        }
+
+        $this->purchaseOrderModel->update($id, [
+            'invoice_number' => $invoiceNumber,
+            'invoice_date' => $invoiceDate,
+            'invoice_amount' => $invoiceAmount,
+            'invoice_notes' => $invoiceNotes,
+            'invoice_submitted_at' => date('Y-m-d H:i:s'),
+            'invoice_submitted_by' => $session->get('user_id'),
+        ]);
+
+        $this->activityLogModel->logActivity($session->get('user_id'), 'submit_invoice', 'purchase_order', "Submitted invoice {$invoiceNumber} for PO: {$po['po_number']}");
+
+        // Notify central admin about invoice submission
+        $this->notificationService->sendToRole('central_admin', 'info', 'Invoice Submitted', "Invoice {$invoiceNumber} submitted for Purchase Order {$po['po_number']}.", base_url("purchase-orders/view/{$id}"));
+
+        return redirect()->back()->with('success', 'Invoice submitted successfully');
     }
 }
 

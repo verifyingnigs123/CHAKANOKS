@@ -4,18 +4,21 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\BranchModel;
+use App\Models\SupplierModel;
 use App\Models\ActivityLogModel;
 
 class UserController extends BaseController
 {
     protected $userModel;
     protected $branchModel;
+    protected $supplierModel;
     protected $activityLogModel;
 
     public function __construct()
     {
         $this->userModel = new UserModel();
         $this->branchModel = new BranchModel();
+        $this->supplierModel = new SupplierModel();
         $this->activityLogModel = new ActivityLogModel();
     }
 
@@ -65,7 +68,8 @@ class UserController extends BaseController
             'inventory_staff' => 'Inventory Staff',
             'supplier' => 'Supplier',
             'logistics_coordinator' => 'Logistics Coordinator',
-            'franchise_manager' => 'Franchise Manager'
+            'franchise_manager' => 'Franchise Manager',
+            'driver' => 'Driver'
         ];
         $data['search'] = $search;
         $data['filterRole'] = $filterRole;
@@ -93,7 +97,8 @@ class UserController extends BaseController
             'inventory_staff' => 'Inventory Staff',
             'supplier' => 'Supplier',
             'logistics_coordinator' => 'Logistics Coordinator',
-            'franchise_manager' => 'Franchise Manager'
+            'franchise_manager' => 'Franchise Manager',
+            'driver' => 'Driver'
         ];
 
         return view('users/create', $data);
@@ -119,7 +124,7 @@ class UserController extends BaseController
             'email' => 'required|valid_email|is_unique[users.email]',
             'full_name' => 'required|min_length[2]|max_length[150]',
             'password' => 'required|min_length[6]',
-            'role' => 'required|in_list[central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager]',
+            'role' => 'required|in_list[central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager,driver]',
             'status' => 'required|in_list[active,inactive]'
         ];
         
@@ -140,6 +145,40 @@ class UserController extends BaseController
             }
         }
 
+        $supplierId = null;
+        $autoCreatedBranch = false;
+        $autoCreatedSupplier = false;
+
+        // Auto-create Supplier if role is 'supplier'
+        if ($role === 'supplier') {
+            $supplierData = [
+                'name' => $this->request->getPost('full_name') . ' Supplies',
+                'code' => 'SUP-' . strtoupper(substr(md5(time()), 0, 6)),
+                'contact_person' => $this->request->getPost('full_name'),
+                'email' => $this->request->getPost('email'),
+                'phone' => $this->request->getPost('phone'),
+                'status' => 'active',
+            ];
+            $this->supplierModel->insert($supplierData);
+            $supplierId = $this->supplierModel->getInsertID();
+            $autoCreatedSupplier = true;
+        }
+
+        // Auto-create Branch if role is 'branch_manager' or 'franchise_manager' and no branch selected
+        if (in_array($role, ['branch_manager', 'franchise_manager']) && empty($branchId)) {
+            $branchData = [
+                'name' => $this->request->getPost('full_name') . "'s Branch",
+                'code' => 'BR-' . strtoupper(substr(md5(time()), 0, 6)),
+                'email' => $this->request->getPost('email'),
+                'phone' => $this->request->getPost('phone'),
+                'status' => 'active',
+                'is_franchise' => ($role === 'franchise_manager') ? 1 : 0,
+            ];
+            $this->branchModel->insert($branchData);
+            $branchId = $this->branchModel->getInsertID();
+            $autoCreatedBranch = true;
+        }
+
         $userData = [
             'username' => $this->request->getPost('username'),
             'email' => $this->request->getPost('email'),
@@ -148,14 +187,36 @@ class UserController extends BaseController
             'phone' => $this->request->getPost('phone'),
             'role' => $role,
             'branch_id' => $branchId ?: null,
+            'supplier_id' => $supplierId,
             'status' => $this->request->getPost('status'),
         ];
 
         $this->userModel->insert($userData);
+        $userId = $this->userModel->getInsertID();
+
+        // Update branch manager_id if auto-created
+        if ($autoCreatedBranch && $branchId) {
+            $this->branchModel->update($branchId, ['manager_id' => $userId]);
+        }
+
+        // Build success message
+        $successMsg = "User created successfully";
+        if ($autoCreatedSupplier) {
+            $successMsg .= ". Supplier account auto-created.";
+        }
+        if ($autoCreatedBranch) {
+            $successMsg .= ". Branch auto-created.";
+        }
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'user', "Created user: {$userData['username']}");
 
-        return redirect()->to('/users')->with('success', 'User created successfully');
+        // Check if redirect_to is specified (from modal)
+        $redirectTo = $this->request->getPost('redirect_to');
+        if ($redirectTo) {
+            return redirect()->to($redirectTo)->with('success', $successMsg);
+        }
+
+        return redirect()->to('/users')->with('success', $successMsg);
     }
 
     public function edit($id)
@@ -183,7 +244,8 @@ class UserController extends BaseController
             'inventory_staff' => 'Inventory Staff',
             'supplier' => 'Supplier',
             'logistics_coordinator' => 'Logistics Coordinator',
-            'franchise_manager' => 'Franchise Manager'
+            'franchise_manager' => 'Franchise Manager',
+            'driver' => 'Driver'
         ];
 
         return view('users/edit', $data);
@@ -210,7 +272,7 @@ class UserController extends BaseController
             'username' => "required|min_length[3]|max_length[100]|is_unique[users.username,id,{$id}]",
             'email' => "required|valid_email|is_unique[users.email,id,{$id}]",
             'full_name' => 'required|min_length[2]|max_length[150]',
-            'role' => 'required|in_list[central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager]',
+            'role' => 'required|in_list[central_admin,branch_manager,inventory_staff,supplier,logistics_coordinator,franchise_manager,driver]',
             'status' => 'required|in_list[active,inactive]'
         ];
 
@@ -237,6 +299,12 @@ class UserController extends BaseController
         $this->userModel->update($id, $userData);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'user', "Updated user ID: $id");
+
+        // Check if redirect_to is specified (from modal)
+        $redirectTo = $this->request->getPost('redirect_to');
+        if ($redirectTo) {
+            return redirect()->to($redirectTo)->with('success', 'User updated successfully');
+        }
 
         return redirect()->to('/users')->with('success', 'User updated successfully');
     }
@@ -265,6 +333,12 @@ class UserController extends BaseController
         $this->userModel->delete($id);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'delete', 'user', "Deleted user ID: $id");
+
+        // Check if redirect_to is specified (from modal)
+        $redirectTo = $this->request->getGet('redirect_to');
+        if ($redirectTo) {
+            return redirect()->to($redirectTo)->with('success', 'User deleted successfully');
+        }
 
         return redirect()->to('/users')->with('success', 'User deleted successfully');
     }

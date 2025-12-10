@@ -21,6 +21,13 @@ $routes->get('auth/logout', 'Auth::logout');
 // Dashboard
 $routes->get('dashboard', 'DashboardController::index');
 
+// Profile
+$routes->group('profile', ['filter' => 'auth'], function($routes) {
+    $routes->get('/', 'ProfileController::index');
+    $routes->post('update', 'ProfileController::update');
+    $routes->post('change-password', 'ProfileController::changePassword');
+});
+
 // Inventory Management
 $routes->group('inventory', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'InventoryController::index');
@@ -70,6 +77,7 @@ $routes->group('suppliers', ['filter' => 'auth'], function($routes) {
     $routes->post('store', 'SupplierController::store');
     $routes->get('edit/(:num)', 'SupplierController::edit/$1');
     $routes->post('update/(:num)', 'SupplierController::update/$1');
+    $routes->get('delete/(:num)', 'SupplierController::delete/$1');
 });
 
 // Purchase Orders
@@ -84,6 +92,9 @@ $routes->group('purchase-orders', ['filter' => 'auth'], function($routes) {
     $routes->post('(:num)/send', 'PurchaseOrderController::send/$1');
     $routes->post('(:num)/confirm', 'PurchaseOrderController::confirm/$1');
     $routes->post('(:num)/prepare', 'PurchaseOrderController::markPrepared/$1');
+    $routes->post('(:num)/update-payment-method', 'PurchaseOrderController::updatePaymentMethod/$1');
+    $routes->post('(:num)/update-delivery-status', 'PurchaseOrderController::updateDeliveryStatus/$1');
+    $routes->post('(:num)/submit-invoice', 'PurchaseOrderController::submitInvoice/$1');
 });
 
 // Deliveries
@@ -95,6 +106,10 @@ $routes->group('deliveries', ['filter' => 'auth'], function($routes) {
     $routes->get('print/(:num)', 'DeliveryController::print/$1');
     $routes->post('(:num)/update-status', 'DeliveryController::updateStatus/$1');
     $routes->post('(:num)/receive', 'DeliveryController::receive/$1');
+    $routes->post('(:num)/process-paypal', 'DeliveryController::processPayPalPayment/$1');
+    $routes->post('(:num)/create-paypal-payment', 'DeliveryController::createPayPalPayment/$1');
+    $routes->get('paypal-success', 'DeliveryController::paypalSuccess');
+    $routes->get('paypal-cancel', 'DeliveryController::paypalCancel');
 });
 
 // Transfers
@@ -172,12 +187,20 @@ $routes->group('notifications', ['filter' => 'auth'], function($routes) {
 $routes->group('settings', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'SettingController::index');
     $routes->post('update', 'SettingController::update');
+    
+    // Driver management
+    $routes->post('drivers/store', 'SettingController::storeDriver');
+    $routes->post('drivers/update/(:num)', 'SettingController::updateDriver/$1');
+    $routes->get('drivers/delete/(:num)', 'SettingController::deleteDriver/$1');
 });
 
-// Franchise Applications (Admin Only)
-$routes->group('franchise-applications', ['filter' => 'auth'], function($routes) {
-    $routes->get('/', 'FranchiseApplicationController::index');
-    $routes->get('view/(:num)', 'FranchiseApplicationController::view/$1');
-    $routes->post('(:num)/approve', 'FranchiseApplicationController::approve/$1');
-    $routes->post('(:num)/reject', 'FranchiseApplicationController::reject/$1');
+// Franchise Management
+$routes->group('franchise', ['filter' => 'auth'], function($routes) {
+    $routes->get('applications', 'FranchiseController::applications');
+    $routes->get('applications/view/(:num)', 'FranchiseController::viewApplication/$1');
+    $routes->post('applications/(:num)/start-review', 'FranchiseController::startReview/$1');
+    $routes->post('applications/(:num)/approve', 'FranchiseController::approve/$1');
+    $routes->post('applications/(:num)/reject', 'FranchiseController::reject/$1');
+    $routes->post('applications/(:num)/convert', 'FranchiseController::convertToBranch/$1');
+    $routes->get('partners', 'FranchiseController::partners');
 });

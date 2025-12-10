@@ -1,702 +1,303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title><?= esc($title ?? 'Home - ChakaNoks SCMS') ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-blue: #1e40af;
-      --dark-blue: #1e3a8a;
-      --light-blue: #3b82f6;
-      --primary-green: #10b981;
-      --accent-orange: #f97316;
-      --text-dark: #0f172a;
-      --text-light: #64748b;
-      --bg-light: #ffffff;
-      --bg-section: #f8fafc;
-    }
-    
-    * {
-      font-family: 'Inter', 'Poppins', system-ui, sans-serif;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      background: var(--bg-light);
-      color: var(--text-dark);
-      line-height: 1.7;
-      overflow-x: hidden;
-    }
-    
-    /* Navigation */
-    .navbar {
-      background: var(--dark-blue) !important;
-      padding: 1.2rem 0;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
-    }
-    
-    .navbar-brand {
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: white !important;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      letter-spacing: -0.5px;
-    }
-    
-    .navbar-brand i {
-      font-size: 1.6rem;
-      color: #60a5fa;
-    }
-    
-    .nav-link {
-      color: rgba(255,255,255,0.9) !important;
-      font-weight: 500;
-      font-size: 0.95rem;
-      margin: 0 0.3rem;
-      transition: all 0.3s ease;
-      padding: 0.5rem 1rem !important;
-      position: relative;
-    }
-    
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 2px;
-      background: #60a5fa;
-      transition: width 0.3s ease;
-    }
-    
-    .nav-link:hover, .nav-link.active {
-      color: white !important;
-    }
-    
-    .nav-link:hover::after, .nav-link.active::after {
-      width: 80%;
-    }
-    
-    .btn-login {
-      background: white;
-      color: var(--dark-blue) !important;
-      font-weight: 600;
-      padding: 0.6rem 1.8rem;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      border: none;
-      font-size: 0.95rem;
-    }
-    
-    .btn-login:hover {
-      background: #e0e7ff;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    /* Hero Section */
-    .hero-section {
-      background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
-      padding: 140px 0 100px;
-      text-align: center;
-      color: white;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .hero-section::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      animation: pulse 15s ease-in-out infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 0.3; }
-    }
-    
-    .hero-content {
-      position: relative;
-      z-index: 1;
-    }
-    
-    .hero-icon {
-      width: 100px;
-      height: 100px;
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 2rem;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      animation: float 3s ease-in-out infinite;
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-    
-    .hero-icon i {
-      font-size: 3.5rem;
-      color: white;
-    }
-    
-    .hero-title {
-      font-size: 3.2rem;
-      font-weight: 800;
-      margin-bottom: 1.5rem;
-      color: white;
-      letter-spacing: -1px;
-      line-height: 1.2;
-    }
-    
-    .hero-subtitle {
-      font-size: 1.15rem;
-      color: rgba(255,255,255,0.9);
-      margin-bottom: 2.5rem;
-      max-width: 650px;
-      margin-left: auto;
-      margin-right: auto;
-      line-height: 1.8;
-      font-weight: 400;
-    }
-    
-    .hero-buttons {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    
-    .btn-hero-primary {
-      background: white;
-      color: var(--dark-blue);
-      font-weight: 600;
-      padding: 1rem 2.5rem;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      font-size: 1rem;
-    }
-    
-    .btn-hero-primary:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-      color: var(--dark-blue);
-    }
-    
-    .btn-hero-secondary {
-      background: rgba(255, 255, 255, 0.15);
-      color: white;
-      font-weight: 600;
-      padding: 1rem 2.5rem;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      backdrop-filter: blur(10px);
-      font-size: 1rem;
-    }
-    
-    .btn-hero-secondary:hover {
-      background: rgba(255, 255, 255, 0.25);
-      color: white;
-      transform: translateY(-3px);
-      border-color: rgba(255, 255, 255, 0.5);
-    }
-    
-    /* Features Section */
-    .features-section {
-      padding: 100px 0;
-      background: var(--bg-section);
-    }
-    
-    .section-header {
-      text-align: center;
-      margin-bottom: 4rem;
-    }
-    
-    .section-title {
-      font-size: 2.4rem;
-      font-weight: 800;
-      color: var(--text-dark);
-      margin-bottom: 1rem;
-      letter-spacing: -0.5px;
-    }
-    
-    .section-subtitle {
-      font-size: 1.1rem;
-      color: var(--text-light);
-      max-width: 600px;
-      margin: 0 auto;
-      font-weight: 400;
-    }
-    
-    .feature-card {
-      background: white;
-      border-radius: 20px;
-      padding: 2.5rem;
-      height: 100%;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.06);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(0,0,0,0.05);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary-blue), var(--primary-green));
-      transform: scaleX(0);
-      transition: transform 0.4s ease;
-    }
-    
-    .feature-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-    }
-    
-    .feature-card:hover::before {
-      transform: scaleX(1);
-    }
-    
-    .feature-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1.5rem;
-      font-size: 1.8rem;
-      color: white;
-      background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
-    }
-    
-    .feature-card:nth-child(2) .feature-icon {
-      background: linear-gradient(135deg, #ef4444, #f87171);
-    }
-    
-    .feature-card:nth-child(3) .feature-icon {
-      background: linear-gradient(135deg, var(--primary-green), #34d399);
-    }
-    
-    .feature-card:nth-child(4) .feature-icon {
-      background: linear-gradient(135deg, var(--accent-orange), #fb923c);
-    }
-    
-    .feature-card h4 {
-      font-size: 1.35rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      color: var(--text-dark);
-    }
-    
-    .feature-card p {
-      color: var(--text-light);
-      line-height: 1.7;
-      margin: 0;
-      font-size: 0.95rem;
-    }
-    
-    /* Franchise Section */
-    .franchise-section {
-      background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-blue) 100%);
-      padding: 100px 0;
-      color: white;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .franchise-section::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url('data:image/svg+xml,<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
-    }
-    
-    .franchise-content {
-      position: relative;
-      z-index: 1;
-    }
-    
-    .franchise-section h2 {
-      font-size: 2.4rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      color: white;
-      letter-spacing: -0.5px;
-    }
-    
-    .franchise-section p {
-      font-size: 1.1rem;
-      color: rgba(255,255,255,0.9);
-      margin-bottom: 3rem;
-      max-width: 650px;
-      margin-left: auto;
-      margin-right: auto;
-      font-weight: 400;
-    }
-    
-    .benefits-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin: 3rem 0;
-      text-align: left;
-    }
-    
-    .benefit-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
-      transition: all 0.3s ease;
-    }
-    
-    .benefit-item:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateX(5px);
-    }
-    
-    .benefit-item i {
-      font-size: 1.5rem;
-      color: #60a5fa;
-      flex-shrink: 0;
-    }
-    
-    .benefit-item span {
-      color: rgba(255, 255, 255, 0.95);
-      font-size: 1rem;
-      font-weight: 500;
-    }
-    
-    /* Footer */
-    footer {
-      background: var(--dark-blue);
-      color: white;
-      padding: 4rem 0 2rem;
-    }
-    
-    .footer-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 3rem;
-      margin-bottom: 3rem;
-    }
-    
-    .footer-section h5 {
-      font-weight: 700;
-      margin-bottom: 1.25rem;
-      color: white;
-      font-size: 1.1rem;
-    }
-    
-    .footer-section p {
-      color: rgba(255,255,255,0.8);
-      line-height: 1.8;
-      font-size: 0.95rem;
-    }
-    
-    .footer-section a {
-      color: rgba(255,255,255,0.75);
-      text-decoration: none;
-      display: block;
-      margin-bottom: 0.75rem;
-      transition: all 0.3s ease;
-      font-size: 0.95rem;
-    }
-    
-    .footer-section a:hover {
-      color: white;
-      transform: translateX(5px);
-    }
-    
-    .social-links {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: 1.25rem;
-    }
-    
-    .social-links a {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      transition: all 0.3s ease;
-      margin: 0;
-    }
-    
-    .social-links a:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-3px);
-    }
-    
-    .footer-bottom {
-      text-align: center;
-      padding-top: 2.5rem;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.7);
-      font-size: 0.9rem;
-    }
-    
-    @media (max-width: 768px) {
-      .hero-title {
-        font-size: 2.2rem;
-      }
-      .hero-subtitle {
-        font-size: 1rem;
-      }
-      .section-title {
-        font-size: 2rem;
-      }
-      .hero-buttons {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .hero-buttons a {
-        width: 100%;
-      }
-      .benefits-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home | ChakaNoks' SCMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .float-animation { animation: float 3s ease-in-out infinite; }
+        .float-delay { animation: float 3s ease-in-out infinite; animation-delay: 1.5s; }
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
-<body>
-  <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg fixed-top">
-    <div class="container">
-      <a class="navbar-brand" href="<?= base_url('/') ?>">
-        <i class="bi bi-shop"></i>
-        <span>ChakaNoks SCMS</span>
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto align-items-center">
-          <li class="nav-item">
-            <a class="nav-link active" href="<?= base_url('/') ?>">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('about') ?>">About</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('contact') ?>">Contact</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="<?= base_url('login') ?>">Login</a>
-          </li>
-        </ul>
-      </div>
+<body class="bg-slate-900" x-data="{ showLoginModal: false }">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl float-animation"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl float-delay"></div>
     </div>
-  </nav>
 
-  <!-- Hero Section -->
-  <div class="hero-section">
-    <div class="container">
-      <div class="hero-content">
-        <div class="hero-icon">
-          <i class="bi bi-box-seam"></i>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="<?= base_url('/') ?>" class="flex items-center space-x-2">
+                    <div class="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <i class="fas fa-link text-white text-sm"></i>
+                    </div>
+                    <span class="text-white font-bold text-lg">ChakaNoks' <span class="text-emerald-400">SCMS</span></span>
+                </a>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="<?= base_url('/') ?>" class="text-white font-medium text-sm">Home</a>
+                    <a href="<?= base_url('about') ?>" class="text-slate-400 hover:text-white transition-colors text-sm font-medium">About</a>
+                    <a href="<?= base_url('contact') ?>" class="text-slate-400 hover:text-white transition-colors text-sm font-medium">Contact</a>
+                    <button @click="showLoginModal = true" class="px-5 py-2 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/25">
+                        Login
+                    </button>
+                </div>
+                <!-- Mobile menu button -->
+                <button @click="showLoginModal = true" class="md:hidden px-4 py-2 bg-emerald-500 text-white font-medium rounded-lg">
+                    Login
+                </button>
+            </div>
         </div>
-        <h1 class="hero-title">Welcome to ChakaNoks SCMS</h1>
-        <p class="hero-subtitle">
-          Streamline your food supply chain with our comprehensive management system. 
-          Experience efficiency, quality, and growth.
-        </p>
-        <div class="hero-buttons">
-          <a href="<?= base_url('franchise-application') ?>" class="btn-hero-primary">
-            <i class="bi bi-briefcase"></i> Apply for Franchise
-          </a>
-          <a href="<?= base_url('about') ?>" class="btn-hero-secondary">
-            <i class="bi bi-info-circle"></i> Learn More
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
+    </nav>
 
-  <!-- Features Section -->
-  <div class="features-section">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Why Choose ChakaNoks SCMS?</h2>
-        <p class="section-subtitle">
-          Powerful tools designed to streamline your food supply chain operations
-        </p>
-      </div>
-      
-      <div class="row g-4">
-        <div class="col-md-6 col-lg-3">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="bi bi-boxes"></i>
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center relative z-10">
+            <div class="w-24 h-24 bg-emerald-500/20 backdrop-blur rounded-3xl flex items-center justify-center mx-auto mb-8 float-animation">
+                <i class="fas fa-boxes-stacked text-emerald-400 text-4xl"></i>
             </div>
-            <h4>Centralized Inventory</h4>
-            <p>Real-time tracking across all branches with automated alerts and barcode scanning.</p>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-3">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="bi bi-truck"></i>
+            <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                Welcome to <span class="text-emerald-400">ChakaNoks'</span><br>Supply Chain Management
+            </h1>
+            <p class="text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+                Streamline your food supply chain with our comprehensive management system. Experience efficiency, quality, and growth.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="<?= base_url('contact') ?>" class="px-8 py-4 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/30 hover:-translate-y-1">
+                    <i class="fas fa-handshake mr-2"></i>Apply for Franchise
+                </a>
+                <a href="<?= base_url('about') ?>" class="px-8 py-4 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 transition-all border border-slate-700">
+                    <i class="fas fa-info-circle mr-2"></i>Learn More
+                </a>
             </div>
-            <h4>Supplier Management</h4>
-            <p>Streamlined procurement with automated requests, approvals, and performance tracking.</p>
-          </div>
         </div>
-        <div class="col-md-6 col-lg-3">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="bi bi-speedometer2"></i>
-            </div>
-            <h4>Real-time Monitoring</h4>
-            <p>Instant visibility into inventory levels with alerts for low stock or expiring items.</p>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-3">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <i class="bi bi-graph-up-arrow"></i>
-            </div>
-            <h4>Franchise Support</h4>
-            <p>Comprehensive support system for franchise partners including training and quality assurance.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- Franchise Section -->
-  <div class="franchise-section">
-    <div class="container">
-      <div class="franchise-content">
-        <h2>Partner With ChakaNoks</h2>
-        <p>
-          Join us in bringing quality Filipino food to communities nationwide. 
-          Receive comprehensive support to ensure your success.
-        </p>
+    <!-- Features Section -->
+    <section class="py-20 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Why Choose ChakaNoks' SCMS?</h2>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto">Powerful tools designed to streamline your food supply chain operations</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800 transition-all hover:-translate-y-2 group">
+                    <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-boxes text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Centralized Inventory</h3>
+                    <p class="text-slate-400 text-sm">Real-time tracking across all branches with automated alerts and barcode scanning.</p>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800 transition-all hover:-translate-y-2 group">
+                    <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-truck text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Supplier Management</h3>
+                    <p class="text-slate-400 text-sm">Streamlined procurement with automated requests, approvals, and performance tracking.</p>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800 transition-all hover:-translate-y-2 group">
+                    <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-gauge-high text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Real-time Monitoring</h3>
+                    <p class="text-slate-400 text-sm">Instant visibility into inventory levels with alerts for low stock or expiring items.</p>
+                </div>
+                <div class="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800 transition-all hover:-translate-y-2 group">
+                    <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Franchise Support</h3>
+                    <p class="text-slate-400 text-sm">Comprehensive support system for franchise partners including training and QA.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 relative z-10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-10 md:p-16 text-center relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div class="relative z-10">
+                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Partner With ChakaNoks'</h2>
+                    <p class="text-emerald-100 text-lg mb-8 max-w-xl mx-auto">Join us in bringing quality Filipino food to communities nationwide.</p>
+                    <a href="<?= base_url('contact') ?>" class="inline-flex items-center px-8 py-4 bg-white text-emerald-600 font-semibold rounded-xl hover:bg-emerald-50 transition-all shadow-lg">
+                        <i class="fas fa-rocket mr-2"></i>Start Your Application
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800/50 border-t border-slate-700/50 py-12 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-link text-white text-xs"></i>
+                        </div>
+                        <span class="text-white font-bold">ChakaNoks' SCMS</span>
+                    </div>
+                    <p class="text-slate-400 text-sm">Empowering food businesses with efficient supply chain management solutions.</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Quick Links</h4>
+                    <div class="space-y-2">
+                        <a href="<?= base_url('/') ?>" class="block text-slate-400 hover:text-white text-sm transition-colors">Home</a>
+                        <a href="<?= base_url('about') ?>" class="block text-slate-400 hover:text-white text-sm transition-colors">About Us</a>
+                        <a href="<?= base_url('contact') ?>" class="block text-slate-400 hover:text-white text-sm transition-colors">Contact</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Resources</h4>
+                    <div class="space-y-2">
+                        <a href="<?= base_url('contact') ?>" class="block text-slate-400 hover:text-white text-sm transition-colors">Franchise Application</a>
+                        <button @click="showLoginModal = true" class="block text-slate-400 hover:text-white text-sm transition-colors text-left">Partner Login</button>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Contact</h4>
+                    <div class="space-y-2 text-slate-400 text-sm">
+                        <p><i class="fas fa-envelope mr-2"></i>info@chakanoks.com</p>
+                        <p><i class="fas fa-phone mr-2"></i>+63 (82) 123-4567</p>
+                        <p><i class="fas fa-location-dot mr-2"></i>Davao City, Philippines</p>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-slate-700/50 pt-8 text-center text-slate-500 text-sm">
+                © <?= date('Y') ?> ChakaNoks' SCMS. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal Popup -->
+    <div x-show="showLoginModal" 
+         x-cloak
+         class="fixed inset-0 z-[100] overflow-y-auto"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
         
-        <div class="benefits-grid">
-          <div class="benefit-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Established Brand Recognition</span>
-          </div>
-          <div class="benefit-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Complete Supply Chain Support</span>
-          </div>
-          <div class="benefit-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Comprehensive Training Programs</span>
-          </div>
-          <div class="benefit-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Quality Assurance Standards</span>
-          </div>
-          <div class="benefit-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Marketing & Operations Support</span>
-          </div>
-          <div class="benefit-item">
-            <i class="bi bi-check-circle-fill"></i>
-            <span>Central Office Coordination</span>
-          </div>
-        </div>
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="showLoginModal = false"></div>
         
-        <a href="<?= base_url('franchise-application') ?>" class="btn-hero-primary" style="margin-top: 1rem;">
-          <i class="bi bi-rocket-takeoff"></i> Start Your Franchise Application
-        </a>
-      </div>
-    </div>
-  </div>
+        <!-- Modal -->
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div x-show="showLoginModal"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                 class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+                 @click.away="showLoginModal = false">
+                
+                <!-- Close Button -->
+                <button @click="showLoginModal = false" 
+                        class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center text-white/80 hover:text-white bg-black/20 hover:bg-black/30 rounded-full transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-6 text-center">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-link text-white text-2xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Welcome Back</h2>
+                    <p class="text-emerald-100 text-sm mt-1">Sign in to your account</p>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="px-8 py-8" x-data="{ showPassword: false }">
+                    <!-- Error Message -->
+                    <?php if (session()->getFlashdata('msg')): ?>
+                    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+                        <i class="fas fa-exclamation-circle mr-3 text-red-500"></i>
+                        <span class="text-sm"><?= session()->getFlashdata('msg') ?></span>
+                    </div>
+                    <?php endif; ?>
 
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <h5>ChakaNoks SCMS</h5>
-          <p>
-            Empowering food businesses with efficient supply chain management solutions.
-          </p>
-          <div class="social-links">
-            <a href="#" title="Facebook"><i class="bi bi-facebook"></i></a>
-            <a href="#" title="Twitter"><i class="bi bi-twitter"></i></a>
-            <a href="#" title="Instagram"><i class="bi bi-instagram"></i></a>
-            <a href="#" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
-          </div>
-        </div>
-        <div class="footer-section">
-          <h5>Quick Links</h5>
-          <a href="<?= base_url('/') ?>">Home</a>
-          <a href="<?= base_url('about') ?>">About Us</a>
-          <a href="<?= base_url('contact') ?>">Contact</a>
-          <a href="<?= base_url('franchise-application') ?>">Franchise Application</a>
-        </div>
-        <div class="footer-section">
-          <h5>Resources</h5>
-          <a href="<?= base_url('about') ?>">Our Mission</a>
-          <a href="<?= base_url('about') ?>">Future Plans</a>
-          <a href="<?= base_url('contact') ?>">Support</a>
-        </div>
-        <div class="footer-section">
-          <h5>Contact Info</h5>
-          <p style="margin-bottom: 0.5rem;">
-            <i class="bi bi-envelope"></i> info@chakanoks.com
-          </p>
-          <p style="margin-bottom: 0.5rem;">
-            <i class="bi bi-telephone"></i> +63 (82) 123-4567
-          </p>
-          <p>
-            <i class="bi bi-geo-alt"></i> Davao City, Philippines
-          </p>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p class="mb-0">&copy; <?= date('Y') ?> ChakaNoks SCMS. All rights reserved.</p>
-      </div>
-    </div>
-  </footer>
+                    <!-- Login Form -->
+                    <form action="<?= base_url('auth/login') ?>" method="post" class="space-y-5">
+                        <!-- Email Field -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="fas fa-envelope text-gray-400"></i>
+                                </div>
+                                <input type="email" name="email" required autocomplete="email"
+                                       class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-gray-800 placeholder-gray-400"
+                                       placeholder="name@company.com">
+                            </div>
+                        </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                        <!-- Password Field -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400"></i>
+                                </div>
+                                <input :type="showPassword ? 'text' : 'password'" name="password" required autocomplete="current-password"
+                                       class="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-gray-800 placeholder-gray-400"
+                                       placeholder="Enter your password">
+                                <button type="button" @click="showPassword = !showPassword" 
+                                        class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                                    <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember & Forgot -->
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center cursor-pointer group">
+                                <input type="checkbox" name="remember" value="1" 
+                                       class="w-4 h-4 text-emerald-500 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer">
+                                <span class="ml-2 text-sm text-gray-600 group-hover:text-gray-800 transition-colors">Remember me</span>
+                            </label>
+                            <a href="#" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline">Forgot password?</a>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" 
+                                class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                        </button>
+                    </form>
+
+                    <!-- Divider -->
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-3 bg-white text-gray-500">New to ChakaNoks'?</span>
+                        </div>
+                    </div>
+
+                    <!-- Franchise Link -->
+                    <a href="<?= base_url('contact') ?>" 
+                       class="w-full flex items-center justify-center px-4 py-3 border-2 border-emerald-500 text-emerald-600 font-medium rounded-xl hover:bg-emerald-50 transition-all">
+                        <i class="fas fa-handshake mr-2"></i>Apply for Franchise
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Auto-open modal if there's an error -->
+    <?php if (session()->getFlashdata('msg')): ?>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('loginModal', { show: true });
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>

@@ -75,6 +75,9 @@ class PurchaseRequestController extends BaseController
 
         $data['requests'] = $builder->orderBy('purchase_requests.created_at', 'DESC')->findAll();
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
+        $data['products'] = $this->productModel->where('status', 'active')->findAll();
+        $data['suppliers'] = (new \App\Models\SupplierModel())->where('status', 'active')->findAll();
+        $data['branch_id'] = $branchId;
         $data['search'] = $search;
         $data['status'] = $status;
         $data['priority'] = $priority;

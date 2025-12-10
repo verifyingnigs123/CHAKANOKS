@@ -60,6 +60,11 @@ class DashboardController extends BaseController
                 break;
 
             case 'branch_manager':
+                // Get branch info
+                $branch = (new BranchModel())->find($branchId);
+                $data['branch_name'] = $branch['name'] ?? 'Your Branch';
+                $data['branch_info'] = $branch;
+                
                 $data['branch_inventory'] = (new InventoryModel())->where('branch_id', $branchId)->countAllResults();
                 $data['low_stock_items'] = $this->getLowStockItems($branchId);
                 $data['pending_requests'] = (new PurchaseRequestModel())->where('branch_id', $branchId)->where('status', 'pending')->countAllResults();
@@ -104,7 +109,14 @@ class DashboardController extends BaseController
 
             case 'supplier':
                 // Supplier dashboard: show orders assigned to this supplier
-                $supplierId = $session->get('supplier_id') ?: $session->get('user_id');
+                $supplierId = $session->get('supplier_id');
+                
+                // Get supplier info
+                $supplierModel = new SupplierModel();
+                $supplier = $supplierModel->find($supplierId);
+                $data['supplier_name'] = $supplier['name'] ?? $session->get('full_name') . ' Supplies';
+                $data['supplier_info'] = $supplier;
+                
                 // Approved orders waiting for preparation (sent/confirmed and not prepared)
                 $poModel = new PurchaseOrderModel();
                 $data['waiting_preparation'] = $poModel->where('supplier_id', $supplierId)

@@ -12,7 +12,9 @@ use App\Models\ActivityLogModel;
 use App\Models\DriverModel;
 use App\Models\BranchModel;
 use App\Models\InventoryHistoryModel;
+use App\Models\PaymentTransactionModel;
 use App\Libraries\NotificationService;
+use App\Libraries\PayPalService;
 
 class DeliveryController extends BaseController
 {
@@ -27,6 +29,8 @@ class DeliveryController extends BaseController
     protected $branchModel;
     protected $inventoryHistoryModel;
     protected $notificationService;
+    protected $paymentTransactionModel;
+    protected $paypalService;
 
     public function __construct()
     {
@@ -41,6 +45,8 @@ class DeliveryController extends BaseController
         $this->branchModel = new BranchModel();
         $this->inventoryHistoryModel = new InventoryHistoryModel();
         $this->notificationService = new NotificationService();
+        $this->paymentTransactionModel = new PaymentTransactionModel();
+        $this->paypalService = new PayPalService();
     }
 
     public function index()
@@ -53,13 +59,14 @@ class DeliveryController extends BaseController
         $role = $session->get('role');
         $branchId = $session->get('branch_id');
 
-        $builder = $this->deliveryModel->select('deliveries.*, purchase_orders.po_number, suppliers.name as supplier_name, branches.name as branch_name')
+        $builder = $this->deliveryModel->select('deliveries.*, purchase_orders.po_number, purchase_orders.payment_method as po_payment_method, suppliers.name as supplier_name, branches.name as branch_name')
             ->join('purchase_orders', 'purchase_orders.id = deliveries.purchase_order_id')
             ->join('suppliers', 'suppliers.id = deliveries.supplier_id')
             ->join('branches', 'branches.id = deliveries.branch_id')
             ->orderBy('deliveries.created_at', 'DESC');
 
-        if ($branchId && $role !== 'central_admin' && $role !== 'central_admin') {
+        // Filter by branch for non-admin roles (except logistics_coordinator who sees all)
+        if ($branchId && !in_array($role, ['central_admin', 'logistics_coordinator'])) {
             $builder->where('deliveries.branch_id', $branchId);
         }
 
@@ -68,7 +75,7 @@ class DeliveryController extends BaseController
 
         // For logistics coordinator, also show prepared purchase orders ready to be scheduled
         $preparedPOs = [];
-        if ($role === 'logistics_coordinator') {
+        if ($role === 'logistics_coordinator' || $role === 'central_admin') {
             $preparedPOs = $this->purchaseOrderModel->select('purchase_orders.id, purchase_orders.po_number, suppliers.name as supplier_name, branches.name as branch_name, purchase_orders.order_date')
                 ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id', 'left')
                 ->join('branches', 'branches.id = purchase_orders.branch_id', 'left')
@@ -78,6 +85,14 @@ class DeliveryController extends BaseController
         }
 
         $data['prepared_pos'] = $preparedPOs;
+
+        // Data for Schedule Delivery Modal
+        $data['purchase_orders_for_modal'] = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, branches.name as branch_name')
+            ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+            ->join('branches', 'branches.id = purchase_orders.branch_id')
+            ->whereIn('purchase_orders.status', ['prepared', 'sent', 'confirmed'])
+            ->findAll();
+        $data['drivers'] = $this->driverModel->getActiveDrivers();
 
         return view('deliveries/index', $data);
     }
@@ -139,6 +154,7 @@ class DeliveryController extends BaseController
             'driver_name' => $this->request->getPost('driver_name'),
             'vehicle_number' => $this->request->getPost('vehicle_number'),
             'notes' => $this->request->getPost('notes'),
+            'payment_method' => $po['payment_method'] ?? 'pending',
         ];
 
         $deliveryId = $this->deliveryModel->insert($deliveryData);
@@ -160,7 +176,7 @@ class DeliveryController extends BaseController
             return redirect()->to('/login');
         }
 
-        $delivery = $this->deliveryModel->select('deliveries.*, purchase_orders.po_number, suppliers.name as supplier_name, branches.name as branch_name, users.full_name as received_by_name')
+        $delivery = $this->deliveryModel->select('deliveries.*, purchase_orders.po_number, purchase_orders.payment_method as po_payment_method, suppliers.name as supplier_name, branches.name as branch_name, users.full_name as received_by_name')
             ->join('purchase_orders', 'purchase_orders.id = deliveries.purchase_order_id')
             ->join('suppliers', 'suppliers.id = deliveries.supplier_id')
             ->join('branches', 'branches.id = deliveries.branch_id')
@@ -177,8 +193,24 @@ class DeliveryController extends BaseController
             ->where('purchase_order_items.purchase_order_id', $delivery['purchase_order_id'])
             ->findAll();
 
+        // Get PO to access payment method and other details
+        $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
+        
+        // Use delivery payment_method if set, otherwise use PO payment_method
+        $paymentMethod = $delivery['payment_method'] ?? $delivery['po_payment_method'] ?? 'pending';
+        if (empty($delivery['payment_method']) && !empty($paymentMethod)) {
+            // Update delivery with payment method from PO if not set
+            $this->deliveryModel->update($id, ['payment_method' => $paymentMethod]);
+            $delivery['payment_method'] = $paymentMethod;
+        }
+        
+        // Get payment transaction if exists
+        $paymentTransaction = $this->paymentTransactionModel->getByDelivery($id);
+
         $data['delivery'] = $delivery;
         $data['po_items'] = $poItems;
+        $data['po'] = $po;
+        $data['payment_transaction'] = $paymentTransaction;
         $data['role'] = $session->get('role');
 
         return view('deliveries/view', $data);
@@ -191,7 +223,7 @@ class DeliveryController extends BaseController
             return redirect()->to('/login');
         }
 
-        $delivery = $this->deliveryModel->select('deliveries.*, purchase_orders.po_number, suppliers.name as supplier_name, branches.name as branch_name, users.full_name as received_by_name')
+        $delivery = $this->deliveryModel->select('deliveries.*, purchase_orders.po_number, purchase_orders.payment_method as po_payment_method, suppliers.name as supplier_name, branches.name as branch_name, users.full_name as received_by_name')
             ->join('purchase_orders', 'purchase_orders.id = deliveries.purchase_order_id')
             ->join('suppliers', 'suppliers.id = deliveries.supplier_id')
             ->join('branches', 'branches.id = deliveries.branch_id')
@@ -200,6 +232,12 @@ class DeliveryController extends BaseController
 
         if (!$delivery) {
             return redirect()->to('/deliveries')->with('error', 'Delivery not found');
+        }
+
+        // Use delivery payment_method if set, otherwise use PO payment_method
+        $paymentMethod = $delivery['payment_method'] ?? $delivery['po_payment_method'] ?? 'pending';
+        if (empty($delivery['payment_method']) && !empty($paymentMethod)) {
+            $delivery['payment_method'] = $paymentMethod;
         }
 
         $poItems = $this->purchaseOrderItemModel->select('purchase_order_items.*, products.name as product_name, products.sku, products.unit')
@@ -218,6 +256,12 @@ class DeliveryController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only logistics coordinators and central admins can update delivery status
+        $role = $session->get('role');
+        if (!in_array($role, ['logistics_coordinator', 'central_admin'])) {
+            return redirect()->back()->with('error', 'Unauthorized to update delivery status');
         }
 
         $status = $this->request->getPost('status');
@@ -251,6 +295,12 @@ class DeliveryController extends BaseController
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        // Only branch staff, branch managers, inventory staff, and central admin can receive deliveries
+        $role = $session->get('role');
+        if (!in_array($role, ['central_admin', 'branch_manager', 'inventory_staff'])) {
+            return redirect()->back()->with('error', 'Unauthorized to receive deliveries');
         }
 
         $delivery = $this->deliveryModel->find($id);
@@ -292,6 +342,7 @@ class DeliveryController extends BaseController
                     }
 
                     // Record inventory history
+                    $paymentMethod = $po['payment_method'] ?? 'pending';
                     $this->inventoryHistoryModel->insert([
                         'branch_id' => $branchId,
                         'product_id' => $productId,
@@ -303,8 +354,9 @@ class DeliveryController extends BaseController
                         'previous_quantity' => $previousQuantity,
                         'new_quantity' => $newQuantity,
                         'transaction_type' => 'delivery_received',
+                        'payment_method' => $paymentMethod,
                         'received_by' => $session->get('user_id'),
-                        'notes' => "Received from Purchase Order {$po['po_number']} via Delivery {$delivery['delivery_number']}",
+                        'notes' => "Received from Purchase Order {$po['po_number']} via Delivery {$delivery['delivery_number']} (Payment: " . ($paymentMethod == 'cod' ? 'Cash on Delivery' : ($paymentMethod == 'paypal' ? 'PayPal' : 'Pending')) . ")",
                         'created_at' => date('Y-m-d H:i:s')
                     ]);
 
@@ -362,6 +414,39 @@ class DeliveryController extends BaseController
             $poStatus = 'partial';
         }
 
+        // Process payment transaction
+        $paymentMethod = $po['payment_method'] ?? 'pending';
+        if ($paymentMethod !== 'pending') {
+            // Check if payment transaction already exists
+            $existingPayment = $this->paymentTransactionModel->getByPurchaseOrder($po['id']);
+            
+            if (!$existingPayment) {
+                // Create payment transaction
+                $transactionNumber = $this->paymentTransactionModel->generateTransactionNumber();
+                $paymentStatus = ($paymentMethod === 'cod') ? 'completed' : 'pending';
+                
+                $paymentData = [
+                    'transaction_number' => $transactionNumber,
+                    'purchase_order_id' => $po['id'],
+                    'delivery_id' => $id,
+                    'branch_id' => $branchId,
+                    'supplier_id' => $po['supplier_id'],
+                    'payment_method' => $paymentMethod,
+                    'amount' => $po['total_amount'],
+                    'status' => $paymentStatus,
+                    'payment_date' => ($paymentMethod === 'cod') ? date('Y-m-d H:i:s') : null,
+                    'processed_by' => ($paymentMethod === 'cod') ? $session->get('user_id') : null,
+                    'notes' => "Payment for Purchase Order {$po['po_number']} via Delivery {$delivery['delivery_number']}",
+                ];
+                
+                $this->paymentTransactionModel->insert($paymentData);
+                
+                if ($paymentMethod === 'cod') {
+                    $this->activityLogModel->logActivity($session->get('user_id'), 'payment', 'payment_transaction', "COD payment processed: {$transactionNumber} for PO: {$po['po_number']}");
+                }
+            }
+        }
+
         $this->activityLogModel->logActivity($session->get('user_id'), 'receive', 'delivery', "Received delivery ID: $id");
 
         // Send notification that delivery is received and inventory is updated
@@ -383,6 +468,231 @@ class DeliveryController extends BaseController
         }
 
         return redirect()->to('/deliveries')->with('success', 'Delivery received and inventory updated');
+    }
+
+    public function processPayPalPayment($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $delivery = $this->deliveryModel->find($id);
+        if (!$delivery) {
+            return redirect()->to('/deliveries')->with('error', 'Delivery not found');
+        }
+
+        $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
+        if (!$po || $po['payment_method'] !== 'paypal') {
+            return redirect()->back()->with('error', 'Invalid payment method');
+        }
+
+        // Get PayPal transaction ID from POST
+        $paypalTransactionId = $this->request->getPost('paypal_transaction_id');
+        $paypalPayerId = $this->request->getPost('paypal_payer_id');
+
+        if (!$paypalTransactionId) {
+            return redirect()->back()->with('error', 'PayPal transaction ID is required');
+        }
+
+        // Check if payment transaction exists
+        $paymentTransaction = $this->paymentTransactionModel->getByPurchaseOrder($po['id']);
+        
+        if ($paymentTransaction) {
+            // Update existing payment transaction
+            $this->paymentTransactionModel->update($paymentTransaction['id'], [
+                'status' => 'completed',
+                'paypal_transaction_id' => $paypalTransactionId,
+                'paypal_payer_id' => $paypalPayerId,
+                'payment_date' => date('Y-m-d H:i:s'),
+                'processed_by' => $session->get('user_id'),
+            ]);
+        } else {
+            // Create new payment transaction
+            $transactionNumber = $this->paymentTransactionModel->generateTransactionNumber();
+            $this->paymentTransactionModel->insert([
+                'transaction_number' => $transactionNumber,
+                'purchase_order_id' => $po['id'],
+                'delivery_id' => $id,
+                'branch_id' => $po['branch_id'],
+                'supplier_id' => $po['supplier_id'],
+                'payment_method' => 'paypal',
+                'amount' => $po['total_amount'],
+                'status' => 'completed',
+                'paypal_transaction_id' => $paypalTransactionId,
+                'paypal_payer_id' => $paypalPayerId,
+                'payment_date' => date('Y-m-d H:i:s'),
+                'processed_by' => $session->get('user_id'),
+                'notes' => "PayPal payment for Purchase Order {$po['po_number']} via Delivery {$delivery['delivery_number']}",
+            ]);
+        }
+
+        $this->activityLogModel->logActivity($session->get('user_id'), 'payment', 'payment_transaction', "PayPal payment processed for PO: {$po['po_number']}");
+
+        return redirect()->back()->with('success', 'PayPal payment processed successfully');
+    }
+
+    /**
+     * Create PayPal payment for delivery
+     */
+    public function createPayPalPayment($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $delivery = $this->deliveryModel->find($id);
+        if (!$delivery) {
+            return redirect()->to('/deliveries')->with('error', 'Delivery not found');
+        }
+
+        $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
+        if (!$po || $po['payment_method'] !== 'paypal') {
+            return redirect()->back()->with('error', 'Invalid payment method');
+        }
+
+        // Check if payment already exists and is completed
+        $paymentTransaction = $this->paymentTransactionModel->getByPurchaseOrder($po['id']);
+        if ($paymentTransaction && $paymentTransaction['status'] === 'completed') {
+            return redirect()->back()->with('error', 'Payment already completed');
+        }
+
+        // Convert PHP to USD for PayPal (PayPal doesn't support PHP currency directly)
+        $amountUSD = $this->paypalService->convertPHPToUSD($po['total_amount']);
+
+        // Get PO items for detailed breakdown
+        $poItems = $this->purchaseOrderItemModel->getByPurchaseOrder($po['id']);
+        $items = [];
+        foreach ($poItems as $item) {
+            $items[] = [
+                'name' => $item['product_name'],
+                'quantity' => $item['quantity'],
+                'price' => $this->paypalService->convertPHPToUSD($item['unit_price']),
+            ];
+        }
+
+        // Create PayPal payment
+        $result = $this->paypalService->createPayment(
+            $amountUSD,
+            'USD',
+            "Payment for Purchase Order {$po['po_number']} - Delivery {$delivery['delivery_number']}",
+            base_url('deliveries/paypal-success?delivery_id=' . $id),
+            base_url('deliveries/paypal-cancel?delivery_id=' . $id),
+            $items
+        );
+
+        if ($result['success']) {
+            // Store payment ID in session for later use
+            $session->set('paypal_payment_id', $result['payment_id']);
+            $session->set('paypal_delivery_id', $id);
+            
+            // Redirect to PayPal for approval
+            return redirect()->to($result['approval_url']);
+        } else {
+            return redirect()->back()->with('error', 'Failed to create PayPal payment: ' . $result['error']);
+        }
+    }
+
+    /**
+     * Handle PayPal payment success
+     */
+    public function paypalSuccess()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $paymentId = $this->request->getGet('paymentId');
+        $payerId = $this->request->getGet('PayerID');
+        $deliveryId = $this->request->getGet('delivery_id');
+
+        if (!$paymentId || !$payerId || !$deliveryId) {
+            return redirect()->to('/deliveries')->with('error', 'Invalid PayPal response');
+        }
+
+        // Verify this matches our session
+        if ($session->get('paypal_payment_id') !== $paymentId || $session->get('paypal_delivery_id') != $deliveryId) {
+            return redirect()->to('/deliveries')->with('error', 'Payment verification failed');
+        }
+
+        // Execute the payment
+        $result = $this->paypalService->executePayment($paymentId, $payerId);
+
+        if ($result['success']) {
+            // Get delivery and PO details
+            $delivery = $this->deliveryModel->find($deliveryId);
+            $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
+
+            // Check if payment transaction exists
+            $paymentTransaction = $this->paymentTransactionModel->getByPurchaseOrder($po['id']);
+            
+            if ($paymentTransaction) {
+                // Update existing payment transaction
+                $this->paymentTransactionModel->update($paymentTransaction['id'], [
+                    'status' => 'completed',
+                    'paypal_transaction_id' => $result['transaction_id'],
+                    'paypal_payer_id' => $payerId,
+                    'payment_date' => date('Y-m-d H:i:s'),
+                    'processed_by' => $session->get('user_id'),
+                    'notes' => "PayPal payment executed successfully for PO {$po['po_number']}",
+                ]);
+            } else {
+                // Create new payment transaction
+                $transactionNumber = $this->paymentTransactionModel->generateTransactionNumber();
+                $this->paymentTransactionModel->insert([
+                    'transaction_number' => $transactionNumber,
+                    'purchase_order_id' => $po['id'],
+                    'delivery_id' => $deliveryId,
+                    'branch_id' => $po['branch_id'],
+                    'supplier_id' => $po['supplier_id'],
+                    'payment_method' => 'paypal',
+                    'amount' => $po['total_amount'],
+                    'status' => 'completed',
+                    'paypal_transaction_id' => $result['transaction_id'],
+                    'paypal_payer_id' => $payerId,
+                    'payment_date' => date('Y-m-d H:i:s'),
+                    'processed_by' => $session->get('user_id'),
+                    'notes' => "PayPal payment executed successfully for PO {$po['po_number']}",
+                ]);
+            }
+
+            // Log activity
+            $this->activityLogModel->logActivity(
+                $session->get('user_id'), 
+                'payment', 
+                'payment_transaction', 
+                "PayPal payment completed for PO: {$po['po_number']} (Transaction: {$result['transaction_id']})"
+            );
+
+            // Clear session data
+            $session->remove('paypal_payment_id');
+            $session->remove('paypal_delivery_id');
+
+            return redirect()->to('/deliveries/view/' . $deliveryId)->with('success', 'PayPal payment completed successfully!');
+        } else {
+            return redirect()->to('/deliveries/view/' . $deliveryId)->with('error', 'PayPal payment execution failed: ' . $result['error']);
+        }
+    }
+
+    /**
+     * Handle PayPal payment cancellation
+     */
+    public function paypalCancel()
+    {
+        $session = session();
+        $deliveryId = $this->request->getGet('delivery_id');
+
+        // Clear session data
+        $session->remove('paypal_payment_id');
+        $session->remove('paypal_delivery_id');
+
+        if ($deliveryId) {
+            return redirect()->to('/deliveries/view/' . $deliveryId)->with('warning', 'PayPal payment was cancelled');
+        } else {
+            return redirect()->to('/deliveries')->with('warning', 'PayPal payment was cancelled');
+        }
     }
 }
 

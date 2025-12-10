@@ -153,5 +153,30 @@ class SupplierController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Failed to update supplier');
         }
     }
+
+    public function delete($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        // Only central_admin can delete suppliers
+        if (!$this->checkRoleAccess(['central_admin'])) {
+            return $this->unauthorized('Only administrators can delete suppliers');
+        }
+
+        $supplier = $this->supplierModel->find($id);
+        if (!$supplier) {
+            return redirect()->to('/suppliers')->with('error', 'Supplier not found');
+        }
+
+        if ($this->supplierModel->delete($id)) {
+            $this->activityLogModel->logActivity($session->get('user_id'), 'delete', 'supplier', 'Deleted supplier: ' . $supplier['name']);
+            return redirect()->to('/suppliers')->with('success', 'Supplier deleted successfully');
+        } else {
+            return redirect()->back()->with('error', 'Failed to delete supplier');
+        }
+    }
 }
 
