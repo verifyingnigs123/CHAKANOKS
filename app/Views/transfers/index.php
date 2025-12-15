@@ -30,6 +30,9 @@ $role = session()->get('role');
             <button onclick="openCreateModal()" class="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">
                 <i class="fas fa-plus mr-2"></i> Create Transfer
             </button>
+            <button onclick="openRequestModal()" class="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">
+                <i class="fas fa-hand-holding mr-2"></i> Request Transfer
+            </button>
             <?php endif; ?>
         </div>
     </div>
@@ -225,6 +228,95 @@ $role = session()->get('role');
                     <button type="button" onclick="closeCreateModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
                     <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
                         <i class="fas fa-paper-plane mr-2"></i>Create Transfer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Request Transfer Modal -->
+<div id="requestModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-hand-holding text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">Request Transfer</h3>
+                        <p class="text-blue-100 text-sm">Request products from another branch</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeRequestModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form method="post" action="<?= base_url('transfers/request-store') ?>" class="overflow-y-auto max-h-[calc(90vh-140px)]">
+                <?= csrf_field() ?>
+                <input type="hidden" name="to_branch_id" id="request_to_branch_id" value="<?= $from_branch_id ?? '' ?>">
+                
+                <div class="p-6 space-y-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>Request Transfer:</strong> You are requesting products FROM another branch TO your branch.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-arrow-left text-blue-600 mr-2"></i>Request From Branch
+                            </label>
+                            <select name="from_branch_id" id="request_from_branch_id" required onchange="loadRequestBranchProducts(this.value)" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none transition-all">
+                                <option value="">Select source branch</option>
+                                <?php foreach ($branches as $branch): ?>
+                                    <?php if ($branch['id'] != ($from_branch_id ?? 0)): ?>
+                                        <option value="<?= $branch['id'] ?>"><?= esc($branch['name']) ?></option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class="fas fa-arrow-right text-emerald-600 mr-2"></i>Deliver To (Your Branch)
+                            </label>
+                            <input type="text" value="<?= esc($branches[array_search($from_branch_id ?? 0, array_column($branches, 'id'))]['name'] ?? 'Your Branch') ?>" readonly class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            <i class="fas fa-box text-emerald-600 mr-2"></i>Products to Request
+                        </label>
+                        <div id="requestProductsContainer" class="space-y-3">
+                            <div class="flex gap-3 items-start product-row">
+                                <select name="products[]" required class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none transition-all">
+                                    <option value="">Select from branch first</option>
+                                </select>
+                                <input type="number" name="quantities[]" min="1" required placeholder="Quantity" class="w-32 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none transition-all">
+                                <button type="button" onclick="removeRequestProductRow(this)" class="px-3 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addRequestProductRow()" class="mt-3 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium">
+                            <i class="fas fa-plus mr-2"></i>Add Another Product
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="2" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none transition-all" placeholder="Request notes (optional)"></textarea>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 sticky bottom-0 bg-white">
+                    <button type="button" onclick="closeRequestModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-paper-plane mr-2"></i>Submit Request
                     </button>
                 </div>
             </form>
@@ -486,12 +578,80 @@ function closeScheduleModal() {
     document.body.style.overflow = '';
 }
 
+// Request Transfer Modal functions
+function openRequestModal() {
+    document.getElementById('requestModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeRequestModal() {
+    document.getElementById('requestModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function loadRequestBranchProducts(branchId) {
+    if (!branchId) {
+        const selects = document.querySelectorAll('#requestProductsContainer select[name="products[]"]');
+        selects.forEach(select => {
+            select.innerHTML = '<option value="">Select from branch first</option>';
+        });
+        return;
+    }
+
+    fetch(`<?= base_url('inventory/get-branch-products/') ?>${branchId}`)
+        .then(response => response.json())
+        .then(products => {
+            const selects = document.querySelectorAll('#requestProductsContainer select[name="products[]"]');
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select product</option>';
+                products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} (Available: ${product.quantity})`;
+                    option.dataset.quantity = product.quantity;
+                    if (product.id == currentValue) option.selected = true;
+                    select.appendChild(option);
+                });
+            });
+        })
+        .catch(error => console.error('Error loading products:', error));
+}
+
+function addRequestProductRow() {
+    const container = document.getElementById('requestProductsContainer');
+    const firstRow = container.querySelector('.product-row');
+    const newRow = firstRow.cloneNode(true);
+    
+    // Reset values
+    newRow.querySelector('select[name="products[]"]').value = '';
+    newRow.querySelector('input[name="quantities[]"]').value = '';
+    
+    container.appendChild(newRow);
+    
+    // Reload products if branch is selected
+    const branchId = document.getElementById('request_from_branch_id').value;
+    if (branchId) {
+        loadRequestBranchProducts(branchId);
+    }
+}
+
+function removeRequestProductRow(button) {
+    const container = document.getElementById('requestProductsContainer');
+    if (container.querySelectorAll('.product-row').length > 1) {
+        button.closest('.product-row').remove();
+    } else {
+        alert('At least one product is required');
+    }
+}
+
 // Close modal on Escape
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeCreateModal();
         closeScheduleModal();
         closeViewModal();
+        closeRequestModal();
     }
 });
 

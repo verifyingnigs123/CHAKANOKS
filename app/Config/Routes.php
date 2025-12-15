@@ -138,6 +138,7 @@ $routes->group('transfers', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'TransferController::index');
     $routes->get('create', 'TransferController::create');
     $routes->post('store', 'TransferController::store');
+    $routes->post('request-store', 'TransferController::requestStore');
     $routes->get('view/(:num)', 'TransferController::view/$1');
     $routes->get('get-details/(:num)', 'TransferController::getDetails/$1');
     $routes->post('(:num)/approve', 'TransferController::approve/$1');

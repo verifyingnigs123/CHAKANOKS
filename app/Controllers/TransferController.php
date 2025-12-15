@@ -177,6 +177,86 @@ class TransferController extends BaseController
         return redirect()->to('/transfers')->with('success', 'Transfer request created successfully');
     }
 
+    public function requestStore()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        // Only branch_manager and franchise_manager can request transfers
+        $role = $session->get('role');
+        if (!in_array($role, ['branch_manager', 'franchise_manager'])) {
+            return redirect()->to('/transfers')->with('error', 'Only Branch Managers and Franchise Managers can request transfers');
+        }
+
+        $transferNumber = $this->transferModel->generateTransferNumber();
+        $fromBranchId = $this->request->getPost('from_branch_id'); // Branch they're requesting FROM
+        $toBranchId = $this->request->getPost('to_branch_id'); // Their branch (requesting TO)
+        $requestedBy = $session->get('user_id');
+
+        if ($fromBranchId == $toBranchId) {
+            return redirect()->back()->withInput()->with('error', 'Cannot request transfer from the same branch');
+        }
+
+        $transferData = [
+            'transfer_number' => $transferNumber,
+            'from_branch_id' => $fromBranchId,
+            'to_branch_id' => $toBranchId,
+            'requested_by' => $requestedBy,
+            'status' => 'pending',
+            'request_date' => date('Y-m-d'),
+            'notes' => $this->request->getPost('notes'),
+        ];
+
+        $transferId = $this->transferModel->insert($transferData);
+
+        // Add items
+        $products = $this->request->getPost('products');
+        $quantities = $this->request->getPost('quantities');
+
+        if ($products && $quantities) {
+            foreach ($products as $index => $productId) {
+                if (!empty($quantities[$index]) && $quantities[$index] > 0) {
+                    // Check if source branch has enough inventory
+                    $inventory = $this->inventoryModel->where('branch_id', $fromBranchId)
+                        ->where('product_id', $productId)
+                        ->first();
+
+                    if (!$inventory || $inventory['quantity'] < $quantities[$index]) {
+                        $this->transferModel->delete($transferId);
+                        return redirect()->back()->withInput()->with('error', 'Insufficient inventory in the requested branch for one or more products');
+                    }
+
+                    $this->transferItemModel->insert([
+                        'transfer_id' => $transferId,
+                        'product_id' => $productId,
+                        'quantity' => (int) $quantities[$index],
+                        'quantity_received' => 0,
+                    ]);
+                }
+            }
+        }
+
+        $this->activityLogModel->logActivity($requestedBy, 'create', 'transfer', "Created transfer request: $transferNumber");
+
+        // Send workflow notification
+        $fromBranch = $this->branchModel->find($fromBranchId);
+        $toBranch = $this->branchModel->find($toBranchId);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        $this->notificationService->notifyTransferCreatedWorkflow(
+            $transferId, 
+            $transferNumber, 
+            $fromBranchId, 
+            $fromBranchName, 
+            $toBranchId, 
+            $toBranchName
+        );
+
+        return redirect()->to('/transfers')->with('success', 'Transfer request submitted successfully');
+    }
+
     public function view($id)
     {
         $session = session();
