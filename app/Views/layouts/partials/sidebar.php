@@ -62,16 +62,6 @@ function activeClass($path) {
             <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Inventory</p>
         </div>
         
-        <a href="<?= base_url('products') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('products') ?>">
-            <i class="fas fa-box w-5"></i>
-            <span class="ml-3">Products</span>
-        </a>
-        
-        <a href="<?= base_url('categories') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('categories') ?>">
-            <i class="fas fa-tags w-5"></i>
-            <span class="ml-3">Categories</span>
-        </a>
-        
         <a href="<?= base_url('inventory') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory') ?>">
             <i class="fas fa-warehouse w-5"></i>
             <span class="ml-3">Inventory</span>
@@ -117,16 +107,6 @@ function activeClass($path) {
             <span class="ml-3">Partners</span>
         </a>
         
-        <!-- Tools -->
-        <div class="pt-4">
-            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tools</p>
-        </div>
-        
-        <a href="<?= base_url('barcode/scan') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('barcode') ?>">
-            <i class="fas fa-barcode w-5"></i>
-            <span class="ml-3">Barcode Scanner</span>
-        </a>
-
         <?php elseif ($role === 'system_admin'): ?>
         <!-- ========================================== -->
         <!-- SYSTEM ADMINISTRATOR (IT) -->
@@ -183,7 +163,7 @@ function activeClass($path) {
         <?php elseif ($role === 'inventory_staff'): ?>
         <!-- ========================================== -->
         <!-- INVENTORY STAFF -->
-        <!-- Update stock levels, receive deliveries, report damaged/expired goods -->
+        <!-- Manage inventory and receive deliveries -->
         <!-- ========================================== -->
         
         <div class="pt-4">
@@ -195,29 +175,11 @@ function activeClass($path) {
             <span class="ml-3">Inventory</span>
         </a>
         
-        <a href="<?= base_url('inventory/history') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory/history') ?>">
-            <i class="fas fa-history w-5"></i>
-            <span class="ml-3">Inventory History</span>
-        </a>
-        
-        <div class="pt-4">
-            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Receiving</p>
-        </div>
-        
         <a href="<?= base_url('deliveries') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('deliveries') ?>">
             <i class="fas fa-truck w-5"></i>
             <span class="ml-3">Receive Deliveries</span>
         </a>
         
-        <div class="pt-4">
-            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tools</p>
-        </div>
-        
-        <a href="<?= base_url('barcode/scan') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('barcode') ?>">
-            <i class="fas fa-barcode w-5"></i>
-            <span class="ml-3">Barcode Scanner</span>
-        </a>
-
         <?php elseif ($role === 'supplier'): ?>
         <!-- ========================================== -->
         <!-- SUPPLIER -->

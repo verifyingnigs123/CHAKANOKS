@@ -121,6 +121,43 @@ $title = 'Dashboard';
     </a>
 </div>
 
+<!-- Low Stock Alerts for Central Admin -->
+<?php if (!empty($low_stock_items)): ?>
+<div class="bg-white rounded-xl shadow-sm border border-amber-200 mb-8">
+    <div class="px-6 py-4 border-b border-amber-100 bg-amber-50">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i> Low Stock Alerts
+            </h3>
+            <a href="<?= base_url('inventory/alerts') ?>" class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                View All →
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <?php foreach (array_slice($low_stock_items, 0, 6) as $item): ?>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 text-sm"><?= esc($item['product_name']) ?></h4>
+                        <p class="text-xs text-gray-500 mt-1"><?= esc($item['branch_name']) ?></p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        <?= $item['quantity'] ?>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-600 mt-2">
+                    <span>Min: <?= $item['min_stock_level'] ?></span>
+                    <span class="font-mono"><?= esc($item['sku']) ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php elseif ($role == 'branch_manager'): ?>
 <!-- Branch Manager Dashboard -->
 
@@ -261,6 +298,53 @@ $title = 'Dashboard';
         </div>
     </a>
 </div>
+
+<!-- Low Stock Alerts for Branch Manager -->
+<?php if (!empty($low_stock_items) && count($low_stock_items) > 0): ?>
+<div class="bg-white rounded-xl shadow-sm border border-amber-200 mb-8">
+    <div class="px-6 py-4 border-b border-amber-100 bg-amber-50">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i> Low Stock Alerts - <?= count($low_stock_items) ?> Items
+            </h3>
+            <a href="<?= base_url('purchase-requests?create=1') ?>" class="inline-flex items-center px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors text-sm font-medium">
+                <i class="fas fa-plus-circle mr-2"></i> Create Request
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-sm text-gray-700">
+                <i class="fas fa-bell text-amber-500 mr-2"></i>
+                <strong><?= count($low_stock_items) ?> products</strong> are running low. Please create a purchase request to restock these items.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <?php foreach (array_slice($low_stock_items, 0, 6) as $item): ?>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 text-sm"><?= esc($item['product_name']) ?></h4>
+                        <p class="text-xs text-gray-500 mt-1">Current: <?= $item['quantity'] ?> | Min: <?= $item['min_stock_level'] ?></p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        <?= $item['quantity'] ?>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-600 mt-2">
+                    <span class="font-mono"><?= esc($item['sku']) ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php if (count($low_stock_items) > 6): ?>
+        <div class="mt-4 text-center">
+            <p class="text-sm text-gray-500">+ <?= count($low_stock_items) - 6 ?> more items</p>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Recent Activities Grid -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -755,6 +839,49 @@ $title = 'Dashboard';
         </div>
     </a>
 </div>
+
+<!-- Low Stock Alerts for Inventory Staff -->
+<?php if (!empty($low_stock_items) && count($low_stock_items) > 0): ?>
+<div class="bg-white rounded-xl shadow-sm border border-amber-200 mb-8">
+    <div class="px-6 py-4 border-b border-amber-100 bg-amber-50">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i> Low Stock Alerts - Action Required
+            </h3>
+            <a href="<?= base_url('inventory/alerts') ?>" class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                View All →
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-sm text-gray-700">
+                <i class="fas fa-info-circle text-amber-500 mr-2"></i>
+                <strong>Action Required:</strong> The following products are running low. Please notify your Branch Manager to create a purchase request.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <?php foreach (array_slice($low_stock_items, 0, 9) as $item): ?>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 text-sm"><?= esc($item['product_name']) ?></h4>
+                        <p class="text-xs text-gray-500 mt-1">Current Stock</p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        <?= $item['quantity'] ?>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-600 mt-2">
+                    <span>Min: <?= $item['min_stock_level'] ?></span>
+                    <span class="font-mono"><?= esc($item['sku']) ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <?php endif; ?>
 
 <?= $this->endSection() ?>

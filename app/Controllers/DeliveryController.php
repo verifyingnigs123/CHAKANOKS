@@ -11,6 +11,7 @@ use App\Models\StockAlertModel;
 use App\Models\ActivityLogModel;
 use App\Models\DriverModel;
 use App\Models\BranchModel;
+use App\Models\SupplierModel;
 use App\Models\InventoryHistoryModel;
 use App\Models\PaymentTransactionModel;
 use App\Libraries\NotificationService;
@@ -27,6 +28,7 @@ class DeliveryController extends BaseController
     protected $activityLogModel;
     protected $driverModel;
     protected $branchModel;
+    protected $supplierModel;
     protected $inventoryHistoryModel;
     protected $notificationService;
     protected $paymentTransactionModel;
@@ -43,6 +45,7 @@ class DeliveryController extends BaseController
         $this->activityLogModel = new ActivityLogModel();
         $this->driverModel = new DriverModel();
         $this->branchModel = new BranchModel();
+        $this->supplierModel = new SupplierModel();
         $this->inventoryHistoryModel = new InventoryHistoryModel();
         $this->notificationService = new NotificationService();
         $this->paymentTransactionModel = new PaymentTransactionModel();
@@ -186,10 +189,18 @@ class DeliveryController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'create', 'delivery', "Created delivery: $deliveryNumber");
 
-        // Send notification that delivery is scheduled and needs to be received
+        // Send workflow notification to branch
         $branch = $this->branchModel->find($po['branch_id']);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-        $this->notificationService->sendDeliveryScheduledNotification($deliveryId, $deliveryNumber, $po['branch_id'], $branchName, $po['po_number']);
+        $scheduledDate = date('M d, Y', strtotime($deliveryData['scheduled_date']));
+        $this->notificationService->notifyDeliveryScheduledWorkflow(
+            $deliveryId, 
+            $deliveryNumber, 
+            $po['branch_id'], 
+            $branchName, 
+            $po['po_number'], 
+            $scheduledDate
+        );
 
         return redirect()->to('/deliveries/view/' . $deliveryId)->with('success', 'Delivery scheduled successfully. Click "Dispatch Now" when ready to send the driver.');
     }
@@ -212,11 +223,44 @@ class DeliveryController extends BaseController
             return redirect()->to('/deliveries')->with('error', 'Delivery not found');
         }
 
-        // Get PO items
-        $poItems = $this->purchaseOrderItemModel->select('purchase_order_items.*, products.name as product_name, products.sku, products.unit')
-            ->join('products', 'products.id = purchase_order_items.product_id')
+        // Get PO items - handle both regular products and supplier products
+        $poItems = $this->purchaseOrderItemModel->select('purchase_order_items.*, 
+            products.name as product_name,
+            products.sku as sku,
+            products.unit as unit,
+            products.id as product_id,
+            supplier_products.name as supplier_product_name,
+            supplier_products.sku as supplier_product_sku,
+            supplier_products.product_id as supplier_mapped_product_id')
+            ->join('products', 'products.id = purchase_order_items.product_id', 'left')
+            ->join('supplier_products', 'supplier_products.id = purchase_order_items.supplier_product_id', 'left')
             ->where('purchase_order_items.purchase_order_id', $delivery['purchase_order_id'])
             ->findAll();
+        
+        // Process items to ensure we have product_id for inventory
+        foreach ($poItems as &$item) {
+            // If this is a supplier product without a product_id
+            if (empty($item['product_id']) && !empty($item['supplier_product_id'])) {
+                // Check if supplier_product has a mapped product_id
+                if (!empty($item['supplier_mapped_product_id'])) {
+                    $item['product_id'] = $item['supplier_mapped_product_id'];
+                    // Get product details
+                    $product = $this->purchaseOrderItemModel->db->table('products')
+                        ->where('id', $item['supplier_mapped_product_id'])
+                        ->get()->getRowArray();
+                    if ($product) {
+                        $item['product_name'] = $product['name'];
+                        $item['sku'] = $product['sku'];
+                        $item['unit'] = $product['unit'];
+                    }
+                } else {
+                    // Use stored product details from PO item
+                    $item['product_name'] = $item['supplier_product_name'] ?? $item['product_name'];
+                    $item['sku'] = $item['supplier_product_sku'] ?? $item['product_sku'];
+                    $item['unit'] = $item['product_unit'] ?? 'pcs';
+                }
+            }
+        }
 
         // Get PO to access payment method and other details
         $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
@@ -296,23 +340,58 @@ class DeliveryController extends BaseController
             $updateData['delivery_date'] = date('Y-m-d');
         } elseif ($status == 'delivered') {
             $updateData['delivery_date'] = date('Y-m-d');
-            $updateData['received_by'] = $session->get('user_id');
-            $updateData['received_at'] = date('Y-m-d H:i:s');
+            // Don't set received_by yet - that happens when branch actually receives
         }
 
         $this->deliveryModel->update($id, $updateData);
 
+        // NEW FLOW: When marked as delivered, notify Central Admin to pay (don't update inventory yet)
+        if ($status == 'delivered') {
+            $delivery = $this->deliveryModel->find($id);
+            $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
+            
+            // Create pending payment transaction for PayPal
+            $existingPayment = $this->paymentTransactionModel->getByPurchaseOrder($po['id']);
+            if (!$existingPayment) {
+                $transactionNumber = $this->paymentTransactionModel->generateTransactionNumber();
+                $this->paymentTransactionModel->insert([
+                    'transaction_number' => $transactionNumber,
+                    'purchase_order_id' => $po['id'],
+                    'delivery_id' => $id,
+                    'branch_id' => $po['branch_id'],
+                    'supplier_id' => $po['supplier_id'],
+                    'payment_method' => 'paypal',
+                    'amount' => $po['total_amount'],
+                    'status' => 'pending',
+                    'payment_date' => null,
+                    'processed_by' => null,
+                    'notes' => "Payment pending for PO {$po['po_number']} - Awaiting Central Admin PayPal payment",
+                ]);
+                
+                // Notify Central Admin that payment is needed BEFORE branch receives
+                $this->notificationService->sendToRole('central_admin', 'warning', '💰 Payment Required', "Delivery {$delivery['delivery_number']} arrived at branch. Please process PayPal payment of ₱" . number_format($po['total_amount'], 2) . " to supplier before branch can receive.", base_url("deliveries/view/{$id}"));
+            }
+            
+            $this->activityLogModel->logActivity($session->get('user_id'), 'deliver', 'delivery', "Marked delivery ID: $id as delivered - awaiting payment");
+        }
+
         $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'delivery', "Updated delivery ID: $id status to $status");
 
-        // Send notification when delivery is in transit or delivered (needs receiving)
-        if ($status == 'in_transit' || $status == 'delivered') {
+        // Send workflow notification when delivery is in transit
+        if ($status == 'in_transit') {
             $delivery = $this->deliveryModel->find($id);
             $branch = $this->branchModel->find($delivery['branch_id']);
             $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-            $this->notificationService->sendDeliveryReceivingNotification($id, $delivery['delivery_number'], $delivery['branch_id'], $branchName, $status);
+            $this->notificationService->notifyDeliveryInTransitWorkflow(
+                $id, 
+                $delivery['delivery_number'], 
+                $delivery['branch_id'], 
+                $branchName
+            );
         }
 
-        return redirect()->back()->with('success', 'Delivery status updated');
+        $successMessage = $status == 'delivered' ? 'Delivery marked as delivered. Central Admin will process payment.' : 'Delivery status updated';
+        return redirect()->back()->with('success', $successMessage);
     }
 
     public function receive($id)
@@ -333,7 +412,32 @@ class DeliveryController extends BaseController
             return redirect()->to('/deliveries')->with('error', 'Delivery not found');
         }
 
+        // Check if delivery has been marked as delivered
+        if ($delivery['status'] != 'delivered') {
+            return redirect()->back()->with('error', 'Delivery must be marked as "delivered" before you can receive it.');
+        }
+
+        // NEW FLOW: Check if payment has been completed before allowing receive
         $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
+        $paymentTransaction = $this->paymentTransactionModel->getByPurchaseOrder($po['id']);
+        
+        log_message('debug', "Payment check - Transaction exists: " . (!empty($paymentTransaction) ? 'Yes' : 'No'));
+        if (!empty($paymentTransaction)) {
+            log_message('debug', "Payment status: " . $paymentTransaction['status']);
+        }
+        
+        if (!$paymentTransaction || $paymentTransaction['status'] != 'completed') {
+            log_message('warning', "Delivery {$id} - Branch attempted to receive before payment completed. Payment status: " . ($paymentTransaction['status'] ?? 'No transaction'));
+            return redirect()->back()->with('error', 'Payment must be completed by Central Admin before you can receive this delivery. Please wait for payment confirmation. (Payment Status: ' . ($paymentTransaction['status'] ?? 'Not found') . ')');
+        }
+
+        // Check if already received and inventory updated
+        $existingHistory = $this->inventoryHistoryModel->where('delivery_id', $id)->countAllResults();
+        if ($existingHistory > 0) {
+            log_message('info', "Delivery {$id} already received and inventory updated. Skipping duplicate receive.");
+            return redirect()->back()->with('info', 'This delivery has already been received and inventory was updated.');
+        }
+
         $branchId = $po['branch_id'];
 
         // Get received quantities
@@ -342,10 +446,81 @@ class DeliveryController extends BaseController
         $batchNumbers = $this->request->getPost('batch_numbers');
         $expiryDates = $this->request->getPost('expiry_dates');
 
+        // Debug logging
+        log_message('debug', 'Receive Delivery - Products: ' . json_encode($products));
+        log_message('debug', 'Receive Delivery - Quantities: ' . json_encode($quantities));
+        log_message('debug', 'Receive Delivery - Branch ID: ' . $branchId);
+
+        // Validate that we have products to receive
+        if (empty($products) || empty($quantities)) {
+            log_message('error', 'Receive Delivery - No products or quantities provided');
+            log_message('error', 'POST data: ' . json_encode($this->request->getPost()));
+            return redirect()->back()->with('error', 'No products to receive. The form did not submit product data. Please try again or contact support.');
+        }
+
+        // Start database transaction for data integrity
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         $itemUpdates = [];
         if ($products && $quantities) {
             foreach ($products as $index => $productId) {
                 $quantity = (int) $quantities[$index];
+                log_message('debug', "Processing Product ID: {$productId}, Quantity: {$quantity}");
+                
+                // If product_id is empty, this is a supplier product - create it in products table
+                if (empty($productId) || $productId == 0) {
+                    $productNames = $this->request->getPost('product_names');
+                    $productSkus = $this->request->getPost('product_skus');
+                    
+                    $productName = $productNames[$index] ?? '';
+                    $productSku = $productSkus[$index] ?? '';
+                    
+                    log_message('warning', "Product ID is empty at index {$index} - Name: {$productName}, SKU: {$productSku}");
+                    
+                    if (empty($productName)) {
+                        log_message('error', "Cannot process item at index {$index} - no product name");
+                        continue;
+                    }
+                    
+                    // Try to find existing product by SKU or name
+                    $productModel = new \App\Models\ProductModel();
+                    $existingProduct = null;
+                    
+                    if (!empty($productSku)) {
+                        $existingProduct = $productModel->where('sku', $productSku)->first();
+                    }
+                    
+                    if (!$existingProduct) {
+                        $existingProduct = $productModel->where('name', $productName)->first();
+                    }
+                    
+                    if ($existingProduct) {
+                        $productId = $existingProduct['id'];
+                        log_message('info', "Found existing product ID: {$productId} for {$productName}");
+                    } else {
+                        // Create new product from supplier product
+                        log_message('info', "Creating new product: {$productName}");
+                        $newProductId = $productModel->insert([
+                            'name' => $productName,
+                            'sku' => $productSku ?: 'AUTO-' . time() . '-' . $index,
+                            'category_id' => 1, // Default category
+                            'unit' => 'pcs',
+                            'description' => "Auto-created from supplier product during delivery receive",
+                            'status' => 'active',
+                            'created_at' => date('Y-m-d H:i:s')
+                        ]);
+                        
+                        if ($newProductId) {
+                            $productId = $newProductId;
+                            log_message('info', "Created new product ID: {$productId}");
+                        } else {
+                            log_message('error', "Failed to create product: {$productName}");
+                            continue;
+                        }
+                    }
+                }
+                
                 if ($quantity > 0) {
                     // Get current inventory before update
                     $inventory = $this->inventoryModel->where('branch_id', $branchId)
@@ -353,18 +528,23 @@ class DeliveryController extends BaseController
                         ->first();
 
                     $previousQuantity = $inventory ? $inventory['quantity'] : 0;
+                    log_message('debug', "Inventory found: " . ($inventory ? 'Yes' : 'No') . ", Previous Quantity: {$previousQuantity}");
 
                     // Update inventory
                     if ($inventory) {
                         $newQuantity = $inventory['quantity'] + $quantity;
+                        log_message('debug', "Updating existing inventory - New Quantity: {$newQuantity}");
                         $this->inventoryModel->updateQuantity($branchId, $productId, $newQuantity, $session->get('user_id'));
                     } else {
+                        log_message('debug', "Creating new inventory - Quantity: {$quantity}");
                         $this->inventoryModel->updateQuantity($branchId, $productId, $quantity, $session->get('user_id'));
                         $inventory = $this->inventoryModel->where('branch_id', $branchId)
                             ->where('product_id', $productId)
                             ->first();
                         $newQuantity = $quantity;
                     }
+                    
+                    log_message('debug', "Inventory update completed for Product ID: {$productId}");
 
                     // Record inventory history
                     $paymentMethod = $po['payment_method'] ?? 'pending';
@@ -385,8 +565,16 @@ class DeliveryController extends BaseController
                         'created_at' => date('Y-m-d H:i:s')
                     ]);
 
+                    // Refresh inventory record to get the ID (in case it was just created)
+                    if (!$inventory) {
+                        $inventory = $this->inventoryModel->where('branch_id', $branchId)
+                            ->where('product_id', $productId)
+                            ->first();
+                    }
+                    
                     // Add inventory items (for perishables with batch/expiry)
-                    if (!empty($batchNumbers[$index]) || !empty($expiryDates[$index])) {
+                    if ($inventory && (!empty($batchNumbers[$index]) || !empty($expiryDates[$index]))) {
+                        log_message('debug', "Adding inventory item with batch/expiry for inventory ID: {$inventory['id']}");
                         $this->inventoryItemModel->insert([
                             'inventory_id' => $inventory['id'],
                             'batch_number' => $batchNumbers[$index] ?? null,
@@ -439,39 +627,46 @@ class DeliveryController extends BaseController
             $poStatus = 'partial';
         }
 
-        // Create pending payment transaction for PayPal (Central Admin will process later)
-        $existingPayment = $this->paymentTransactionModel->getByPurchaseOrder($po['id']);
-        
-        if (!$existingPayment) {
-            // Create pending payment transaction - Central Admin will process via PayPal
-            $transactionNumber = $this->paymentTransactionModel->generateTransactionNumber();
-            
-            $paymentData = [
-                'transaction_number' => $transactionNumber,
-                'purchase_order_id' => $po['id'],
-                'delivery_id' => $id,
-                'branch_id' => $branchId,
-                'supplier_id' => $po['supplier_id'],
-                'payment_method' => 'paypal',
-                'amount' => $po['total_amount'],
-                'status' => 'pending', // Pending until Central Admin processes PayPal payment
-                'payment_date' => null,
-                'processed_by' => null,
-                'notes' => "Payment pending for Purchase Order {$po['po_number']} - Awaiting Central Admin PayPal payment",
-            ];
-            
-            $this->paymentTransactionModel->insert($paymentData);
-            
-            // Notify Central Admin that payment is needed
-            $this->notificationService->sendToRole('central_admin', 'warning', 'Payment Required', "Delivery {$delivery['delivery_number']} received. Please process PayPal payment of ₱" . number_format($po['total_amount'], 2) . " to supplier.", base_url("deliveries/view/{$id}"));
-        }
+        // Payment transaction already exists and is completed (checked earlier)
+        // No need to create it here
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'receive', 'delivery', "Received delivery ID: $id");
 
-        // Send notification that delivery is received and inventory is updated
+        // Verify inventory was actually updated
+        $inventoryUpdateCount = 0;
+        if ($products && $quantities) {
+            foreach ($products as $index => $productId) {
+                $quantity = (int) $quantities[$index];
+                if ($quantity > 0) {
+                    $checkInventory = $this->inventoryModel->where('branch_id', $branchId)
+                        ->where('product_id', $productId)
+                        ->first();
+                    if ($checkInventory) {
+                        $inventoryUpdateCount++;
+                        log_message('debug', "Verified inventory for Product ID {$productId}: Quantity = {$checkInventory['quantity']}");
+                    } else {
+                        log_message('error', "Inventory verification failed for Product ID {$productId}");
+                    }
+                }
+            }
+        }
+        
+        log_message('info', "Delivery {$id} received: {$inventoryUpdateCount} inventory records updated");
+
+        // Send workflow notification to all stakeholders
         $branch = $this->branchModel->find($branchId);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-        $this->notificationService->sendDeliveryReceivedNotification($id, $delivery['delivery_number'], $branchId, $branchName, $po['po_number'], $po['supplier_id']);
+        $supplier = $this->supplierModel->find($po['supplier_id']);
+        $supplierName = $supplier ? $supplier['name'] : 'Unknown Supplier';
+        $this->notificationService->notifyDeliveryReceivedWorkflow(
+            $id, 
+            $delivery['delivery_number'], 
+            $branchId, 
+            $branchName, 
+            $po['po_number'], 
+            $po['supplier_id'], 
+            $supplierName
+        );
 
         // If AJAX request, return JSON so callers (like PO page) can update in-place
         if ($this->request->isAJAX()) {
@@ -482,11 +677,21 @@ class DeliveryController extends BaseController
                 'po_status' => $poStatus,
                 'item_updates' => $itemUpdates,
                 'delivery_id' => $id,
-                'po_id' => $po['id']
+                'po_id' => $po['id'],
+                'inventory_updates' => $inventoryUpdateCount
             ]);
         }
 
-        return redirect()->to('/deliveries')->with('success', 'Delivery received and inventory updated');
+        // Complete database transaction
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            log_message('error', "Transaction failed for delivery {$id}");
+            return redirect()->back()->with('error', 'Failed to receive delivery. Database transaction error. Please check logs.');
+        }
+
+        $successMessage = "Delivery received successfully. {$inventoryUpdateCount} product(s) added to inventory.";
+        return redirect()->to('/deliveries')->with('success', $successMessage);
     }
 
     public function processPayPalPayment($id)
@@ -548,7 +753,30 @@ class DeliveryController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'payment', 'payment_transaction', "PayPal payment processed for PO: {$po['po_number']}");
 
-        return redirect()->back()->with('success', 'PayPal payment processed successfully');
+        // NEW FLOW: Notify branch that payment is complete and they can now receive the delivery
+        $branch = $this->branchModel->find($po['branch_id']);
+        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
+        
+        // Notify Branch Manager and Inventory Staff to receive the delivery
+        $this->notificationService->notifyByBranchAndRole(
+            $po['branch_id'],
+            ['branch_manager', 'inventory_staff'],
+            'success',
+            '✅ Payment Complete - Ready to Receive',
+            "Payment completed for Delivery {$delivery['delivery_number']}. You can now receive the delivery and update inventory.",
+            base_url("deliveries/view/{$id}")
+        );
+        
+        // Also notify Central Admin for confirmation
+        $this->notificationService->sendToRole(
+            'central_admin',
+            'success',
+            '✅ Payment Processed',
+            "PayPal payment of ₱" . number_format($po['total_amount'], 2) . " completed for {$branchName}. Branch can now receive delivery.",
+            base_url("deliveries/view/{$id}")
+        );
+
+        return redirect()->back()->with('success', 'PayPal payment processed successfully. Branch has been notified to receive the delivery.');
     }
 
     /**
@@ -718,6 +946,57 @@ class DeliveryController extends BaseController
      * Delete a delivery - Only for scheduled deliveries
      * Only Central Admin and Logistics Coordinator can delete
      */
+    public function diagnostics($deliveryId)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'central_admin') {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(403);
+        }
+
+        $delivery = $this->deliveryModel->find($deliveryId);
+        if (!$delivery) {
+            return $this->response->setJSON(['error' => 'Delivery not found'])->setStatusCode(404);
+        }
+
+        $po = $this->purchaseOrderModel->find($delivery['purchase_order_id']);
+        $poItems = $this->purchaseOrderItemModel->where('purchase_order_id', $po['id'])->findAll();
+        
+        $diagnostics = [
+            'delivery' => $delivery,
+            'purchase_order' => $po,
+            'po_items' => $poItems,
+            'inventory_status' => []
+        ];
+
+        // Check inventory for each product
+        foreach ($poItems as $item) {
+            $inventory = $this->inventoryModel->where('branch_id', $po['branch_id'])
+                ->where('product_id', $item['product_id'])
+                ->first();
+            
+            $diagnostics['inventory_status'][] = [
+                'product_id' => $item['product_id'],
+                'product_name' => $item['product_name'] ?? 'Unknown',
+                'ordered_quantity' => $item['quantity'],
+                'received_quantity' => $item['quantity_received'],
+                'inventory_exists' => !empty($inventory),
+                'inventory_quantity' => $inventory['quantity'] ?? 0,
+                'inventory_id' => $inventory['id'] ?? null
+            ];
+        }
+
+        // Check inventory history
+        $diagnostics['inventory_history'] = $this->inventoryHistoryModel
+            ->where('delivery_id', $deliveryId)
+            ->findAll();
+
+        // Check payment transaction
+        $diagnostics['payment_transaction'] = $this->paymentTransactionModel
+            ->getByDelivery($deliveryId);
+
+        return $this->response->setJSON($diagnostics);
+    }
+
     public function delete($id)
     {
         $session = session();

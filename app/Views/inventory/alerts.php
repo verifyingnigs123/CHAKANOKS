@@ -14,11 +14,6 @@ $role = session()->get('role');
         <p class="text-gray-500 text-sm mt-1">Monitor low stock, out of stock, and expiring items</p>
     </div>
     <div class="flex flex-wrap gap-2">
-        <?php if (in_array($role, ['central_admin', 'inventory_staff'])): ?>
-        <a href="<?= base_url('barcode/scan') ?>" class="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
-            <i class="fas fa-barcode mr-2"></i>Scan Item
-        </a>
-        <?php endif; ?>
         <a href="<?= base_url('inventory') ?>" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
             <i class="fas fa-warehouse mr-2"></i>View Inventory
         </a>

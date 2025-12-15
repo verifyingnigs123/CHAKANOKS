@@ -236,9 +236,6 @@ if ($currentDeliveryStep == 0 && in_array($role, ['logistics_coordinator', 'cent
 } elseif ($currentDeliveryStep == 0) {
     $hasDeliveryAction = false;
     $deliveryActionMessage = 'Delivery is scheduled. Waiting for logistics to dispatch the driver.';
-} elseif ($currentDeliveryStep == 1 && in_array($role, ['branch_manager', 'inventory_staff', 'central_admin'])) {
-    $hasDeliveryAction = true;
-    $deliveryActionMessage = 'Delivery is on the way! <strong>Receive the delivery</strong> when it arrives and verify all items.';
 } elseif ($currentDeliveryStep == 1 && $role == 'logistics_coordinator') {
     $hasDeliveryAction = true;
     $deliveryActionMessage = 'Driver is on the way. You can mark as <strong>Delivered</strong> when goods arrive at branch.';
@@ -247,10 +244,20 @@ if ($currentDeliveryStep == 0 && in_array($role, ['logistics_coordinator', 'cent
     $deliveryActionMessage = 'Delivery is in transit to the branch.';
 } elseif ($currentDeliveryStep == 2 && $role == 'central_admin') {
     $hasDeliveryAction = true;
-    $deliveryActionMessage = 'Delivery received! <strong>Process PayPal payment</strong> to complete the transaction.';
+    $deliveryActionMessage = 'Delivery arrived at branch! <strong>Process PayPal payment</strong> first, then branch can receive it.';
+} elseif ($currentDeliveryStep == 2 && in_array($role, ['branch_manager', 'inventory_staff'])) {
+    // Check if payment is completed
+    $paymentCompleted = !empty($payment_transaction) && $payment_transaction['status'] == 'completed';
+    if ($paymentCompleted) {
+        $hasDeliveryAction = true;
+        $deliveryActionMessage = 'Payment completed! <strong>Receive the delivery</strong> now to update inventory.';
+    } else {
+        $hasDeliveryAction = false;
+        $deliveryActionMessage = 'Delivery arrived. Waiting for Central Admin to process PayPal payment before you can receive it.';
+    }
 } elseif ($currentDeliveryStep == 2) {
     $hasDeliveryAction = false;
-    $deliveryActionMessage = 'Delivery received. Waiting for Central Admin to process payment to supplier.';
+    $deliveryActionMessage = 'Delivery arrived at branch. Waiting for Central Admin to process payment.';
 }
 ?>
 
@@ -458,8 +465,61 @@ if ($currentDeliveryStep == 0 && in_array($role, ['logistics_coordinator', 'cent
 </div>
 <?php endif; ?>
 
-<?php if (($delivery['status'] == 'in_transit' || $delivery['status'] == 'scheduled') && in_array($role, ['central_admin', 'branch_manager', 'inventory_staff'])): ?>
+<?php 
+// Check if inventory was actually updated by looking for inventory history
+$inventoryUpdated = false;
+if ($delivery['status'] == 'delivered') {
+    $inventoryHistoryModel = new \App\Models\InventoryHistoryModel();
+    $historyCount = $inventoryHistoryModel->where('delivery_id', $delivery['id'])->countAllResults();
+    $inventoryUpdated = ($historyCount > 0);
+}
+
+// Check if payment is completed
+$paymentCompleted = !empty($payment_transaction) && $payment_transaction['status'] == 'completed';
+
+// NEW FLOW: Show receive form only if:
+// 1. Status is delivered AND
+// 2. Payment is completed AND
+// 3. Inventory has NOT been updated yet AND
+// 4. User has permission
+$canReceive = ($delivery['status'] == 'delivered' && 
+               $paymentCompleted && 
+               !$inventoryUpdated && 
+               in_array($role, ['central_admin', 'branch_manager', 'inventory_staff']));
+
+
+
+// Show warning if delivered but payment not completed
+$showPaymentWarning = ($delivery['status'] == 'delivered' && 
+                       !$paymentCompleted && 
+                       in_array($role, ['branch_manager', 'inventory_staff']));
+?>
+
+
+
+<?php if ($showPaymentWarning): ?>
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+    <div class="flex items-start gap-3">
+        <i class="fas fa-clock text-amber-600 text-xl mt-0.5"></i>
+        <div>
+            <h4 class="font-semibold text-amber-800">Waiting for Payment</h4>
+            <p class="text-amber-700 text-sm mt-1">Delivery has arrived at your branch. Central Admin must process PayPal payment before you can receive it and update inventory.</p>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($canReceive): ?>
 <!-- Receive Delivery Card -->
+<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
+    <div class="flex items-start gap-3">
+        <i class="fas fa-check-circle text-emerald-600 text-xl mt-0.5"></i>
+        <div>
+            <h4 class="font-semibold text-emerald-800">✅ Payment Completed - Ready to Receive!</h4>
+            <p class="text-emerald-700 text-sm mt-1">Central Admin has processed the payment. You can now receive the delivery and update inventory.</p>
+        </div>
+    </div>
+</div>
 <div class="bg-white rounded-xl shadow-sm border border-emerald-200 mb-6">
     <div class="px-6 py-4 border-b border-emerald-100 bg-emerald-50 rounded-t-xl">
         <h3 class="font-semibold text-gray-800 flex items-center">
@@ -467,12 +527,12 @@ if ($currentDeliveryStep == 0 && in_array($role, ['logistics_coordinator', 'cent
         </h3>
     </div>
     <div class="p-6">
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-start">
-            <i class="fab fa-paypal text-blue-500 mt-0.5 mr-3 text-xl"></i>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4 flex items-start">
+            <i class="fas fa-check-circle text-emerald-500 mt-0.5 mr-3 text-xl"></i>
             <div>
-                <p class="font-medium text-blue-800">Payment via PayPal</p>
-                <p class="text-blue-700 text-sm">Total: <span class="font-semibold">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></span></p>
-                <p class="text-blue-600 text-xs mt-1">Central Admin will process payment after you receive this delivery.</p>
+                <p class="font-medium text-emerald-800">✅ Payment Completed</p>
+                <p class="text-emerald-700 text-sm">Amount Paid: <span class="font-semibold">₱<?= number_format($po['total_amount'] ?? 0, 2) ?></span></p>
+                <p class="text-emerald-600 text-xs mt-1">Central Admin has processed PayPal payment. You can now receive the delivery.</p>
             </div>
         </div>
 
@@ -497,7 +557,9 @@ if ($currentDeliveryStep == 0 && in_array($role, ['logistics_coordinator', 'cent
                             <td class="px-4 py-3"><span class="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-0.5 rounded"><?= esc($item['sku']) ?></span></td>
                             <td class="px-4 py-3 text-center text-gray-700"><?= $item['quantity'] ?></td>
                             <td class="px-4 py-3">
-                                <input type="hidden" name="products[]" value="<?= $item['product_id'] ?>">
+                                <input type="hidden" name="products[]" value="<?= $item['product_id'] ?? 0 ?>">
+                                <input type="hidden" name="product_names[]" value="<?= esc($item['product_name']) ?>">
+                                <input type="hidden" name="product_skus[]" value="<?= esc($item['sku']) ?>">
                                 <input type="number" name="quantities[]" class="w-20 mx-auto block px-3 py-2 bg-white border border-gray-200 rounded-lg text-center focus:border-emerald-500 outline-none" min="0" max="<?= $item['quantity'] ?>" value="<?= $item['quantity'] ?>" required>
                             </td>
                             <td class="px-4 py-3"><input type="text" name="batch_numbers[]" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-emerald-500 outline-none" placeholder="Optional"></td>
@@ -516,6 +578,8 @@ if ($currentDeliveryStep == 0 && in_array($role, ['logistics_coordinator', 'cent
 </div>
 <?php endif; ?>
 
+
+
 <?php 
 // Check if payment is needed (delivery received but not yet paid)
 $needsPayment = $delivery['status'] == 'delivered' && (empty($payment_transaction) || $payment_transaction['status'] != 'completed');
@@ -524,7 +588,7 @@ $isPaid = !empty($payment_transaction) && $payment_transaction['status'] == 'com
 
 <?php if ($needsPayment && $role == 'central_admin'): ?>
 <!-- Central Admin Payment Action Card -->
-<div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
+<div id="payment-section" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
         <i class="fab fa-paypal text-blue-600 mr-2"></i>Process Payment to Supplier
     </h3>

@@ -47,7 +47,10 @@ class PaymentTransactionModel extends Model
     
     public function getByDelivery($deliveryId)
     {
-        return $this->where('delivery_id', $deliveryId)->first();
+        // Use a fresh query to avoid any leftover state
+        $db = \Config\Database::connect();
+        $builder = $db->table($this->table);
+        return $builder->where('delivery_id', $deliveryId)->get()->getRowArray();
     }
 }
 

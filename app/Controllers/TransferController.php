@@ -153,12 +153,19 @@ class TransferController extends BaseController
 
         $this->activityLogModel->logActivity($requestedBy, 'create', 'transfer', "Created transfer: $transferNumber");
 
-        // Send notification to admins and branch managers for approval
+        // Send workflow notification to destination branch for approval
         $fromBranch = $this->branchModel->find($fromBranchId);
         $toBranch = $this->branchModel->find($toBranchId);
         $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
         $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
-        $this->notificationService->sendTransferApprovalNotification($transferId, $transferNumber, $fromBranchId, $toBranchId, $fromBranchName, $toBranchName);
+        $this->notificationService->notifyTransferCreatedWorkflow(
+            $transferId, 
+            $transferNumber, 
+            $fromBranchId, 
+            $fromBranchName, 
+            $toBranchId, 
+            $toBranchName
+        );
 
         return redirect()->to('/transfers')->with('success', 'Transfer request created successfully');
     }
@@ -222,12 +229,19 @@ class TransferController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'approve', 'transfer', "Approved transfer ID: $id");
 
-        // Notify branch users that their transfer has been approved
+        // Send workflow notification to source branch to complete transfer
         $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
         $toBranch = $this->branchModel->find($transfer['to_branch_id']);
         $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
         $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
-        $this->notificationService->sendTransferApprovalToBranch($id, $transfer['transfer_number'], $transfer['from_branch_id'], $transfer['to_branch_id'], $fromBranchName, $toBranchName);
+        $this->notificationService->notifyTransferApprovedWorkflow(
+            $id, 
+            $transfer['transfer_number'], 
+            $transfer['from_branch_id'], 
+            $fromBranchName, 
+            $transfer['to_branch_id'], 
+            $toBranchName
+        );
 
         return redirect()->back()->with('success', 'Transfer approved');
     }
@@ -251,6 +265,25 @@ class TransferController extends BaseController
         ]);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'reject', 'transfer', "Rejected transfer ID: $id");
+
+        // Send workflow notification to source branch
+        $transfer = $this->transferModel->find($id);
+        if ($transfer) {
+            $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
+            $toBranch = $this->branchModel->find($transfer['to_branch_id']);
+            $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+            $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+            $rejectionReason = $this->request->getPost('rejection_reason') ?: 'No reason provided';
+            $this->notificationService->notifyTransferRejectedWorkflow(
+                $id, 
+                $transfer['transfer_number'], 
+                $transfer['from_branch_id'], 
+                $fromBranchName, 
+                $transfer['to_branch_id'], 
+                $toBranchName, 
+                $rejectionReason
+            );
+        }
 
         return redirect()->back()->with('success', 'Transfer rejected');
     }
@@ -304,6 +337,20 @@ class TransferController extends BaseController
         ]);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'complete', 'transfer', "Completed transfer ID: $id");
+
+        // Send workflow notification to destination branch
+        $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
+        $toBranch = $this->branchModel->find($transfer['to_branch_id']);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        $this->notificationService->notifyTransferCompletedWorkflow(
+            $id, 
+            $transfer['transfer_number'], 
+            $transfer['from_branch_id'], 
+            $fromBranchName, 
+            $transfer['to_branch_id'], 
+            $toBranchName
+        );
 
         return redirect()->to('/transfers')->with('success', 'Transfer completed and inventory updated');
     }

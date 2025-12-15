@@ -477,9 +477,8 @@ class PurchaseOrderController extends BaseController
         // Get items - supports both new supplier products and legacy system products
         $items = $this->purchaseOrderItemModel->getByPurchaseOrder($id);
 
-        // Find an active delivery for this PO (scheduled or in_transit)
+        // Find the latest delivery for this PO (including delivered status for progress tracking)
         $delivery = $this->deliveryModel->where('purchase_order_id', $id)
-            ->whereIn('status', ['scheduled', 'in_transit'])
             ->orderBy('created_at', 'DESC')
             ->first();
 
@@ -514,12 +513,19 @@ class PurchaseOrderController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'send', 'purchase_order', "Sent purchase order ID: $id");
 
-        // Send notification that PO is sent and needs delivery scheduling
+        // Send workflow notification to supplier and branch
         $branch = $this->branchModel->find($po['branch_id']);
         $supplier = $this->supplierModel->find($po['supplier_id']);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
         $supplierName = $supplier ? $supplier['name'] : 'Unknown Supplier';
-        $this->notificationService->sendPurchaseOrderSentNotification($id, $po['po_number'], $branchName, $supplierName);
+        $this->notificationService->notifyPurchaseOrderSentWorkflow(
+            $id, 
+            $po['po_number'], 
+            $po['supplier_id'], 
+            $supplierName, 
+            $po['branch_id'], 
+            $branchName
+        );
 
         return redirect()->back()->with('success', 'Purchase order sent to supplier');
     }
@@ -531,12 +537,27 @@ class PurchaseOrderController extends BaseController
             return redirect()->to('/login');
         }
 
+        $po = $this->purchaseOrderModel->find($id);
+        if (!$po) {
+            return redirect()->back()->with('error', 'Purchase order not found');
+        }
+
         $this->purchaseOrderModel->update($id, [
             'status' => 'confirmed',
             'confirmed_at' => date('Y-m-d H:i:s')
         ]);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'confirm', 'purchase_order', "Confirmed purchase order ID: $id");
+
+        // Send workflow notification
+        $supplier = $this->supplierModel->find($po['supplier_id']);
+        $supplierName = $supplier ? $supplier['name'] : 'Unknown Supplier';
+        $this->notificationService->notifyPurchaseOrderConfirmedWorkflow(
+            $id, 
+            $po['po_number'], 
+            $po['supplier_id'], 
+            $supplierName
+        );
 
         return redirect()->back()->with('success', 'Purchase order confirmed');
     }
@@ -569,14 +590,14 @@ class PurchaseOrderController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'prepare', 'purchase_order', "Marked purchase order ID: $id as prepared");
 
-        // Notify logistics coordinator to schedule shipment
+        // Send workflow notification to logistics coordinator
         $supplier = $this->supplierModel->find($po['supplier_id']);
-        $branch = $this->branchModel->find($po['branch_id']);
-        $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-        $this->notificationService->sendToRole('logistics_coordinator', 'info', 'PO Prepared - Schedule Shipment', "Purchase Order {$po['po_number']} for {$branchName} has been prepared by supplier.", base_url("purchase-orders/view/{$id}"));
-
-        // Notify logistics coordinator to schedule shipment
-        $this->notificationService->sendToRole('logistics_coordinator', 'info', 'PO Prepared - Schedule Shipment', "Purchase Order {$po['po_number']} for {$branchName} has been prepared by supplier.", base_url("purchase-orders/view/{$id}"));
+        $supplierName = $supplier ? $supplier['name'] : 'Unknown Supplier';
+        $this->notificationService->notifyPurchaseOrderPreparedWorkflow(
+            $id, 
+            $po['po_number'], 
+            $supplierName
+        );
 
         return redirect()->back()->with('success', 'Purchase order marked as prepared');
     }

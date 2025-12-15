@@ -148,9 +148,9 @@ $title = 'Purchase Requests';
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-                            <select name="supplier_id" id="modalSupplierSelect" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all cursor-pointer">
-                                <option value="" data-user-id="">-- Central Admin Products --</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier <span class="text-red-500">*</span></label>
+                            <select name="supplier_id" id="modalSupplierSelect" required class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all cursor-pointer">
+                                <option value="">-- Select Supplier --</option>
                                 <?php if (!empty($suppliers)): ?>
                                 <?php foreach ($suppliers as $sup): ?>
                                 <option value="<?= $sup['supplier_id'] ?>" data-user-id="<?= $sup['id'] ?>"><?= esc($sup['username']) ?></option>
@@ -250,22 +250,9 @@ $title = 'Purchase Requests';
 <?= $this->section('scripts') ?>
 <script>
 <?php if ($role !== 'central_admin'): ?>
-// Central Admin products (default) with stock quantity
-const centralAdminProducts = `<?php 
-    $options = '<option value="">Select Product</option>';
-    if (!empty($products)) {
-        foreach ($products as $prod) {
-            $stock = $prod['stock_quantity'] ?? 0;
-            $stockLabel = $stock > 0 ? ' [Stock: ' . $stock . ']' : ' [Out of Stock]';
-            $options .= '<option value="' . $prod['id'] . '" data-price="' . ($prod['cost_price'] ?? 0) . '" data-stock="' . $stock . '" data-type="system">' . 
-                        htmlspecialchars($prod['name']) . ' (' . htmlspecialchars($prod['sku']) . ') - ₱' . number_format($prod['cost_price'] ?? 0, 2) . $stockLabel . '</option>';
-        }
-    }
-    echo $options;
-?>`;
-
-// Current product type: 'system' or 'supplier'
-let currentProductType = 'system';
+// No Central Admin products - only supplier products allowed
+// Current product type: 'supplier' only
+let currentProductType = 'supplier';
 
 // Create Modal Functions
 function openCreateModal() {
@@ -308,11 +295,11 @@ function loadProducts(userId) {
     const tableContainer = document.getElementById('productsTableContainer');
     
     if (!userId) {
-        // No supplier selected - show Central Admin products
-        currentProductType = 'system';
-        updateProductDropdownsWithOptions(centralAdminProducts);
-        noSupplierMsg.style.display = 'none';
-        tableContainer.style.display = 'block';
+        // No supplier selected - show message
+        currentProductType = 'supplier';
+        noSupplierMsg.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Please select a supplier to see available products.';
+        noSupplierMsg.style.display = 'block';
+        tableContainer.style.display = 'none';
         return;
     }
     
@@ -327,7 +314,7 @@ function loadProducts(userId) {
         .then(data => {
             if (data.success && data.products) {
                 if (data.products.length === 0) {
-                    noSupplierMsg.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i> This supplier has no products yet. Please select a different supplier or use Central Admin Products.';
+                    noSupplierMsg.innerHTML = '<i class="fas fa-exclamation-circle mr-1"></i> This supplier has no products yet. Please select a different supplier.';
                     noSupplierMsg.style.display = 'block';
                     tableContainer.style.display = 'none';
                     // Clear product dropdowns to prevent form submission with invalid data
@@ -398,7 +385,7 @@ document.getElementById('createForm').addEventListener('submit', function(e) {
     const tableContainer = document.getElementById('productsTableContainer');
     if (supplierSelect.value && tableContainer.style.display === 'none') {
         e.preventDefault();
-        alert('The selected supplier has no products. Please select a different supplier or use Central Admin Products.');
+        alert('The selected supplier has no products. Please select a different supplier.');
         return false;
     }
 });

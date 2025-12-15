@@ -122,6 +122,7 @@ $routes->group('deliveries', ['filter' => 'auth'], function($routes) {
     $routes->post('store', 'DeliveryController::store');
     $routes->get('view/(:num)', 'DeliveryController::view/$1');
     $routes->get('print/(:num)', 'DeliveryController::print/$1');
+    $routes->get('(:num)/diagnostics', 'DeliveryController::diagnostics/$1'); // Debug endpoint
     $routes->post('(:num)/update-status', 'DeliveryController::updateStatus/$1');
     $routes->post('(:num)/receive', 'DeliveryController::receive/$1');
     $routes->post('(:num)/process-paypal', 'DeliveryController::processPayPalPayment/$1');
@@ -200,6 +201,7 @@ $routes->group('notifications', ['filter' => 'auth'], function($routes) {
     $routes->get('get-unread', 'NotificationController::getUnread');
     $routes->post('mark-as-read/(:num)', 'NotificationController::markAsRead/$1');
     $routes->post('mark-all-read', 'NotificationController::markAllAsRead');
+    $routes->post('cleanup-duplicates', 'NotificationController::cleanupDuplicates');
 });
 
 // Settings

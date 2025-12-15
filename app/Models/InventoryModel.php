@@ -23,19 +23,28 @@ class InventoryModel extends Model
     
     public function updateQuantity($branchId, $productId, $quantity, $userId = null)
     {
+        log_message('debug', "InventoryModel::updateQuantity called - Branch: {$branchId}, Product: {$productId}, Quantity: {$quantity}");
+        
         $inventory = $this->where('branch_id', $branchId)
                          ->where('product_id', $productId)
                          ->first();
         
         if ($inventory) {
-            $this->update($inventory['id'], [
+            log_message('debug', "Updating existing inventory ID: {$inventory['id']}");
+            $result = $this->update($inventory['id'], [
                 'quantity' => $quantity,
-                'available_quantity' => $quantity - $inventory['reserved_quantity'],
+                'available_quantity' => $quantity - ($inventory['reserved_quantity'] ?? 0),
                 'last_updated_by' => $userId,
                 'last_updated_at' => date('Y-m-d H:i:s')
             ]);
+            log_message('debug', "Update result: " . ($result ? 'Success' : 'Failed'));
+            
+            if (!$result) {
+                log_message('error', "Failed to update inventory: " . json_encode($this->errors()));
+            }
         } else {
-            $this->insert([
+            log_message('debug', "Creating new inventory record");
+            $result = $this->insert([
                 'branch_id' => $branchId,
                 'product_id' => $productId,
                 'quantity' => $quantity,
@@ -44,7 +53,14 @@ class InventoryModel extends Model
                 'last_updated_by' => $userId,
                 'last_updated_at' => date('Y-m-d H:i:s')
             ]);
+            log_message('debug', "Insert result: " . ($result ? "Success (ID: {$result})" : 'Failed'));
+            
+            if (!$result) {
+                log_message('error', "Failed to insert inventory: " . json_encode($this->errors()));
+            }
         }
+        
+        return $result ?? false;
     }
 }
 

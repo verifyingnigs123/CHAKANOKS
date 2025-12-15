@@ -217,10 +217,16 @@ class PurchaseRequestController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Failed to create purchase request.');
         }
 
-        // Add items - handle both system products (Central Admin) and supplier products
+        // Add items - only supplier products allowed (no Central Admin products)
         $products = $this->request->getPost('products');
         $quantities = $this->request->getPost('quantities');
         $supplierId = $this->request->getPost('supplier_id');
+
+        // Validate that supplier is selected
+        if (empty($supplierId)) {
+            $db->transRollback();
+            return redirect()->back()->withInput()->with('error', 'Please select a supplier. Purchase requests must be from a specific supplier.');
+        }
 
         // Validate that at least one product is selected
         $hasValidProduct = false;
@@ -243,48 +249,27 @@ class PurchaseRequestController extends BaseController
                 if (!empty($quantities[$index]) && $quantities[$index] > 0) {
                     $quantity = (int) $quantities[$index];
                     
-                    if ($supplierId) {
-                        // Supplier selected - use supplier products
-                        $supplierProduct = $this->supplierProductModel->find($productId);
-                        if ($supplierProduct) {
-                            $unitPrice = $supplierProduct['supplier_price'] ?? 0;
-                            $totalPrice = $quantity * $unitPrice;
+                    // Only supplier products allowed
+                    $supplierProduct = $this->supplierProductModel->find($productId);
+                    if ($supplierProduct) {
+                        $unitPrice = $supplierProduct['supplier_price'] ?? 0;
+                        $totalPrice = $quantity * $unitPrice;
 
-                            $this->purchaseRequestItemModel->insert([
-                                'purchase_request_id' => $requestId,
-                                'product_id' => null,
-                                'supplier_product_id' => $productId,
-                                'product_name' => $supplierProduct['name'],
-                                'product_sku' => $supplierProduct['sku'],
-                                'product_unit' => $supplierProduct['unit'] ?? 'pcs',
-                                'quantity' => $quantity,
-                                'unit_price' => $unitPrice,
-                                'total_price' => $totalPrice,
-                            ]);
-                        } else {
-                            // Supplier product not found - skip this item
-                            log_message('warning', "Supplier product ID {$productId} not found for purchase request {$requestId}");
-                            continue;
-                        }
+                        $this->purchaseRequestItemModel->insert([
+                            'purchase_request_id' => $requestId,
+                            'product_id' => null,
+                            'supplier_product_id' => $productId,
+                            'product_name' => $supplierProduct['name'],
+                            'product_sku' => $supplierProduct['sku'],
+                            'product_unit' => $supplierProduct['unit'] ?? 'pcs',
+                            'quantity' => $quantity,
+                            'unit_price' => $unitPrice,
+                            'total_price' => $totalPrice,
+                        ]);
                     } else {
-                        // No supplier - use Central Admin products (system products)
-                        $product = $this->productModel->find($productId);
-                        if ($product) {
-                            $unitPrice = $product['cost_price'] ?? 0;
-                            $totalPrice = $quantity * $unitPrice;
-
-                            $this->purchaseRequestItemModel->insert([
-                                'purchase_request_id' => $requestId,
-                                'product_id' => $productId,
-                                'supplier_product_id' => null,
-                                'product_name' => $product['name'],
-                                'product_sku' => $product['sku'],
-                                'product_unit' => $product['unit'] ?? 'pcs',
-                                'quantity' => $quantity,
-                                'unit_price' => $unitPrice,
-                                'total_price' => $totalPrice,
-                            ]);
-                        }
+                        // Supplier product not found - skip this item
+                        log_message('warning', "Supplier product ID {$productId} not found for purchase request {$requestId}");
+                        continue;
                     }
                 }
             }
@@ -298,10 +283,10 @@ class PurchaseRequestController extends BaseController
 
         $this->activityLogModel->logActivity($requestedBy, 'create', 'purchase_request', "Created purchase request: $requestNumber");
 
-        // Send notification to admins for approval
+        // Send workflow notification to admins for approval
         $branch = $this->branchModel->find($branchId);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-        $this->notificationService->sendPurchaseRequestNotification($requestId, $requestNumber, $branchName);
+        $this->notificationService->notifyPurchaseRequestCreatedWorkflow($requestId, $requestNumber, $branchName);
 
         return redirect()->to('/purchase-requests')->with('success', 'Purchase request created successfully');
     }
@@ -332,10 +317,10 @@ class PurchaseRequestController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'approve', 'purchase_request', "Approved purchase request ID: $id");
 
-        // Notify branch users that their request has been approved
+        // Send workflow notification to branch and central admin
         $branch = $this->branchModel->find($request['branch_id']);
         $branchName = $branch ? $branch['name'] : 'Unknown Branch';
-        $this->notificationService->sendPurchaseRequestApprovalToBranch($id, $request['request_number'], $request['branch_id'], $branchName);
+        $this->notificationService->notifyPurchaseRequestApprovedWorkflow($id, $request['request_number'], $request['branch_id'], $branchName);
 
         // If supplier is assigned on the request, auto-create a Purchase Order and send to supplier
         try {
@@ -422,14 +407,27 @@ class PurchaseRequestController extends BaseController
             return redirect()->back()->with('error', 'Unauthorized');
         }
 
+        $request = $this->purchaseRequestModel->find($id);
+        $rejectionReason = $this->request->getPost('rejection_reason') ?: 'No reason provided';
+        
         $this->purchaseRequestModel->update($id, [
             'status' => 'rejected',
             'approved_by' => $session->get('user_id'),
             'approved_at' => date('Y-m-d H:i:s'),
-            'rejection_reason' => $this->request->getPost('rejection_reason')
+            'rejection_reason' => $rejectionReason
         ]);
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'reject', 'purchase_request', "Rejected purchase request ID: $id");
+
+        // Send workflow notification to branch
+        if ($request) {
+            $this->notificationService->notifyPurchaseRequestRejectedWorkflow(
+                $id,
+                $request['request_number'],
+                $request['branch_id'],
+                $rejectionReason
+            );
+        }
 
         return redirect()->back()->with('success', 'Purchase request rejected');
     }

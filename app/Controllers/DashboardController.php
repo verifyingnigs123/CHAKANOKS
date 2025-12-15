@@ -35,7 +35,9 @@ class DashboardController extends BaseController
         switch ($role) {
             case 'central_admin':
                 $data['total_branches'] = (new BranchModel())->where('status', 'active')->countAllResults();
-                $data['total_products'] = (new ProductModel())->countAllResults();
+                // Count products from supplier_products table (managed by suppliers)
+                $supplierProductModel = new \App\Models\SupplierProductModel();
+                $data['total_products'] = $supplierProductModel->where('status', 'active')->countAllResults();
                 $data['total_suppliers'] = (new SupplierModel())->where('status', 'active')->countAllResults();
                 $data['pending_requests'] = (new PurchaseRequestModel())->where('status', 'pending')->countAllResults();
                 $data['active_alerts'] = (new StockAlertModel())->where('status', 'active')->countAllResults();
@@ -45,6 +47,9 @@ class DashboardController extends BaseController
                 
                 // Branch inventory summary
                 $data['branch_inventory_summary'] = $this->getBranchInventorySummary();
+                
+                // Low stock items across all branches
+                $data['low_stock_items'] = $this->getAllLowStockItems();
                 
                 // Supplier performance
                 $data['supplier_performance'] = $this->getSupplierPerformance();
@@ -66,7 +71,9 @@ class DashboardController extends BaseController
                 $data['branch_info'] = $branch;
                 
                 $data['branch_inventory'] = (new InventoryModel())->where('branch_id', $branchId)->countAllResults();
-                $data['low_stock_items'] = $this->getLowStockItems($branchId);
+                $lowStockItems = $this->getLowStockItems($branchId);
+                $data['low_stock_items'] = $lowStockItems;
+                $data['low_stock_count'] = count($lowStockItems);
                 $data['pending_requests'] = (new PurchaseRequestModel())->where('branch_id', $branchId)->where('status', 'pending')->countAllResults();
                 $data['active_alerts'] = (new StockAlertModel())->where('branch_id', $branchId)->where('status', 'active')->countAllResults();
                 
@@ -82,6 +89,9 @@ class DashboardController extends BaseController
                 // Purchase orders for this branch
                 $data['pending_orders'] = (new PurchaseOrderModel())->where('branch_id', $branchId)->whereIn('status', ['draft', 'sent'])->countAllResults();
                 $data['completed_orders'] = (new PurchaseOrderModel())->where('branch_id', $branchId)->where('status', 'completed')->countAllResults();
+                
+                // Send low stock notifications to branch staff
+                $this->sendLowStockNotifications($branchId, $lowStockItems);
                 
                 // Recent activities
                 $data['recent_requests'] = (new PurchaseRequestModel())->where('branch_id', $branchId)->orderBy('created_at', 'DESC')->limit(5)->findAll();
@@ -103,8 +113,14 @@ class DashboardController extends BaseController
 
             case 'inventory_staff':
                 $data['branch_inventory'] = (new InventoryModel())->where('branch_id', $branchId)->countAllResults();
+                $lowStockItems = $this->getLowStockItems($branchId);
+                $data['low_stock_items'] = $lowStockItems;
+                $data['low_stock_count'] = count($lowStockItems);
                 $data['active_alerts'] = (new StockAlertModel())->where('branch_id', $branchId)->where('status', 'active')->countAllResults();
                 $data['pending_transfers'] = (new TransferModel())->where('to_branch_id', $branchId)->where('status', 'pending')->countAllResults();
+                
+                // Send low stock notifications to branch staff
+                $this->sendLowStockNotifications($branchId, $lowStockItems);
                 break;
 
             case 'supplier':
@@ -196,15 +212,32 @@ class DashboardController extends BaseController
     private function getLowStockItems($branchId)
     {
         $inventoryModel = new InventoryModel();
-        $productModel = new ProductModel();
 
-        $lowStock = $inventoryModel->select('inventory.*, products.name, products.min_stock_level')
+        $lowStock = $inventoryModel->select('inventory.*, products.name as product_name, products.sku, products.min_stock_level')
             ->join('products', 'products.id = inventory.product_id')
             ->where('inventory.branch_id', $branchId)
             ->where('inventory.quantity <= products.min_stock_level', null, false)
+            ->where('inventory.quantity >', 0) // Exclude out of stock
+            ->orderBy('inventory.quantity', 'ASC')
             ->findAll();
 
-        return count($lowStock);
+        return $lowStock;
+    }
+    
+    private function getAllLowStockItems()
+    {
+        $inventoryModel = new InventoryModel();
+
+        $lowStock = $inventoryModel->select('inventory.*, products.name as product_name, products.sku, products.min_stock_level, branches.name as branch_name')
+            ->join('products', 'products.id = inventory.product_id')
+            ->join('branches', 'branches.id = inventory.branch_id')
+            ->where('inventory.quantity <= products.min_stock_level', null, false)
+            ->where('inventory.quantity >', 0) // Exclude out of stock
+            ->orderBy('inventory.quantity', 'ASC')
+            ->limit(10)
+            ->findAll();
+
+        return $lowStock;
     }
 
     private function getBranchInventorySummary()
@@ -414,6 +447,35 @@ class DashboardController extends BaseController
             'labels' => $labels,
             'data' => $data
         ];
+    }
+
+    /**
+     * Send low stock notifications to branch staff
+     * This method checks for low stock items and sends notifications to branch manager and inventory staff
+     */
+    private function sendLowStockNotifications($branchId, $lowStockItems)
+    {
+        if (empty($lowStockItems)) {
+            return;
+        }
+
+        // Load notification service
+        $notificationService = new \App\Libraries\NotificationService();
+        
+        // Get branch name
+        $branchModel = new BranchModel();
+        $branch = $branchModel->find($branchId);
+        $branchName = $branch['name'] ?? 'Branch';
+
+        // Send notification for each low stock item
+        foreach ($lowStockItems as $item) {
+            $productName = $item['product_name'];
+            $currentQty = $item['quantity'];
+            $minLevel = $item['min_stock_level'];
+            
+            // Send notification to branch manager and inventory staff
+            $notificationService->notifyLowStock($branchId, $productName, $currentQty, $minLevel);
+        }
     }
 }
 

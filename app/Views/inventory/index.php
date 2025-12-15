@@ -43,10 +43,6 @@ $title = 'Inventory';
                class="inline-flex items-center justify-center px-4 py-2.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 font-medium rounded-lg transition-colors whitespace-nowrap">
                 <i class="fas fa-history mr-2"></i> History
             </a>
-            <button onclick="openScanModal()" 
-                    class="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">
-                <i class="fas fa-barcode mr-2"></i> Scan
-            </button>
         </div>
     </div>
 </div>
@@ -62,7 +58,6 @@ $title = 'Inventory';
                     <?php endif; ?>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">SKU</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Barcode</th>
                     <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantity</th>
                     <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Available</th>
                     <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Min Level</th>
@@ -96,7 +91,6 @@ $title = 'Inventory';
                         <td class="px-6 py-4">
                             <span class="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-0.5 rounded"><?= esc($item['sku']) ?></span>
                         </td>
-                        <td class="px-6 py-4 text-gray-500 text-sm"><?= esc($item['barcode'] ?? '-') ?></td>
                         <td class="px-6 py-4 text-center">
                             <?php if ($item['quantity'] <= $item['min_stock_level']): ?>
                             <span class="inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold bg-red-100 text-red-700">
@@ -191,111 +185,11 @@ $title = 'Inventory';
     </div>
 </div>
 
-<!-- Scan Barcode Modal -->
-<div id="scanModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" id="scanModalOverlay"></div>
-        <div class="relative z-10 bg-white rounded-xl shadow-xl max-w-2xl w-full mx-auto transform transition-all" onclick="event.stopPropagation()">
-            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-800 flex items-center">
-                    <i class="fas fa-barcode text-emerald-500 mr-2"></i> Barcode Scanner
-                </h3>
-                <button type="button" id="closeScanBtn" class="text-gray-400 hover:text-gray-600 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                    <i class="fas fa-times text-xl pointer-events-none"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <?php if ($role === 'central_admin'): ?>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Branch</label>
-                    <select id="scanBranchSelect" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 outline-none transition-all">
-                        <option value="">-- Select Branch --</option>
-                        <?php foreach ($branches as $branch): ?>
-                        <option value="<?= $branch['id'] ?>" <?= ($current_branch_id == $branch['id']) ? 'selected' : '' ?>><?= esc($branch['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <?php else: ?>
-                <input type="hidden" id="scanBranchSelect" value="<?= session()->get('branch_id') ?>">
-                <?php endif; ?>
-                
-                <div class="text-center mb-4">
-                    <button id="toggleCameraBtn" onclick="toggleCamera()"
-                            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                        <i class="fas fa-camera mr-2"></i> <span id="cameraStatus">Start Camera</span>
-                    </button>
-                </div>
-
-                <div id="videoContainer" class="hidden relative w-full max-w-lg mx-auto mb-4 bg-black rounded-lg overflow-hidden">
-                    <video id="scannerVideo" autoplay playsinline class="w-full" style="transform: scaleX(1); -webkit-transform: scaleX(1);"></video>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-64 h-64 border-2 border-blue-500 rounded-lg" style="box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);"></div>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Or Enter Barcode Manually</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="manualBarcodeInput" 
-                               class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
-                               placeholder="Enter barcode number">
-                        <button onclick="scanManualBarcode()"
-                                class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="scanResultCard" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 id="scannedProductName" class="font-semibold text-gray-800 mb-2"></h4>
-                    <div class="grid grid-cols-2 gap-2 text-sm mb-3">
-                        <p><span class="text-gray-500">SKU:</span> <span id="scannedProductSku" class="font-medium"></span></p>
-                        <p><span class="text-gray-500">Category:</span> <span id="scannedProductCategory" class="font-medium"></span></p>
-                        <p><span class="text-gray-500">Current Stock:</span> <span id="scannedCurrentStock" class="font-medium"></span></p>
-                        <p><span class="text-gray-500">Min Level:</span> <span id="scannedMinStock" class="font-medium"></span></p>
-                    </div>
-                    
-                    <div id="lowStockAlert" class="hidden bg-amber-100 border border-amber-200 text-amber-700 px-3 py-2 rounded-lg mb-3 text-sm">
-                        <i class="fas fa-exclamation-triangle mr-1"></i> Low stock alert!
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mt-4">
-                        <div>
-                            <label class="block text-sm text-gray-600 mb-1">Add Quantity</label>
-                            <input type="number" id="addQuantityInput" min="1" value="1"
-                                   class="w-full px-3 py-2 border border-gray-200 rounded-lg mb-2">
-                            <button onclick="updateInventoryFromScan('add')"
-                                    class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
-                                <i class="fas fa-plus mr-1"></i> Add Stock
-                            </button>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-600 mb-1">Subtract Quantity</label>
-                            <input type="number" id="subtractQuantityInput" min="1" value="1"
-                                   class="w-full px-3 py-2 border border-gray-200 rounded-lg mb-2">
-                            <button onclick="updateInventoryFromScan('subtract')"
-                                    class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
-                                <i class="fas fa-minus mr-1"></i> Subtract
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="scanErrorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mt-4"></div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 <script>
-let scannerStream = null;
-let scannerScanning = false;
-let currentScannedProduct = null;
-
 function updateInventory(id, branchId, productId, currentQty) {
     document.getElementById('update_branch_id').value = branchId;
     document.getElementById('update_product_id').value = productId;
@@ -307,189 +201,12 @@ function closeUpdateModal() {
     document.getElementById('updateModal').classList.add('hidden');
 }
 
-function openScanModal() {
-    document.getElementById('scanModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeScanModal() {
-    stopCamera();
-    document.getElementById('scanModal').classList.add('hidden');
-    document.getElementById('scanResultCard').classList.add('hidden');
-    document.getElementById('scanErrorMessage').classList.add('hidden');
-    document.getElementById('manualBarcodeInput').value = '';
-    document.body.style.overflow = '';
-    currentScannedProduct = null;
-}
-
-// Attach event listeners for scan modal close
-document.addEventListener('DOMContentLoaded', function() {
-    // Close button
-    document.getElementById('closeScanBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        closeScanModal();
-    });
-    
-    // Overlay click
-    document.getElementById('scanModalOverlay').addEventListener('click', function(e) {
-        e.preventDefault();
-        closeScanModal();
-    });
-});
-
-// Close modals on Escape key
+// Close modal on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        closeScanModal();
         closeUpdateModal();
     }
 });
-
-function toggleCamera() {
-    if (!scannerScanning) {
-        startCamera();
-    } else {
-        stopCamera();
-    }
-}
-
-function startCamera() {
-    // Try to use back camera first, fallback to any available camera
-    const constraints = {
-        video: { 
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 640 },
-            height: { ideal: 480 }
-        }
-    };
-    
-    navigator.mediaDevices.getUserMedia(constraints)
-    .then(function(mediaStream) {
-        scannerStream = mediaStream;
-        const video = document.getElementById('scannerVideo');
-        video.srcObject = mediaStream;
-        
-        // Check if using front camera and apply un-mirror if needed
-        const track = mediaStream.getVideoTracks()[0];
-        const settings = track.getSettings();
-        if (settings.facingMode === 'user') {
-            video.style.transform = 'scaleX(-1)';
-        } else {
-            video.style.transform = 'scaleX(1)';
-        }
-        
-        document.getElementById('videoContainer').classList.remove('hidden');
-        document.getElementById('cameraStatus').textContent = 'Stop Camera';
-        scannerScanning = true;
-
-        Quagga.init({
-            inputStream: { name: "Live", type: "LiveStream", target: video, constraints: { width: 640, height: 480, facingMode: "environment" } },
-            decoder: { readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader", "upc_e_reader"] }
-        }, function(err) {
-            if (err) { console.error('Error:', err); return; }
-            Quagga.start();
-        });
-
-        Quagga.onDetected(function(result) {
-            scanBarcode(result.codeResult.code);
-            Quagga.stop();
-        });
-    })
-    .catch(function(err) {
-        document.getElementById('scanErrorMessage').textContent = 'Camera access denied. Please use manual input.';
-        document.getElementById('scanErrorMessage').classList.remove('hidden');
-    });
-}
-
-function stopCamera() {
-    if (scannerStream) { scannerStream.getTracks().forEach(track => track.stop()); scannerStream = null; }
-    if (typeof Quagga !== 'undefined') { Quagga.stop(); }
-    document.getElementById('videoContainer').classList.add('hidden');
-    document.getElementById('cameraStatus').textContent = 'Start Camera';
-    scannerScanning = false;
-}
-
-function scanManualBarcode() {
-    const barcode = document.getElementById('manualBarcodeInput').value.trim();
-    if (barcode) { scanBarcode(barcode); } else { alert('Please enter a barcode'); }
-}
-
-function getScanBranchId() {
-    const branchSelect = document.getElementById('scanBranchSelect');
-    return branchSelect ? branchSelect.value : '';
-}
-
-function scanBarcode(barcode) {
-    const branchId = getScanBranchId();
-    
-    fetch('<?= base_url('barcode/scan') ?>', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'barcode=' + encodeURIComponent(barcode) + '&branch_id=' + encodeURIComponent(branchId)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            currentScannedProduct = data.product;
-            currentScannedProduct.branch_id = data.branch_id || branchId;
-            displayScannedProduct(data);
-        } else {
-            document.getElementById('scanErrorMessage').textContent = data.message || 'Product not found';
-            document.getElementById('scanErrorMessage').classList.remove('hidden');
-            document.getElementById('scanResultCard').classList.add('hidden');
-        }
-    });
-}
-
-function displayScannedProduct(data) {
-    document.getElementById('scanErrorMessage').classList.add('hidden');
-    document.getElementById('scanResultCard').classList.remove('hidden');
-    document.getElementById('scannedProductName').textContent = data.product.name;
-    document.getElementById('scannedProductSku').textContent = data.product.sku;
-    document.getElementById('scannedProductCategory').textContent = data.product.category || 'N/A';
-    
-    if (data.inventory) {
-        document.getElementById('scannedCurrentStock').textContent = data.inventory.quantity;
-        document.getElementById('scannedMinStock').textContent = data.inventory.min_stock_level;
-        document.getElementById('lowStockAlert').classList.toggle('hidden', data.inventory.quantity > data.inventory.min_stock_level);
-    } else {
-        document.getElementById('scannedCurrentStock').textContent = '0 (Not in inventory)';
-        document.getElementById('scannedMinStock').textContent = data.product.min_stock_level;
-        document.getElementById('lowStockAlert').classList.remove('hidden');
-    }
-}
-
-function updateInventoryFromScan(action) {
-    if (!currentScannedProduct) return;
-    
-    const branchId = getScanBranchId() || currentScannedProduct.branch_id;
-    if (!branchId) {
-        alert('Please select a branch first');
-        return;
-    }
-    
-    const quantity = action === 'add' ? parseInt(document.getElementById('addQuantityInput').value) : parseInt(document.getElementById('subtractQuantityInput').value);
-    if (quantity <= 0) { alert('Quantity must be greater than 0'); return; }
-
-    fetch('<?= base_url('barcode/update-inventory') ?>', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'barcode=' + encodeURIComponent(currentScannedProduct.barcode) + '&quantity=' + quantity + '&action=' + action + '&branch_id=' + encodeURIComponent(branchId)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Inventory updated! New quantity: ' + data.quantity);
-            scanBarcode(currentScannedProduct.barcode);
-            setTimeout(() => { window.location.reload(); }, 1500);
-        } else {
-            alert('Error: ' + (data.error || 'Failed to update'));
-        }
-    });
-}
-
-document.getElementById('manualBarcodeInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') scanManualBarcode(); });
 
 // Real-time search filter
 document.addEventListener('DOMContentLoaded', function() {
