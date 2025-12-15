@@ -37,6 +37,7 @@ $routes->group('inventory', ['filter' => 'auth'], function($routes) {
     $routes->get('alerts', 'InventoryController::alerts');
     $routes->post('alerts/(:num)/acknowledge', 'InventoryController::acknowledgeAlert/$1');
     $routes->get('get-quantity', 'InventoryController::getQuantity');
+    $routes->get('get-branch-products', 'InventoryController::getBranchProducts');
 });
 
 // Purchase Requests
@@ -138,9 +139,12 @@ $routes->group('transfers', ['filter' => 'auth'], function($routes) {
     $routes->get('create', 'TransferController::create');
     $routes->post('store', 'TransferController::store');
     $routes->get('view/(:num)', 'TransferController::view/$1');
+    $routes->get('get-details/(:num)', 'TransferController::getDetails/$1');
     $routes->post('(:num)/approve', 'TransferController::approve/$1');
     $routes->post('(:num)/reject', 'TransferController::reject/$1');
-    $routes->post('(:num)/complete', 'TransferController::complete/$1');
+    $routes->post('(:num)/schedule', 'TransferController::schedule/$1');
+    $routes->post('(:num)/dispatch', 'TransferController::dispatch/$1');
+    $routes->post('(:num)/receive', 'TransferController::receive/$1');
 });
 
 // Users
@@ -225,4 +229,6 @@ $routes->group('franchise', ['filter' => 'auth'], function($routes) {
     $routes->post('applications/(:num)/reject', 'FranchiseController::reject/$1');
     $routes->post('applications/(:num)/convert', 'FranchiseController::convertToBranch/$1');
     $routes->get('partners', 'FranchiseController::partners');
+    $routes->get('supply-allocation', 'FranchiseController::supplyAllocation');
+    $routes->post('allocate-supply', 'FranchiseController::allocateSupply');
 });

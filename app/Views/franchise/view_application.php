@@ -123,7 +123,7 @@
             </form>
             <?php endif; ?>
             
-            <?php if (in_array($application['status'], ['pending', 'under_review'])): ?>
+            <?php if ($role == 'central_admin' && in_array($application['status'], ['pending', 'under_review'])): ?>
             <button type="button" onclick="openApproveModal()" class="w-full px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors mb-3">
                 <i class="fas fa-check mr-2"></i>Approve
             </button>
@@ -132,7 +132,7 @@
             </button>
             <?php endif; ?>
             
-            <?php if ($application['status'] == 'approved'): ?>
+            <?php if ($role == 'central_admin' && $application['status'] == 'approved'): ?>
             <form method="post" action="<?= base_url('franchise/applications/' . $application['id'] . '/convert') ?>">
                 <?= csrf_field() ?>
                 <button type="submit" class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">

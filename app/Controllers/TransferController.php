@@ -75,10 +75,10 @@ class TransferController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Only central_admin and branch_manager can create transfers
+        // Only central_admin, branch_manager, and franchise_manager can create transfers
         $role = $session->get('role');
-        if (!in_array($role, ['central_admin', 'branch_manager'])) {
-            return redirect()->to('/transfers')->with('error', 'Only Central Admin and Branch Managers can create transfers');
+        if (!in_array($role, ['central_admin', 'branch_manager', 'franchise_manager'])) {
+            return redirect()->to('/transfers')->with('error', 'Only Central Admin, Branch Managers, and Franchise Managers can create transfers');
         }
 
         $branchId = $session->get('branch_id');
@@ -97,10 +97,10 @@ class TransferController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Only central_admin and branch_manager can create transfers
+        // Only central_admin, branch_manager, and franchise_manager can create transfers
         $role = $session->get('role');
-        if (!in_array($role, ['central_admin', 'branch_manager'])) {
-            return redirect()->to('/transfers')->with('error', 'Only Central Admin and Branch Managers can create transfers');
+        if (!in_array($role, ['central_admin', 'branch_manager', 'franchise_manager'])) {
+            return redirect()->to('/transfers')->with('error', 'Only Central Admin, Branch Managers, and Franchise Managers can create transfers');
         }
 
         $transferNumber = $this->transferModel->generateTransferNumber();
@@ -158,7 +158,12 @@ class TransferController extends BaseController
         $toBranch = $this->branchModel->find($toBranchId);
         $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
         $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
-        $this->notificationService->notifyTransferCreatedWorkflow(
+        
+        // Log for debugging
+        log_message('info', "Sending transfer notifications for Transfer ID: $transferId, Number: $transferNumber");
+        log_message('info', "From: $fromBranchName (ID: $fromBranchId), To: $toBranchName (ID: $toBranchId)");
+        
+        $notificationCount = $this->notificationService->notifyTransferCreatedWorkflow(
             $transferId, 
             $transferNumber, 
             $fromBranchId, 
@@ -166,6 +171,8 @@ class TransferController extends BaseController
             $toBranchId, 
             $toBranchName
         );
+        
+        log_message('info', "Transfer notifications sent: $notificationCount notifications created");
 
         return redirect()->to('/transfers')->with('success', 'Transfer request created successfully');
     }
@@ -204,6 +211,39 @@ class TransferController extends BaseController
         return view('transfers/view', $data);
     }
 
+    public function getDetails($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $transfer = $this->transferModel->select('transfers.*, 
+            from_branch.name as from_branch_name, 
+            to_branch.name as to_branch_name,
+            requester.full_name as requested_by_name,
+            approver.full_name as approved_by_name')
+            ->join('branches as from_branch', 'from_branch.id = transfers.from_branch_id')
+            ->join('branches as to_branch', 'to_branch.id = transfers.to_branch_id')
+            ->join('users as requester', 'requester.id = transfers.requested_by')
+            ->join('users as approver', 'approver.id = transfers.approved_by', 'left')
+            ->find($id);
+
+        if (!$transfer) {
+            return $this->response->setJSON(['error' => 'Transfer not found'])->setStatusCode(404);
+        }
+
+        $items = $this->transferItemModel->select('transfer_items.*, products.name as product_name, products.sku, products.unit')
+            ->join('products', 'products.id = transfer_items.product_id')
+            ->where('transfer_items.transfer_id', $id)
+            ->findAll();
+
+        return $this->response->setJSON([
+            'transfer' => $transfer,
+            'items' => $items
+        ]);
+    }
+
     public function approve($id)
     {
         $session = session();
@@ -212,8 +252,9 @@ class TransferController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'branch_manager' && $role !== 'central_admin' && $role !== 'central_admin') {
-            return redirect()->back()->with('error', 'Unauthorized');
+        // Only Central Admin can approve transfers
+        if ($role !== 'central_admin') {
+            return redirect()->back()->with('error', 'Only Central Admin can approve transfers');
         }
 
         $transfer = $this->transferModel->find($id);
@@ -234,7 +275,9 @@ class TransferController extends BaseController
         $toBranch = $this->branchModel->find($transfer['to_branch_id']);
         $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
         $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
-        $this->notificationService->notifyTransferApprovedWorkflow(
+        
+        log_message('info', "Transfer {$transfer['transfer_number']} approved by Central Admin");
+        $notificationCount = $this->notificationService->notifyTransferApprovedWorkflow(
             $id, 
             $transfer['transfer_number'], 
             $transfer['from_branch_id'], 
@@ -242,8 +285,9 @@ class TransferController extends BaseController
             $transfer['to_branch_id'], 
             $toBranchName
         );
+        log_message('info', "Transfer approval notifications sent: $notificationCount");
 
-        return redirect()->back()->with('success', 'Transfer approved');
+        return redirect()->back()->with('success', 'Transfer approved successfully');
     }
 
     public function reject($id)
@@ -254,8 +298,14 @@ class TransferController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'branch_manager' && $role !== 'central_admin' && $role !== 'central_admin') {
-            return redirect()->back()->with('error', 'Unauthorized');
+        // Only Central Admin can reject transfers
+        if ($role !== 'central_admin') {
+            return redirect()->back()->with('error', 'Only Central Admin can reject transfers');
+        }
+
+        $transfer = $this->transferModel->find($id);
+        if (!$transfer || $transfer['status'] !== 'pending') {
+            return redirect()->back()->with('error', 'Invalid transfer request');
         }
 
         $this->transferModel->update($id, [
@@ -267,32 +317,38 @@ class TransferController extends BaseController
         $this->activityLogModel->logActivity($session->get('user_id'), 'reject', 'transfer', "Rejected transfer ID: $id");
 
         // Send workflow notification to source branch
-        $transfer = $this->transferModel->find($id);
-        if ($transfer) {
-            $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
-            $toBranch = $this->branchModel->find($transfer['to_branch_id']);
-            $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
-            $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
-            $rejectionReason = $this->request->getPost('rejection_reason') ?: 'No reason provided';
-            $this->notificationService->notifyTransferRejectedWorkflow(
-                $id, 
-                $transfer['transfer_number'], 
-                $transfer['from_branch_id'], 
-                $fromBranchName, 
-                $transfer['to_branch_id'], 
-                $toBranchName, 
-                $rejectionReason
-            );
-        }
+        $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
+        $toBranch = $this->branchModel->find($transfer['to_branch_id']);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        $rejectionReason = $this->request->getPost('rejection_reason') ?: 'No reason provided';
+        
+        log_message('info', "Transfer {$transfer['transfer_number']} rejected by Central Admin");
+        $notificationCount = $this->notificationService->notifyTransferRejectedWorkflow(
+            $id, 
+            $transfer['transfer_number'], 
+            $transfer['from_branch_id'], 
+            $fromBranchName, 
+            $transfer['to_branch_id'], 
+            $toBranchName, 
+            $rejectionReason
+        );
+        log_message('info', "Transfer rejection notifications sent: $notificationCount");
 
-        return redirect()->back()->with('success', 'Transfer rejected');
+        return redirect()->back()->with('success', 'Transfer rejected successfully');
     }
 
-    public function complete($id)
+    public function schedule($id)
     {
         $session = session();
         if (!$session->get('isLoggedIn')) {
             return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        // Only Central Admin or Logistics Coordinator can schedule
+        if ($role !== 'central_admin' && $role !== 'logistics_coordinator') {
+            return redirect()->back()->with('error', 'Only Central Admin or Logistics Coordinator can schedule transfers');
         }
 
         $transfer = $this->transferModel->find($id);
@@ -300,10 +356,69 @@ class TransferController extends BaseController
             return redirect()->back()->with('error', 'Transfer must be approved first');
         }
 
-        $items = $this->transferItemModel->where('transfer_id', $id)->findAll();
+        $scheduledDate = $this->request->getPost('scheduled_date');
+        if (!$scheduledDate) {
+            return redirect()->back()->with('error', 'Please provide a scheduled date');
+        }
 
+        $this->transferModel->update($id, [
+            'status' => 'scheduled',
+            'scheduled_date' => $scheduledDate,
+            'scheduled_by' => $session->get('user_id'),
+            'scheduled_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $this->activityLogModel->logActivity($session->get('user_id'), 'schedule', 'transfer', "Scheduled transfer ID: $id for $scheduledDate");
+
+        // Send notifications
+        $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
+        $toBranch = $this->branchModel->find($transfer['to_branch_id']);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        
+        // Notify both branches
+        $this->notificationService->createForBranch(
+            $transfer['from_branch_id'],
+            'branch_manager',
+            'info',
+            '📅 Transfer Scheduled',
+            "Transfer {$transfer['transfer_number']} to {$toBranchName} scheduled for " . date('M d, Y', strtotime($scheduledDate)),
+            base_url("transfers/view/{$id}")
+        );
+        
+        $this->notificationService->createForBranch(
+            $transfer['to_branch_id'],
+            'branch_manager',
+            'info',
+            '📅 Incoming Transfer Scheduled',
+            "Transfer {$transfer['transfer_number']} from {$fromBranchName} scheduled for " . date('M d, Y', strtotime($scheduledDate)),
+            base_url("transfers/view/{$id}")
+        );
+
+        return redirect()->back()->with('success', 'Transfer scheduled successfully');
+    }
+
+    public function dispatch($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        // Only Central Admin or Logistics Coordinator can dispatch
+        if ($role !== 'central_admin' && $role !== 'logistics_coordinator') {
+            return redirect()->back()->with('error', 'Only Central Admin or Logistics Coordinator can dispatch transfers');
+        }
+
+        $transfer = $this->transferModel->find($id);
+        if (!$transfer || ($transfer['status'] !== 'approved' && $transfer['status'] !== 'scheduled')) {
+            return redirect()->back()->with('error', 'Transfer must be approved or scheduled first');
+        }
+
+        // Deduct inventory from source branch when dispatching
+        $items = $this->transferItemModel->where('transfer_id', $id)->findAll();
         foreach ($items as $item) {
-            // Subtract from source branch
             $fromInventory = $this->inventoryModel->where('branch_id', $transfer['from_branch_id'])
                 ->where('product_id', $item['product_id'])
                 ->first();
@@ -312,8 +427,78 @@ class TransferController extends BaseController
                 $newQuantity = $fromInventory['quantity'] - $item['quantity'];
                 $this->inventoryModel->updateQuantity($transfer['from_branch_id'], $item['product_id'], $newQuantity, $session->get('user_id'));
             }
+        }
 
-            // Add to destination branch
+        $this->transferModel->update($id, [
+            'status' => 'in_transit',
+            'dispatched_by' => $session->get('user_id'),
+            'dispatched_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $this->activityLogModel->logActivity($session->get('user_id'), 'dispatch', 'transfer', "Dispatched transfer ID: $id");
+
+        // Send notifications
+        $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
+        $toBranch = $this->branchModel->find($transfer['to_branch_id']);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        
+        // Notify destination branch that transfer is on the way
+        $this->notificationService->createForBranch(
+            $transfer['to_branch_id'],
+            'branch_manager',
+            'warning',
+            '🚚 Transfer In Transit - Prepare to Receive',
+            "Transfer {$transfer['transfer_number']} from {$fromBranchName} is on the way. Click to receive when it arrives.",
+            base_url("transfers/view/{$id}")
+        );
+        
+        // Notify source branch
+        $this->notificationService->createForBranch(
+            $transfer['from_branch_id'],
+            'branch_manager',
+            'info',
+            '🚚 Transfer Dispatched',
+            "Transfer {$transfer['transfer_number']} to {$toBranchName} has been dispatched. Inventory deducted.",
+            base_url("transfers/view/{$id}")
+        );
+        
+        // Notify Central Admin
+        $this->notificationService->createForRole(
+            'central_admin',
+            'info',
+            '🚚 Transfer Dispatched',
+            "Transfer {$transfer['transfer_number']} from {$fromBranchName} to {$toBranchName} is in transit.",
+            base_url("transfers/view/{$id}")
+        );
+
+        return redirect()->back()->with('success', 'Transfer dispatched successfully. Inventory deducted from source branch.');
+    }
+
+    public function receive($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        $userBranchId = $session->get('branch_id');
+
+        $transfer = $this->transferModel->find($id);
+        if (!$transfer || $transfer['status'] !== 'in_transit') {
+            return redirect()->back()->with('error', 'Transfer must be in transit to receive');
+        }
+
+        // Only destination branch manager or central admin can receive
+        if ($role !== 'central_admin' && ($role !== 'branch_manager' || $userBranchId != $transfer['to_branch_id'])) {
+            return redirect()->back()->with('error', 'Only the destination branch manager can receive this transfer');
+        }
+
+        $items = $this->transferItemModel->where('transfer_id', $id)->findAll();
+
+        // Add inventory to destination branch
+        foreach ($items as $item) {
             $toInventory = $this->inventoryModel->where('branch_id', $transfer['to_branch_id'])
                 ->where('product_id', $item['product_id'])
                 ->first();
@@ -333,17 +518,21 @@ class TransferController extends BaseController
 
         $this->transferModel->update($id, [
             'status' => 'completed',
+            'received_by' => $session->get('user_id'),
+            'received_at' => date('Y-m-d H:i:s'),
             'completed_at' => date('Y-m-d H:i:s')
         ]);
 
-        $this->activityLogModel->logActivity($session->get('user_id'), 'complete', 'transfer', "Completed transfer ID: $id");
+        $this->activityLogModel->logActivity($session->get('user_id'), 'receive', 'transfer', "Received transfer ID: $id");
 
-        // Send workflow notification to destination branch
+        // Send completion notifications to all parties
         $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
         $toBranch = $this->branchModel->find($transfer['to_branch_id']);
         $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
         $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
-        $this->notificationService->notifyTransferCompletedWorkflow(
+        
+        log_message('info', "Transfer {$transfer['transfer_number']} completed");
+        $notificationCount = $this->notificationService->notifyTransferCompletedWorkflow(
             $id, 
             $transfer['transfer_number'], 
             $transfer['from_branch_id'], 
@@ -351,8 +540,10 @@ class TransferController extends BaseController
             $transfer['to_branch_id'], 
             $toBranchName
         );
+        log_message('info', "Transfer completion notifications sent: $notificationCount");
 
-        return redirect()->to('/transfers')->with('success', 'Transfer completed and inventory updated');
+        return redirect()->to('/transfers')->with('success', 'Transfer received successfully. Inventory updated.');
     }
+
 }
 

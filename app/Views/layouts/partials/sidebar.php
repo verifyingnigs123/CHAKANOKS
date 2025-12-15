@@ -258,14 +258,9 @@ function activeClass($path) {
             <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Supply Allocation</p>
         </div>
         
-        <a href="<?= base_url('transfers') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('transfers') ?>">
-            <i class="fas fa-exchange-alt w-5"></i>
-            <span class="ml-3">Allocate Supplies</span>
-        </a>
-        
-        <a href="<?= base_url('inventory') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('inventory') ?>">
-            <i class="fas fa-warehouse w-5"></i>
-            <span class="ml-3">View Inventory</span>
+        <a href="<?= base_url('franchise/supply-allocation') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('franchise/supply-allocation') ?>">
+            <i class="fas fa-boxes w-5"></i>
+            <span class="ml-3">Supply Allocation</span>
         </a>
 
         <?php else: ?>

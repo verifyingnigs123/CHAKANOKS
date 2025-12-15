@@ -59,15 +59,22 @@ class NotificationService
      */
     public function createForRole(string $role, string $type, string $title, string $message, ?string $link = null): int
     {
+        log_message('info', "createForRole called for role: $role");
         $users = $this->userModel->where('role', $role)->where('status', 'active')->findAll();
+        log_message('info', "Found " . count($users) . " active users with role: $role");
         $count = 0;
         
         foreach ($users as $user) {
+            log_message('info', "Creating notification for user ID: {$user['id']}, username: {$user['username']}");
             if ($this->createForUser($user['id'], $type, $title, $message, $link)) {
                 $count++;
+                log_message('info', "Notification created successfully for user ID: {$user['id']}");
+            } else {
+                log_message('warning', "Failed to create notification for user ID: {$user['id']} (possibly duplicate)");
             }
         }
         
+        log_message('info', "createForRole completed: $count notifications created for role: $role");
         return $count;
     }
 
@@ -801,8 +808,23 @@ class NotificationService
     {
         $count = 0;
         
+        log_message('info', "notifyTransferCreatedWorkflow called for Transfer $transferNumber");
+        
+        // Notify Central Admin - for oversight
+        log_message('info', "Notifying Central Admin about transfer $transferNumber");
+        $centralAdminCount = $this->createForRole(
+            'central_admin',
+            'info',
+            '📋 New Transfer Request',
+            "Transfer {$transferNumber} from {$fromBranchName} to {$toBranchName} created. Pending approval.",
+            base_url("transfers/view/{$transferId}")
+        );
+        log_message('info', "Central Admin notifications created: $centralAdminCount");
+        $count += $centralAdminCount;
+        
         // Notify destination branch manager - ACTION REQUIRED
-        $count += $this->createForBranch(
+        log_message('info', "Notifying destination branch (ID: $toBranchId) about transfer $transferNumber");
+        $destCount = $this->createForBranch(
             $toBranchId,
             'branch_manager',
             'warning',
@@ -810,9 +832,12 @@ class NotificationService
             "Transfer {$transferNumber} from {$fromBranchName} needs your approval. Click to review.",
             base_url("transfers/view/{$transferId}")
         );
+        log_message('info', "Destination branch notifications created: $destCount");
+        $count += $destCount;
         
         // Notify source branch
-        $count += $this->createForBranch(
+        log_message('info', "Notifying source branch (ID: $fromBranchId) about transfer $transferNumber");
+        $sourceCount = $this->createForBranch(
             $fromBranchId,
             'branch_manager',
             'info',
@@ -820,7 +845,10 @@ class NotificationService
             "Transfer {$transferNumber} to {$toBranchName} is pending approval.",
             base_url("transfers/view/{$transferId}")
         );
+        log_message('info', "Source branch notifications created: $sourceCount");
+        $count += $sourceCount;
         
+        log_message('info', "Total transfer notifications created: $count");
         return $count;
     }
 
@@ -830,6 +858,15 @@ class NotificationService
     public function notifyTransferApprovedWorkflow(int $transferId, string $transferNumber, int $fromBranchId, string $fromBranchName, int $toBranchId, string $toBranchName): int
     {
         $count = 0;
+        
+        // Notify Central Admin - for oversight
+        $count += $this->createForRole(
+            'central_admin',
+            'success',
+            '✅ Transfer Approved',
+            "Transfer {$transferNumber} from {$fromBranchName} to {$toBranchName} has been approved.",
+            base_url("transfers/view/{$transferId}")
+        );
         
         // Notify source branch - ACTION REQUIRED
         $count += $this->createForBranch(
@@ -851,12 +888,12 @@ class NotificationService
             base_url("transfers/view/{$transferId}")
         );
         
-        // Notify logistics coordinator
+        // Notify logistics coordinator - for dispatch coordination
         $count += $this->createForRole(
             'logistics_coordinator',
             'info',
-            '🚚 Transfer Approved',
-            "Transfer {$transferNumber} from {$fromBranchName} to {$toBranchName} approved.",
+            '🚚 Transfer Ready for Dispatch',
+            "Transfer {$transferNumber} from {$fromBranchName} to {$toBranchName} approved and ready for dispatch.",
             base_url("transfers/view/{$transferId}")
         );
         
@@ -869,6 +906,15 @@ class NotificationService
     public function notifyTransferCompletedWorkflow(int $transferId, string $transferNumber, int $fromBranchId, string $fromBranchName, int $toBranchId, string $toBranchName): int
     {
         $count = 0;
+        
+        // Notify Central Admin - for oversight
+        $count += $this->createForRole(
+            'central_admin',
+            'success',
+            '✅ Transfer Completed',
+            "Transfer {$transferNumber} from {$fromBranchName} to {$toBranchName} completed successfully.",
+            base_url("transfers/view/{$transferId}")
+        );
         
         // Notify destination branch
         $count += $this->createForBranch(
@@ -900,6 +946,15 @@ class NotificationService
             base_url("transfers/view/{$transferId}")
         );
         
+        // Notify logistics coordinator
+        $count += $this->createForRole(
+            'logistics_coordinator',
+            'success',
+            '✅ Transfer Delivered',
+            "Transfer {$transferNumber} from {$fromBranchName} to {$toBranchName} delivered successfully.",
+            base_url("transfers/view/{$transferId}")
+        );
+        
         return $count;
     }
 
@@ -908,7 +963,19 @@ class NotificationService
      */
     public function notifyTransferRejectedWorkflow(int $transferId, string $transferNumber, int $fromBranchId, string $fromBranchName, int $toBranchId, string $toBranchName, string $reason): int
     {
-        return $this->createForBranch(
+        $count = 0;
+        
+        // Notify Central Admin - for oversight
+        $count += $this->createForRole(
+            'central_admin',
+            'danger',
+            '❌ Transfer Rejected',
+            "Transfer {$transferNumber} from {$fromBranchName} to {$toBranchName} was rejected. Reason: {$reason}",
+            base_url("transfers/view/{$transferId}")
+        );
+        
+        // Notify source branch
+        $count += $this->createForBranch(
             $fromBranchId,
             'branch_manager',
             'danger',
@@ -916,6 +983,8 @@ class NotificationService
             "Transfer {$transferNumber} to {$toBranchName} was rejected. Reason: {$reason}",
             base_url("transfers/view/{$transferId}")
         );
+        
+        return $count;
     }
 
     /**

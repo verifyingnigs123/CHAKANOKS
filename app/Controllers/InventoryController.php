@@ -272,5 +272,28 @@ class InventoryController extends BaseController
 
         return view('inventory/history', $data);
     }
+
+    /**
+     * API: Get products available in a specific branch (for transfers)
+     */
+    public function getBranchProducts()
+    {
+        $branchId = $this->request->getGet('branch_id');
+        
+        if (!$branchId) {
+            return $this->response->setJSON(['products' => []]);
+        }
+
+        // Get all products that have inventory in this branch
+        $products = $this->inventoryModel
+            ->select('products.id, inventory.quantity, products.name, products.sku')
+            ->join('products', 'products.id = inventory.product_id')
+            ->where('inventory.branch_id', $branchId)
+            ->where('inventory.quantity >', 0) // Only show products with stock
+            ->orderBy('products.name', 'ASC')
+            ->findAll();
+
+        return $this->response->setJSON(['products' => $products]);
+    }
 }
 

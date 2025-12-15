@@ -72,8 +72,9 @@ class DashboardController extends BaseController
                 
                 $data['branch_inventory'] = (new InventoryModel())->where('branch_id', $branchId)->countAllResults();
                 $lowStockItems = $this->getLowStockItems($branchId);
-                $data['low_stock_items'] = $lowStockItems;
+                $data['low_stock_items'] = count($lowStockItems);
                 $data['low_stock_count'] = count($lowStockItems);
+                $data['low_stock_list'] = $lowStockItems;
                 $data['pending_requests'] = (new PurchaseRequestModel())->where('branch_id', $branchId)->where('status', 'pending')->countAllResults();
                 $data['active_alerts'] = (new StockAlertModel())->where('branch_id', $branchId)->where('status', 'active')->countAllResults();
                 
@@ -114,8 +115,9 @@ class DashboardController extends BaseController
             case 'inventory_staff':
                 $data['branch_inventory'] = (new InventoryModel())->where('branch_id', $branchId)->countAllResults();
                 $lowStockItems = $this->getLowStockItems($branchId);
-                $data['low_stock_items'] = $lowStockItems;
+                $data['low_stock_items'] = count($lowStockItems);
                 $data['low_stock_count'] = count($lowStockItems);
+                $data['low_stock_list'] = $lowStockItems;
                 $data['active_alerts'] = (new StockAlertModel())->where('branch_id', $branchId)->where('status', 'active')->countAllResults();
                 $data['pending_transfers'] = (new TransferModel())->where('to_branch_id', $branchId)->where('status', 'pending')->countAllResults();
                 
@@ -200,6 +202,30 @@ class DashboardController extends BaseController
 
                 // Delivery completion history
                 $data['delivery_history'] = $deliveryModel->where('status', 'delivered')->orderBy('delivery_date', 'DESC')->limit(20)->findAll();
+                break;
+
+            case 'franchise_manager':
+                // Franchise manager dashboard: applications and franchise locations
+                $franchiseApplicationModel = new \App\Models\FranchiseApplicationModel();
+                $branchModel = new BranchModel();
+                
+                // Total applications (all time)
+                $data['total_applications'] = $franchiseApplicationModel->countAllResults();
+                
+                // Pending review (awaiting decision)
+                $data['pending_review'] = $franchiseApplicationModel->where('status', 'pending')->countAllResults();
+                
+                // Approved franchises (active franchises)
+                $data['approved_franchises'] = $franchiseApplicationModel->where('status', 'approved')->countAllResults();
+                
+                // Total locations (franchise branches across the region)
+                $data['total_locations'] = $branchModel->where('is_franchise', 1)->where('status', 'active')->countAllResults();
+                
+                // Recent applications
+                $data['recent_applications'] = $franchiseApplicationModel->orderBy('created_at', 'DESC')->limit(10)->findAll();
+                
+                // Franchise partners (approved applications)
+                $data['franchise_partners'] = $franchiseApplicationModel->where('status', 'approved')->orderBy('approved_at', 'DESC')->findAll();
                 break;
 
             default:

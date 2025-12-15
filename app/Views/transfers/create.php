@@ -114,9 +114,71 @@ $title = 'Create Transfer';
 
 <?= $this->section('scripts') ?>
 <script>
+// Filter "To Branch" dropdown when "From Branch" changes
 document.getElementById('from_branch_id').addEventListener('change', function() {
-    updateAvailableQuantities();
+    const fromBranchId = this.value;
+    const toBranchSelect = document.getElementById('to_branch_id');
+    const allOptions = toBranchSelect.querySelectorAll('option');
+    
+    // Reset and filter "To Branch" options
+    allOptions.forEach(option => {
+        if (option.value === fromBranchId) {
+            option.style.display = 'none'; // Hide selected "From Branch"
+        } else {
+            option.style.display = 'block'; // Show others
+        }
+    });
+    
+    // Reset "To Branch" if it's the same as "From Branch"
+    if (toBranchSelect.value === fromBranchId) {
+        toBranchSelect.value = '';
+    }
+    
+    // Load products for selected branch
+    loadBranchProducts(fromBranchId);
 });
+
+// Load products based on selected branch inventory
+function loadBranchProducts(branchId) {
+    if (!branchId) {
+        // Reset to empty if no branch selected
+        document.querySelectorAll('.product-select').forEach(select => {
+            select.innerHTML = '<option value="">Select Product</option>';
+        });
+        return;
+    }
+    
+    // Fetch products available in this branch
+    fetch(`<?= base_url('inventory/get-branch-products') ?>?branch_id=${branchId}`)
+        .then(response => response.json())
+        .then(data => {
+            const products = data.products || [];
+            
+            // Update all product dropdowns
+            document.querySelectorAll('.product-select').forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select Product</option>';
+                
+                products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.product_id;
+                    option.textContent = `${product.product_name} (${product.sku}) - Available: ${product.quantity}`;
+                    option.setAttribute('data-available', product.quantity);
+                    if (currentValue == product.product_id) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+                
+                // Update available quantity display
+                updateAvailableQuantity(select);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+            alert('Failed to load products. Please try again.');
+        });
+}
 
 document.querySelectorAll('.product-select').forEach(select => {
     select.addEventListener('change', function() {
@@ -124,39 +186,30 @@ document.querySelectorAll('.product-select').forEach(select => {
     });
 });
 
-function updateAvailableQuantities() {
-    document.querySelectorAll('.product-select').forEach(select => {
-        updateAvailableQuantity(select);
-    });
-}
-
 function updateAvailableQuantity(selectElement) {
-    const fromBranchId = document.getElementById('from_branch_id').value;
-    const productId = selectElement.value;
     const row = selectElement.closest('.item-row');
     const availableQtySpan = row.querySelector('.available-qty');
+    const quantityInput = row.querySelector('.quantity-input');
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
     
-    if (!fromBranchId || !productId) {
+    if (!selectElement.value) {
         availableQtySpan.textContent = '-';
         availableQtySpan.className = 'available-qty inline-flex items-center justify-center w-16 h-8 rounded-lg text-sm font-medium bg-gray-100 text-gray-600';
+        quantityInput.max = '';
         return;
     }
     
-    fetch(`<?= base_url('inventory/get-quantity') ?>?branch_id=${fromBranchId}&product_id=${productId}`)
-        .then(response => response.json())
-        .then(data => {
-            const qty = data.quantity || 0;
-            availableQtySpan.textContent = qty;
-            availableQtySpan.className = qty > 0 
-                ? 'available-qty inline-flex items-center justify-center w-16 h-8 rounded-lg text-sm font-bold bg-emerald-100 text-emerald-700'
-                : 'available-qty inline-flex items-center justify-center w-16 h-8 rounded-lg text-sm font-bold bg-red-100 text-red-700';
-            const quantityInput = row.querySelector('.quantity-input');
-            quantityInput.max = qty;
-        })
-        .catch(() => {
-            availableQtySpan.textContent = '-';
-            availableQtySpan.className = 'available-qty inline-flex items-center justify-center w-16 h-8 rounded-lg text-sm font-medium bg-gray-100 text-gray-600';
-        });
+    const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
+    availableQtySpan.textContent = available;
+    availableQtySpan.className = available > 0 
+        ? 'available-qty inline-flex items-center justify-center w-16 h-8 rounded-lg text-sm font-bold bg-emerald-100 text-emerald-700'
+        : 'available-qty inline-flex items-center justify-center w-16 h-8 rounded-lg text-sm font-bold bg-red-100 text-red-700';
+    quantityInput.max = available;
+    
+    // Adjust quantity if it exceeds available
+    if (parseInt(quantityInput.value) > available) {
+        quantityInput.value = available;
+    }
 }
 
 document.getElementById('addItemBtn').addEventListener('click', function() {
@@ -186,6 +239,10 @@ document.addEventListener('click', function(e) {
     }
 });
 
-updateAvailableQuantities();
+// Initialize on page load
+const fromBranchId = document.getElementById('from_branch_id').value;
+if (fromBranchId) {
+    loadBranchProducts(fromBranchId);
+}
 </script>
 <?= $this->endSection() ?>

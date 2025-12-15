@@ -500,4 +500,165 @@ class FranchiseController extends BaseController
 
         return view('franchise/partners', $data);
     }
+
+    /**
+     * Supply Allocation page - shows allocations to franchise partners
+     */
+    public function supplyAllocation()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        if ($role !== 'franchise_manager') {
+            return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
+        }
+
+        // Get only converted franchises (with branch_id)
+        $allFranchises = $this->franchiseModel->where('status', 'converted')->findAll();
+        $data['franchises'] = array_filter($allFranchises, function($f) {
+            return !empty($f['branch_id']);
+        });
+
+        // Get main branch to check inventory
+        $mainBranch = $this->branchModel->where('is_franchise', 0)->first();
+        $mainBranchId = $mainBranch ? $mainBranch['id'] : 1;
+        
+        // Get products from suppliers with inventory from main branch
+        $db = \Config\Database::connect();
+        $builder = $db->table('products');
+        
+        // Get products that belong to suppliers (have supplier_id)
+        $products = $builder->select('products.id as product_id,
+            products.name, 
+            products.sku,
+            COALESCE(inventory.quantity, 0) as available_qty,
+            suppliers.name as supplier_name')
+            ->join('suppliers', 'suppliers.id = products.supplier_id', 'inner')
+            ->join('inventory', 'inventory.product_id = products.id AND inventory.branch_id = ' . $mainBranchId, 'left')
+            ->where('products.status', 'active')
+            ->where('suppliers.status', 'active')
+            ->orderBy('products.name', 'ASC')
+            ->get()
+            ->getResultArray();
+        
+        $data['products'] = $products;
+
+        // Get allocations (transfers to franchise branches)
+        $transferModel = new \App\Models\TransferModel();
+        $transferItemModel = new \App\Models\TransferItemModel();
+        
+        $transfers = $transferModel->select('transfers.*, 
+            to_branch.name as franchise_name,
+            to_branch.is_franchise')
+            ->join('branches as to_branch', 'to_branch.id = transfers.to_branch_id')
+            ->where('to_branch.is_franchise', 1)
+            ->orderBy('transfers.created_at', 'DESC')
+            ->findAll();
+
+        // Build allocations array with product details
+        $productModel = new \App\Models\ProductModel();
+        $allocations = [];
+        foreach ($transfers as $transfer) {
+            $items = $transferItemModel->select('transfer_items.*, products.name as product_name')
+                ->join('products', 'products.id = transfer_items.product_id')
+                ->where('transfer_items.transfer_id', $transfer['id'])
+                ->findAll();
+
+            foreach ($items as $item) {
+                $allocations[] = [
+                    'franchise_name' => $transfer['franchise_name'],
+                    'product_name' => $item['product_name'],
+                    'allocated_qty' => $item['quantity'],
+                    'delivered_qty' => $item['quantity_received'] ?? 0,
+                    'pending_qty' => $item['quantity'] - ($item['quantity_received'] ?? 0),
+                    'status' => $transfer['status'] == 'completed' ? 'fulfilled' : 
+                               ($item['quantity_received'] > 0 ? 'partial' : 'pending'),
+                ];
+            }
+        }
+
+        $data['allocations'] = $allocations;
+
+        return view('franchise/supply_allocation', $data);
+    }
+
+    /**
+     * Allocate supply to franchise (creates a transfer)
+     */
+    public function allocateSupply()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        if ($role !== 'franchise_manager') {
+            return redirect()->back()->with('error', 'Unauthorized access');
+        }
+
+        $franchiseBranchId = $this->request->getPost('franchise_id');
+        $productId = $this->request->getPost('product_id');
+        $quantity = $this->request->getPost('quantity');
+
+        if (!$franchiseBranchId || !$productId || !$quantity || $quantity <= 0) {
+            return redirect()->back()->with('error', 'Invalid allocation data');
+        }
+
+        // Get main branch (central warehouse) as the "from" branch
+        $mainBranch = $this->branchModel->where('is_franchise', 0)->first();
+        $fromBranchId = $mainBranch ? $mainBranch['id'] : 1;
+
+        // Check inventory availability in main branch
+        $inventoryModel = new \App\Models\InventoryModel();
+        $inventory = $inventoryModel->where('branch_id', $fromBranchId)
+            ->where('product_id', $productId)
+            ->first();
+
+        if (!$inventory || $inventory['quantity'] < $quantity) {
+            return redirect()->back()->with('error', 'Insufficient inventory for allocation');
+        }
+
+        // Create transfer
+        $transferModel = new \App\Models\TransferModel();
+        $transferItemModel = new \App\Models\TransferItemModel();
+        
+        $transferNumber = $transferModel->generateTransferNumber();
+        
+        $transferData = [
+            'transfer_number' => $transferNumber,
+            'from_branch_id' => $fromBranchId,
+            'to_branch_id' => $franchiseBranchId,
+            'requested_by' => $session->get('user_id'),
+            'status' => 'pending',
+            'request_date' => date('Y-m-d'),
+            'notes' => 'Franchise supply allocation',
+        ];
+
+        $transferId = $transferModel->insert($transferData);
+
+        // Add transfer item
+        $transferItemModel->insert([
+            'transfer_id' => $transferId,
+            'product_id' => $productId,
+            'quantity' => $quantity,
+            'quantity_received' => 0,
+        ]);
+
+        // Note: Inventory will be reduced when the transfer is completed
+        // This prevents double-deduction of inventory
+
+        // Log activity
+        $this->activityLogModel->logActivity(
+            $session->get('user_id'),
+            'create',
+            'supply_allocation',
+            "Allocated supplies: Transfer $transferNumber"
+        );
+
+        return redirect()->to('/franchise/supply-allocation')->with('success', 'Supply allocated successfully');
+    }
 }

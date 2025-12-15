@@ -806,6 +806,207 @@ $title = 'Dashboard';
     </div>
 </div>
 
+<?php elseif ($role == 'franchise_manager'): ?>
+<!-- Franchise Manager Dashboard -->
+
+<!-- Franchise Info Header -->
+<div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 mb-8 text-white relative overflow-hidden">
+    <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-handshake text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold">Franchise Management</h2>
+                    <p class="text-indigo-100 text-sm">Manage franchise applications and partners</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 flex flex-wrap gap-3">
+            <a href="<?= base_url('franchise/applications') ?>" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-file-signature mr-2"></i>View Applications
+            </a>
+            <a href="<?= base_url('franchise/partners') ?>" class="inline-flex items-center px-4 py-2 bg-white text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-50 transition-colors">
+                <i class="fas fa-handshake mr-2"></i>View Partners
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Applications -->
+    <a href="<?= base_url('franchise/applications') ?>" class="group">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-gray-300 transition-all">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Applications</p>
+                    <p class="text-3xl font-bold text-gray-800 mt-2"><?= $total_applications ?? 0 ?></p>
+                    <p class="text-xs text-gray-400 mt-2">All time</p>
+                </div>
+                <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-file-alt text-gray-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- Pending Review -->
+    <a href="<?= base_url('franchise/applications') ?>" class="group">
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-sm border border-amber-200 p-6 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Pending Review</p>
+                    <p class="text-3xl font-bold text-gray-800 mt-2"><?= $pending_review ?? 0 ?></p>
+                    <p class="text-xs text-gray-500 mt-2">Awaiting decision</p>
+                </div>
+                <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+                    <i class="fas fa-clock text-amber-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- Approved Franchises -->
+    <a href="<?= base_url('franchise/partners') ?>" class="group">
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl shadow-sm border border-emerald-200 p-6 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Approved Franchises</p>
+                    <p class="text-3xl font-bold text-gray-800 mt-2"><?= $approved_franchises ?? 0 ?></p>
+                    <p class="text-xs text-gray-500 mt-2">Active franchises</p>
+                </div>
+                <div class="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                    <i class="fas fa-check-circle text-emerald-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- Total Locations -->
+    <a href="<?= base_url('inventory') ?>" class="group">
+        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-sm border border-indigo-200 p-6 hover:shadow-md transition-all">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Locations</p>
+                    <p class="text-3xl font-bold text-gray-800 mt-2"><?= $total_locations ?? 0 ?></p>
+                    <p class="text-xs text-gray-500 mt-2">Across the region</p>
+                </div>
+                <div class="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                    <i class="fas fa-store text-indigo-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </a>
+</div>
+
+<!-- Recent Applications -->
+<?php if (!empty($recent_applications)): ?>
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-file-signature text-indigo-500 mr-2"></i> Recent Applications
+            </h3>
+            <a href="<?= base_url('franchise/applications') ?>" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                View All →
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Applicant</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Business Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Location</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <?php foreach (array_slice($recent_applications, 0, 5) as $app): ?>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-3 text-sm text-gray-800"><?= esc($app['applicant_name']) ?></td>
+                        <td class="px-4 py-3 text-sm text-gray-800"><?= esc($app['business_name']) ?></td>
+                        <td class="px-4 py-3 text-sm text-gray-600"><?= esc($app['city']) ?></td>
+                        <td class="px-4 py-3">
+                            <?php if ($app['status'] == 'approved'): ?>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                <i class="fas fa-check-circle mr-1"></i> Approved
+                            </span>
+                            <?php elseif ($app['status'] == 'rejected'): ?>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                <i class="fas fa-times-circle mr-1"></i> Rejected
+                            </span>
+                            <?php else: ?>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                <i class="fas fa-clock mr-1"></i> Pending
+                            </span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500"><?= date('M d, Y', strtotime($app['created_at'])) ?></td>
+                        <td class="px-4 py-3">
+                            <a href="<?= base_url('franchise/view-application/' . $app['id']) ?>" class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-medium transition-colors">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Franchise Partners Grid -->
+<?php if (!empty($franchise_partners)): ?>
+<div class="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-handshake text-emerald-500 mr-2"></i> Active Franchise Partners
+            </h3>
+            <a href="<?= base_url('franchise/partners') ?>" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                View All →
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <?php foreach (array_slice($franchise_partners, 0, 6) as $partner): ?>
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-4 hover:shadow-md transition-all">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 text-sm"><?= esc($partner['business_name']) ?></h4>
+                        <p class="text-xs text-gray-600 mt-1"><?= esc($partner['applicant_name']) ?></p>
+                    </div>
+                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-store text-emerald-600"></i>
+                    </div>
+                </div>
+                <div class="space-y-1 text-xs text-gray-600">
+                    <p><i class="fas fa-map-marker-alt text-emerald-500 mr-1"></i> <?= esc($partner['city']) ?></p>
+                    <p><i class="fas fa-phone text-emerald-500 mr-1"></i> <?= esc($partner['phone']) ?></p>
+                    <p class="text-emerald-600 font-medium"><i class="fas fa-calendar-check mr-1"></i> Approved: <?= date('M d, Y', strtotime($partner['approved_at'])) ?></p>
+                </div>
+                <div class="mt-3 pt-3 border-t border-emerald-200">
+                    <a href="<?= base_url('franchise/view-application/' . $partner['id']) ?>" class="inline-flex items-center text-xs text-emerald-600 hover:text-emerald-700 font-medium">
+                        View Details <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php else: ?>
 <!-- Inventory Staff Dashboard -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
