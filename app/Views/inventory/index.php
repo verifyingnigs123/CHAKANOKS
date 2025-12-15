@@ -192,16 +192,16 @@ $title = 'Inventory';
 </div>
 
 <!-- Scan Barcode Modal -->
-<div id="scanModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+<div id="scanModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeScanModal()"></div>
-        <div class="relative bg-white rounded-xl shadow-xl max-w-2xl w-full mx-auto transform transition-all">
-            <div class="px-6 py-4 border-b border-gray-100">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" id="scanModalOverlay"></div>
+        <div class="relative z-10 bg-white rounded-xl shadow-xl max-w-2xl w-full mx-auto transform transition-all" onclick="event.stopPropagation()">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-800 flex items-center">
                     <i class="fas fa-barcode text-emerald-500 mr-2"></i> Barcode Scanner
                 </h3>
-                <button onclick="closeScanModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
+                <button type="button" id="closeScanBtn" class="text-gray-400 hover:text-gray-600 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <i class="fas fa-times text-xl pointer-events-none"></i>
                 </button>
             </div>
             <div class="p-6">
@@ -309,6 +309,7 @@ function closeUpdateModal() {
 
 function openScanModal() {
     document.getElementById('scanModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeScanModal() {
@@ -317,8 +318,33 @@ function closeScanModal() {
     document.getElementById('scanResultCard').classList.add('hidden');
     document.getElementById('scanErrorMessage').classList.add('hidden');
     document.getElementById('manualBarcodeInput').value = '';
+    document.body.style.overflow = '';
     currentScannedProduct = null;
 }
+
+// Attach event listeners for scan modal close
+document.addEventListener('DOMContentLoaded', function() {
+    // Close button
+    document.getElementById('closeScanBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeScanModal();
+    });
+    
+    // Overlay click
+    document.getElementById('scanModalOverlay').addEventListener('click', function(e) {
+        e.preventDefault();
+        closeScanModal();
+    });
+});
+
+// Close modals on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeScanModal();
+        closeUpdateModal();
+    }
+});
 
 function toggleCamera() {
     if (!scannerScanning) {

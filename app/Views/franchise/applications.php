@@ -74,8 +74,7 @@
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        <p class="text-gray-800"><?= esc($app['city']) ?></p>
-                        <p class="text-sm text-gray-500"><?= esc($app['province']) ?></p>
+                        <p class="text-gray-800 text-sm max-w-xs truncate" title="<?= esc($app['proposed_location']) ?>"><?= esc($app['proposed_location']) ?></p>
                     </td>
                     <td class="px-6 py-4 text-gray-800">
                         <?= $app['investment_capital'] ? '₱' . number_format($app['investment_capital'], 2) : '-' ?>

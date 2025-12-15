@@ -102,6 +102,21 @@ function activeClass($path) {
             <span class="ml-3">Transfers</span>
         </a>
         
+        <!-- Franchise -->
+        <div class="pt-4">
+            <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Franchise</p>
+        </div>
+        
+        <a href="<?= base_url('franchise/applications') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('franchise/applications') ?>">
+            <i class="fas fa-file-signature w-5"></i>
+            <span class="ml-3">Applications</span>
+        </a>
+        
+        <a href="<?= base_url('franchise/partners') ?>" class="flex items-center px-4 py-3 rounded-lg transition-colors <?= activeClass('franchise/partners') ?>">
+            <i class="fas fa-handshake w-5"></i>
+            <span class="ml-3">Partners</span>
+        </a>
+        
         <!-- Tools -->
         <div class="pt-4">
             <p class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tools</p>

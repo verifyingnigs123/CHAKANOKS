@@ -65,6 +65,7 @@ $routes->group('branches', ['filter' => 'auth'], function($routes) {
     $routes->get('/', 'BranchController::index');
     $routes->get('create', 'BranchController::create');
     $routes->post('store', 'BranchController::store');
+    $routes->get('view/(:num)', 'BranchController::view/$1');
     $routes->get('edit/(:num)', 'BranchController::edit/$1');
     $routes->post('update/(:num)', 'BranchController::update/$1');
     $routes->get('delete/(:num)', 'BranchController::delete/$1');
@@ -82,6 +83,7 @@ $routes->group('suppliers', ['filter' => 'auth'], function($routes) {
     // Supplier Products
     $routes->get('(:num)/products', 'SupplierController::products/$1');
     $routes->post('add-product', 'SupplierController::addProduct');
+    $routes->post('store-product', 'SupplierController::storeProduct');
     $routes->post('update-product/(:num)', 'SupplierController::updateProduct/$1');
     $routes->get('remove-product/(:num)', 'SupplierController::removeProduct/$1');
     $routes->get('(:num)/products-json', 'SupplierController::getProductsJson/$1');

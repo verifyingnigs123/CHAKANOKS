@@ -14,9 +14,7 @@ class BranchModel extends Model
     
     protected $useTimestamps = true;
     
-    protected $validationRules = [
-        'name' => 'required|min_length[3]|max_length[150]',
-        'code' => 'required|min_length[2]|max_length[50]|is_unique[branches.code,id,{id}]',
-    ];
+    // Disable validation rules - handle manually in controller if needed
+    protected $validationRules = [];
 }
 

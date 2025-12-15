@@ -23,36 +23,37 @@ class ProductController extends BaseController
             return redirect()->to('/login');
         }
 
-        // Get products with category names
+        // Get products from supplier_products table (real-time sync with suppliers)
         $db = \Config\Database::connect();
-        $builder = $db->table('products p');
-        $builder->select('p.*, c.name as category_name');
-        $builder->join('categories c', 'c.id = p.category_id', 'left');
+        $builder = $db->table('supplier_products sp');
+        $builder->select('sp.*, s.name as supplier_name, s.code as supplier_code');
+        $builder->join('suppliers s', 's.id = sp.supplier_id', 'left');
+        $builder->where('sp.status', 'active');
 
         // Search functionality
         $search = $this->request->getGet('search');
         if ($search) {
             $builder->groupStart()
-                ->like('p.name', $search)
-                ->orLike('p.sku', $search)
-                ->orLike('p.barcode', $search)
-                ->orLike('c.name', $search)
+                ->like('sp.name', $search)
+                ->orLike('sp.sku', $search)
+                ->orLike('sp.category', $search)
+                ->orLike('s.name', $search)
                 ->groupEnd();
         }
 
         // Filter by category
         $category = $this->request->getGet('category');
         if ($category) {
-            $builder->where('p.category_id', $category);
+            $builder->like('sp.category', $category);
         }
 
         // Filter by status
         $status = $this->request->getGet('status');
         if ($status) {
-            $builder->where('p.status', $status);
+            $builder->where('sp.status', $status);
         }
 
-        $data['products'] = $builder->orderBy('p.created_at', 'DESC')->get()->getResultArray();
+        $data['products'] = $builder->orderBy('sp.created_at', 'DESC')->get()->getResultArray();
         
         // Get active categories for filter dropdown
         $categoryModel = new \App\Models\CategoryModel();

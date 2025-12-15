@@ -144,10 +144,22 @@ class SupplierProductModel extends Model
     /**
      * Generate unique SKU for supplier
      */
-    public function generateSku($supplierId, $prefix = 'PROD')
+    public function generateSku($supplierId, $prefix = 'SKU')
     {
-        $count = $this->where('supplier_id', $supplierId)->countAllResults() + 1;
-        return $prefix . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        // Generate unique SKU with timestamp and random string
+        $timestamp = strtoupper(base_convert(time(), 10, 36));
+        $random = strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
+        $sku = $prefix . '-' . substr($timestamp, -4) . $random;
+        
+        // Ensure uniqueness
+        $counter = 0;
+        $originalSku = $sku;
+        while ($this->where('supplier_id', $supplierId)->where('sku', $sku)->first()) {
+            $counter++;
+            $sku = $originalSku . $counter;
+        }
+        
+        return $sku;
     }
     
     /**

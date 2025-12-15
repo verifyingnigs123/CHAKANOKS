@@ -76,19 +76,9 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>Proposed Location
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <p class="text-sm text-gray-500">Address</p>
-                    <p class="font-medium text-gray-800"><?= esc($application['proposed_location']) ?></p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">City</p>
-                    <p class="font-medium text-gray-800"><?= esc($application['city']) ?></p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Province</p>
-                    <p class="font-medium text-gray-800"><?= esc($application['province']) ?></p>
-                </div>
+            <div>
+                <p class="text-sm text-gray-500">Complete Address</p>
+                <p class="font-medium text-gray-800"><?= esc($application['proposed_location']) ?></p>
             </div>
         </div>
 

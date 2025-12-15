@@ -58,6 +58,33 @@ class BranchController extends BaseController
         return view('branches/index', $data);
     }
 
+    public function view($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $branch = $this->branchModel->select('branches.*, users.full_name as manager_full_name')
+            ->join('users', 'users.id = branches.manager_id', 'left')
+            ->find($id);
+            
+        if (!$branch) {
+            return redirect()->to('/branches')->with('error', 'Branch not found');
+        }
+
+        // Get branch manager user if exists
+        $branchManager = $this->userModel->where('branch_id', $id)
+            ->where('role', 'branch_manager')
+            ->first();
+
+        $data['branch'] = $branch;
+        $data['branch_manager'] = $branchManager;
+        $data['role'] = $session->get('role');
+
+        return view('branches/view', $data);
+    }
+
     public function create()
     {
         $session = session();
@@ -145,23 +172,43 @@ class BranchController extends BaseController
             return $this->unauthorized('Only administrators can update branches');
         }
 
+        // Check if branch exists
+        $branch = $this->branchModel->find($id);
+        if (!$branch) {
+            return redirect()->to('/branches')->with('error', 'Branch not found');
+        }
+
+        // Check if code is unique (excluding current branch)
+        $code = $this->request->getPost('code');
+        $existingBranch = $this->branchModel->where('code', $code)->where('id !=', $id)->first();
+        if ($existingBranch) {
+            return redirect()->to('/branches')->with('error', 'Branch code already exists');
+        }
+
         $data = [
             'name' => $this->request->getPost('name'),
-            'code' => $this->request->getPost('code'),
+            'code' => $code,
             'address' => $this->request->getPost('address'),
             'city' => $this->request->getPost('city'),
             'phone' => $this->request->getPost('phone'),
             'email' => $this->request->getPost('email'),
-            'manager_id' => $this->request->getPost('manager_id'),
+            'manager_id' => $this->request->getPost('manager_id') ?: null,
             'status' => $this->request->getPost('status'),
             'is_franchise' => $this->request->getPost('is_franchise') ? 1 : 0,
         ];
 
-        if ($this->branchModel->update($id, $data)) {
-            $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'branch', 'Updated branch ID: ' . $id);
-            return redirect()->to('/branches')->with('success', 'Branch updated successfully');
-        } else {
-            return redirect()->back()->withInput()->with('error', 'Failed to update branch');
+        try {
+            if ($this->branchModel->update($id, $data)) {
+                $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'branch', 'Updated branch ID: ' . $id);
+                return redirect()->to('/branches')->with('success', 'Branch updated successfully');
+            } else {
+                $errors = $this->branchModel->errors();
+                $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Failed to update branch';
+                return redirect()->to('/branches')->with('error', $errorMsg);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Branch update error: ' . $e->getMessage());
+            return redirect()->to('/branches')->with('error', 'Failed to update branch: ' . $e->getMessage());
         }
     }
 

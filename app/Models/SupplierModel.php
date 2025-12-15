@@ -14,10 +14,7 @@ class SupplierModel extends Model
     
     protected $useTimestamps = true;
     
-    protected $validationRules = [
-        'name' => 'required|min_length[3]|max_length[150]',
-        'code' => 'required|min_length[2]|max_length[50]|is_unique[suppliers.code,id,{id}]',
-        'email' => 'permit_empty|valid_email|max_length[150]',
-    ];
+    // Disable validation rules - handle manually in controller if needed
+    protected $validationRules = [];
 }
 

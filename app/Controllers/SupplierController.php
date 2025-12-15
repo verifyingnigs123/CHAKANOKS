@@ -188,9 +188,22 @@ class SupplierController extends BaseController
             return $this->unauthorized('Only administrators, suppliers, and franchise managers can update suppliers');
         }
 
+        // Check if supplier exists
+        $supplier = $this->supplierModel->find($id);
+        if (!$supplier) {
+            return redirect()->to('/suppliers')->with('error', 'Supplier not found');
+        }
+
+        // Check if code is unique (excluding current supplier)
+        $code = $this->request->getPost('code');
+        $existingSupplier = $this->supplierModel->where('code', $code)->where('id !=', $id)->first();
+        if ($existingSupplier) {
+            return redirect()->to('/suppliers')->with('error', 'Supplier code already exists');
+        }
+
         $data = [
             'name' => $this->request->getPost('name'),
-            'code' => $this->request->getPost('code'),
+            'code' => $code,
             'contact_person' => $this->request->getPost('contact_person'),
             'email' => $this->request->getPost('email'),
             'phone' => $this->request->getPost('phone'),
@@ -200,11 +213,18 @@ class SupplierController extends BaseController
             'status' => $this->request->getPost('status'),
         ];
 
-        if ($this->supplierModel->update($id, $data)) {
-            $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'supplier', 'Updated supplier ID: ' . $id);
-            return redirect()->to('/suppliers')->with('success', 'Supplier updated successfully');
-        } else {
-            return redirect()->back()->withInput()->with('error', 'Failed to update supplier');
+        try {
+            if ($this->supplierModel->update($id, $data)) {
+                $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'supplier', 'Updated supplier ID: ' . $id);
+                return redirect()->to('/suppliers')->with('success', 'Supplier updated successfully');
+            } else {
+                $errors = $this->supplierModel->errors();
+                $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Failed to update supplier';
+                return redirect()->to('/suppliers')->with('error', $errorMsg);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Supplier update error: ' . $e->getMessage());
+            return redirect()->to('/suppliers')->with('error', 'Failed to update supplier: ' . $e->getMessage());
         }
     }
 
@@ -318,9 +338,18 @@ class SupplierController extends BaseController
         }
 
         $data['supplier'] = $supplier;
-        $data['products'] = $this->supplierProductModel->getProductsBySupplier($id);
+        // Get ALL products for this supplier (both admin-created and supplier-created)
+        $data['products'] = $this->supplierProductModel
+            ->where('supplier_id', $id)
+            ->where('status', 'active')
+            ->orderBy('name', 'ASC')
+            ->findAll();
         $data['available_products'] = $this->supplierProductModel->getUnassignedProducts($id);
         $data['role'] = $role;
+        
+        // Get categories for dropdown
+        $categoryModel = new \App\Models\CategoryModel();
+        $data['categories'] = $categoryModel->getActiveCategories();
 
         return view('suppliers/products', $data);
     }
@@ -405,11 +434,21 @@ class SupplierController extends BaseController
         }
 
         $data = [
+            'name' => $this->request->getPost('name'),
+            'sku' => $this->request->getPost('sku'),
+            'category' => $this->request->getPost('category'),
+            'unit' => $this->request->getPost('unit') ?: 'pcs',
             'supplier_price' => $this->request->getPost('supplier_price') ?: null,
+            'stock_quantity' => $this->request->getPost('stock_quantity') ?: 0,
             'min_order_qty' => $this->request->getPost('min_order_qty') ?: 1,
             'lead_time_days' => $this->request->getPost('lead_time_days') ?: null,
-            'is_preferred' => $this->request->getPost('is_preferred') ? 1 : 0,
         ];
+
+        // Check if SKU already exists for this supplier (excluding current product)
+        $sku = $this->request->getPost('sku');
+        if (!empty($sku) && $this->supplierProductModel->supplierHasProductSku($supplierProduct['supplier_id'], $sku, $id)) {
+            return redirect()->back()->withInput()->with('error', 'SKU already exists for this supplier');
+        }
 
         if ($this->supplierProductModel->update($id, $data)) {
             $this->activityLogModel->logActivity($session->get('user_id'), 'update', 'supplier_product', "Updated supplier product ID: $id");
@@ -582,18 +621,18 @@ class SupplierController extends BaseController
         }
 
         $data['supplier'] = $supplier;
-        // Get products for this supplier - either created by this user OR legacy products (created_by is null)
+        // Get ALL products for this supplier (both admin-created and supplier-created)
         $data['products'] = $this->supplierProductModel
             ->where('supplier_id', $supplierId)
             ->where('status', 'active')
-            ->groupStart()
-                ->where('created_by', $userId)
-                ->orWhere('created_by IS NULL')
-            ->groupEnd()
             ->orderBy('name', 'ASC')
             ->findAll();
         $data['role'] = $role;
         $data['is_own_catalog'] = true; // Flag to indicate this is supplier's own view
+        
+        // Get categories for dropdown
+        $categoryModel = new \App\Models\CategoryModel();
+        $data['categories'] = $categoryModel->getActiveCategories();
 
         return view('suppliers/my_products', $data);
     }
@@ -615,9 +654,15 @@ class SupplierController extends BaseController
             return redirect()->to('/dashboard')->with('error', 'Supplier account not configured');
         }
 
+        // Auto-generate SKU if not provided
+        $sku = $this->request->getPost('sku');
+        if (empty($sku)) {
+            $sku = $this->supplierProductModel->generateSku($supplierId);
+        }
+
         $data = [
             'name' => $this->request->getPost('name'),
-            'sku' => $this->request->getPost('sku'),
+            'sku' => $sku,
             'description' => $this->request->getPost('description'),
             'category' => $this->request->getPost('category'),
             'unit' => $this->request->getPost('unit') ?: 'pcs',
@@ -627,9 +672,9 @@ class SupplierController extends BaseController
             'lead_time_days' => $this->request->getPost('lead_time_days'),
         ];
 
-        // Check if SKU already exists for this user (not supplier-wide)
+        // Check if SKU already exists - regenerate if duplicate
         if ($this->supplierProductModel->supplierHasProductSku($supplierId, $data['sku'], null, $userId)) {
-            return redirect()->back()->withInput()->with('error', 'SKU already exists in your catalog');
+            $data['sku'] = $this->supplierProductModel->generateSku($supplierId);
         }
 
         // Pass userId to track who created the product
@@ -728,6 +773,72 @@ class SupplierController extends BaseController
         }
 
         return redirect()->back()->with('error', 'Failed to delete product');
+    }
+
+    /**
+     * Store new product for supplier (admin view)
+     */
+    public function storeProduct()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        if (!$this->checkRoleAccess(['central_admin', 'supplier'])) {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $supplierId = $this->request->getPost('supplier_id');
+        $userId = $session->get('user_id');
+        $role = $session->get('role');
+        
+        // Suppliers can only add to their own catalog
+        if ($role === 'supplier') {
+            $userSupplierId = $session->get('supplier_id');
+            if (!$userSupplierId) {
+                $user = $this->userModel->find($userId);
+                $userSupplierId = $user['supplier_id'] ?? null;
+            }
+            if ($userSupplierId != $supplierId) {
+                return redirect()->back()->with('error', 'Unauthorized');
+            }
+        }
+
+        // Auto-generate SKU if not provided
+        $sku = $this->request->getPost('sku');
+        if (empty($sku)) {
+            $sku = $this->supplierProductModel->generateSku($supplierId);
+        }
+
+        $data = [
+            'name' => $this->request->getPost('name'),
+            'sku' => $sku,
+            'description' => $this->request->getPost('description'),
+            'category' => $this->request->getPost('category'),
+            'unit' => $this->request->getPost('unit') ?: 'pcs',
+            'supplier_price' => $this->request->getPost('supplier_price'),
+            'stock_quantity' => $this->request->getPost('stock_quantity') ?: 0,
+            'min_order_qty' => $this->request->getPost('min_order_qty') ?: 1,
+            'lead_time_days' => $this->request->getPost('lead_time_days'),
+        ];
+
+        // Check if SKU already exists for this supplier
+        if ($this->supplierProductModel->supplierHasProductSku($supplierId, $data['sku'])) {
+            // Regenerate SKU if duplicate
+            $data['sku'] = $this->supplierProductModel->generateSku($supplierId);
+        }
+
+        // Admin creates products with NULL created_by so all supplier users can see them
+        // Supplier users create with their own user_id
+        $createdBy = ($role === 'central_admin') ? null : $userId;
+
+        if ($this->supplierProductModel->createSupplierProduct($supplierId, $data, $createdBy)) {
+            $this->activityLogModel->logActivity($userId, 'create', 'supplier_product', 'Added product: ' . $data['name'] . ' to supplier ID: ' . $supplierId);
+            return redirect()->back()->with('success', 'Product added successfully');
+        }
+
+        return redirect()->back()->withInput()->with('error', 'Failed to add product');
     }
 
     /**

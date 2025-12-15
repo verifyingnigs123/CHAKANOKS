@@ -254,8 +254,9 @@ $title = 'Suppliers';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Name <span class="text-red-500">*</span></label>
-                            <input type="text" name="name" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input type="text" name="name" id="createName" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="Enter supplier name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Code <span class="text-red-500">*</span></label>
@@ -265,13 +266,18 @@ $title = 'Suppliers';
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
-                            <input type="text" name="contact_person"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input type="text" name="contact_person" id="createContactPerson"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="Enter contact person name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" name="email"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input type="email" name="email" id="createEmail"
+                                   pattern="^[a-zA-Z0-9.@]+$"
+                                   title="Only letters, numbers, dots and @ allowed"
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z0-9.@]/g, '')"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="example@email.com">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
@@ -298,15 +304,21 @@ $title = 'Suppliers';
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-                            <input type="text" name="payment_terms"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                   placeholder="e.g., Net 30">
+                            <select name="payment_terms"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                <option value="PayPal Online" selected>PayPal Online</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Terms</label>
-                            <input type="text" name="delivery_terms"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                   placeholder="e.g., FOB">
+                            <select name="delivery_terms"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                <option value="">Select Delivery Terms</option>
+                                <option value="Same Day">Same Day Delivery</option>
+                                <option value="Next Day">Next Day Delivery</option>
+                                <option value="3-5 Days">3-5 Business Days</option>
+                                <option value="1-2 Weeks">1-2 Weeks</option>
+                            </select>
                         </div>
                         
                         <!-- User Account Section -->
@@ -379,7 +391,8 @@ $title = 'Suppliers';
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Name <span class="text-red-500">*</span></label>
                             <input type="text" name="name" id="editName" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="Enter supplier name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Code <span class="text-red-500">*</span></label>
@@ -389,12 +402,17 @@ $title = 'Suppliers';
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
                             <input type="text" name="contact_person" id="editContactPerson"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="Enter contact person name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                             <input type="email" name="email" id="editEmail"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                   pattern="^[a-zA-Z0-9.@]+$"
+                                   title="Only letters, numbers, dots and @ allowed"
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z0-9.@]/g, '')"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="example@email.com">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
@@ -421,15 +439,21 @@ $title = 'Suppliers';
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-                            <input type="text" name="payment_terms" id="editPaymentTerms"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                   placeholder="e.g., Net 30">
+                            <select name="payment_terms" id="editPaymentTerms"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                <option value="PayPal Online">PayPal Online</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Terms</label>
-                            <input type="text" name="delivery_terms" id="editDeliveryTerms"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                   placeholder="e.g., FOB">
+                            <select name="delivery_terms" id="editDeliveryTerms"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                <option value="">Select Delivery Terms</option>
+                                <option value="Same Day">Same Day Delivery</option>
+                                <option value="Next Day">Next Day Delivery</option>
+                                <option value="3-5 Days">3-5 Business Days</option>
+                                <option value="1-2 Weeks">1-2 Weeks</option>
+                            </select>
                         </div>
                     </div>
                 </div>

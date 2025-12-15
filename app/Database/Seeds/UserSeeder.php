@@ -94,17 +94,7 @@ class UserSeeder extends Seeder
                 'created_at'    => Time::now(),
                 'updated_at'    => Time::now(),
             ],
-            [
-                'username'      => 'sysadmin',
-                'password'      => password_hash('sysadmin123', PASSWORD_DEFAULT),
-                'full_name'     => 'System Administrator',
-                'email'         => 'sysadmin@scms.com',
-                'phone'         => '09958889999',
-                'role'          => 'system_admin',
-                'status'        => 'active',
-                'created_at'    => Time::now(),
-                'updated_at'    => Time::now(),
-            ],
+            
         ];
 
         // Insert or update users (handles duplicates gracefully)

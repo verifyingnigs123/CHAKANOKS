@@ -55,6 +55,16 @@
         .sidebar-transition {
             transition: transform 0.3s ease;
         }
+        
+        /* Smooth fade in animation for page load - no loading spinner */
+        @keyframes smoothFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .animate-fade-in {
+            animation: smoothFadeIn 0.2s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -74,7 +84,7 @@
         <?= $this->include('layouts/partials/header') ?>
         
         <!-- Page Content -->
-        <main class="flex-1 p-4 md:p-6 pb-20 overflow-x-auto">
+        <main id="mainContent" class="flex-1 p-4 md:p-6 pb-20 overflow-x-auto animate-fade-in">
             <?= $this->renderSection('content') ?>
         </main>
         
@@ -118,6 +128,8 @@
                 document.body.style.overflow = '';
             }
         });
+        
+
     </script>
     
     <?= $this->renderSection('scripts') ?>

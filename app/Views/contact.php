@@ -112,24 +112,40 @@
                     <div class="grid md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label class="block text-sm font-semibold text-slate-300 mb-2">Full Name <span class="text-red-400">*</span></label>
-                            <input type="text" name="full_name" required placeholder="Enter your full name"
+                            <input type="text" name="full_name" id="full_name" required placeholder="Enter your full name"
+                                   pattern="^[A-Za-zÑñ\s]+$" title="Letters only (including Ñ/ñ), no numbers or special characters"
                                    class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                            <p class="text-slate-500 text-xs mt-1">Letters only (Ñ/ñ allowed)</p>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-300 mb-2">Email <span class="text-red-400">*</span></label>
-                            <input type="email" name="email" required placeholder="your.email@example.com"
+                            <input type="email" name="email" id="email" required placeholder="yourname@gmail.com"
+                                   pattern="^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+$" title="Valid email without special characters"
                                    class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                            <p class="text-slate-500 text-xs mt-1">No special characters allowed</p>
                         </div>
                     </div>
                     <div class="mb-6">
                         <label class="block text-sm font-semibold text-slate-300 mb-2">Phone Number <span class="text-red-400">*</span></label>
-                        <input type="tel" name="phone_number" required placeholder="+63 XXX XXX XXXX"
+                        <input type="tel" name="phone_number" id="phone_number" required placeholder="09XXXXXXXXX" 
+                               pattern="^09[0-9]{9}$" maxlength="11" title="Must start with 09 and be exactly 11 digits"
                                class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                        <p class="text-slate-500 text-xs mt-1">Philippine mobile number (09XXXXXXXXX)</p>
                     </div>
                     <div class="mb-6">
-                        <label class="block text-sm font-semibold text-slate-300 mb-2">Proposed Branch Location <span class="text-red-400">*</span></label>
-                        <textarea name="address" rows="3" required placeholder="Enter the proposed location address"
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">Proposed Branch Address <span class="text-red-400">*</span></label>
+                        <textarea name="address" rows="2" required placeholder="Enter complete address (street, barangay, city, province)"
                                   class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none"></textarea>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">Investment Capital <span class="text-red-400">*</span></label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">₱</span>
+                            <input type="text" id="investment_display" required placeholder="e.g., 500,000"
+                                   class="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
+                            <input type="hidden" name="investment_capital" id="investment_capital">
+                        </div>
+                        <p class="text-slate-500 text-xs mt-1">Max: ₱100,000,000 (100 million)</p>
                     </div>
                     <div class="text-center">
                         <button type="submit" class="inline-flex items-center px-8 py-4 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5">
@@ -221,5 +237,79 @@
     </div>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Name validation - letters and Ñ/ñ only
+        const nameInput = document.getElementById('full_name');
+        if (nameInput) {
+            nameInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^A-Za-zÑñ\s]/g, '');
+            });
+        }
+        
+        // Phone validation - numbers only, starts with 09, max 11 digits
+        const phoneInput = document.getElementById('phone_number');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                // Remove non-digits
+                let value = this.value.replace(/\D/g, '');
+                // Ensure starts with 09
+                if (value.length >= 2 && !value.startsWith('09')) {
+                    value = '09' + value.substring(2);
+                }
+                // Limit to 11 digits
+                this.value = value.substring(0, 11);
+            });
+            // Set default value if empty
+            phoneInput.addEventListener('focus', function() {
+                if (!this.value) {
+                    this.value = '09';
+                }
+            });
+        }
+        
+        // Email validation - no special characters except . and @
+        const emailInput = document.getElementById('email');
+        if (emailInput) {
+            emailInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^a-zA-Z0-9.@]/g, '');
+            });
+        }
+        
+        // Investment Capital - format with commas, max 100 million
+        const investmentDisplay = document.getElementById('investment_display');
+        const investmentHidden = document.getElementById('investment_capital');
+        const MAX_INVESTMENT = 100000000; // 100 million
+        
+        if (investmentDisplay && investmentHidden) {
+            investmentDisplay.addEventListener('input', function(e) {
+                // Remove non-digits
+                let value = this.value.replace(/\D/g, '');
+                
+                // Limit to max value
+                if (parseInt(value) > MAX_INVESTMENT) {
+                    value = MAX_INVESTMENT.toString();
+                }
+                
+                // Store raw value in hidden field
+                investmentHidden.value = value;
+                
+                // Format with commas for display
+                if (value) {
+                    this.value = parseInt(value).toLocaleString('en-PH');
+                } else {
+                    this.value = '';
+                }
+            });
+            
+            // Prevent non-numeric input
+            investmentDisplay.addEventListener('keypress', function(e) {
+                if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete') {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>

@@ -59,58 +59,75 @@ $title = isset($is_own_catalog) && $is_own_catalog ? 'My Product Catalog' : 'Sup
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">SKU</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Category</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Supplier Price</th>
+                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Stock</th>
                     <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Min Order</th>
                     <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Lead Time</th>
-                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Preferred</th>
                     <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <?php if (!empty($products)): ?>
                     <?php foreach ($products as $product): ?>
+                    <?php 
+                    // Support both 'name' and 'product_name' field names
+                    $productName = $product['name'] ?? $product['product_name'] ?? 'Unknown';
+                    $categoryName = $product['category'] ?? $product['category_name'] ?? '-';
+                    $costPrice = $product['cost_price'] ?? $product['supplier_price'] ?? 0;
+                    $isPreferred = $product['is_preferred'] ?? 0;
+                    ?>
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4">
                             <div class="flex items-center">
                                 <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
                                     <i class="fas fa-box text-emerald-600"></i>
                                 </div>
-                                <span class="font-medium text-gray-800"><?= esc($product['product_name']) ?></span>
+                                <span class="font-medium text-gray-800"><?= esc($productName) ?></span>
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded"><?= esc($product['sku']) ?></span>
+                            <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded"><?= esc($product['sku'] ?? '-') ?></span>
                         </td>
-                        <td class="px-6 py-4 text-gray-600"><?= esc($product['category_name'] ?? '-') ?></td>
+                        <td class="px-6 py-4 text-gray-600"><?= esc($categoryName) ?></td>
                         <td class="px-6 py-4 text-right">
-                            <?php if ($product['supplier_price']): ?>
+                            <?php if (!empty($product['supplier_price'])): ?>
                             <span class="font-semibold text-emerald-600">₱<?= number_format($product['supplier_price'], 2) ?></span>
                             <?php else: ?>
-                            <span class="text-gray-400">₱<?= number_format($product['cost_price'], 2) ?></span>
+                            <span class="text-gray-400">₱<?= number_format($costPrice, 2) ?></span>
                             <span class="text-xs text-gray-400">(default)</span>
                             <?php endif; ?>
                         </td>
-                        <td class="px-6 py-4 text-center text-gray-600"><?= $product['min_order_qty'] ?></td>
-                        <td class="px-6 py-4 text-center text-gray-600">
-                            <?= $product['lead_time_days'] ? $product['lead_time_days'] . ' days' : '-' ?>
-                        </td>
                         <td class="px-6 py-4 text-center">
-                            <?php if ($product['is_preferred']): ?>
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                <i class="fas fa-star mr-1"></i> Yes
-                            </span>
+                            <?php $stock = $product['stock_quantity'] ?? 0; ?>
+                            <?php if ($stock > 10): ?>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"><?= number_format($stock) ?></span>
+                            <?php elseif ($stock > 0): ?>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700"><?= number_format($stock) ?></span>
                             <?php else: ?>
-                            <span class="text-gray-400">-</span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">0</span>
                             <?php endif; ?>
+                        </td>
+                        <td class="px-6 py-4 text-center text-gray-600"><?= $product['min_order_qty'] ?? 1 ?></td>
+                        <td class="px-6 py-4 text-center text-gray-600">
+                            <?= !empty($product['lead_time_days']) ? $product['lead_time_days'] . ' days' : '-' ?>
                         </td>
                         <td class="px-6 py-4 text-center">
                             <div class="flex items-center justify-center gap-2">
                                 <button type="button" 
-                                   onclick="openEditProductModal(<?= $product['id'] ?>, '<?= esc($product['product_name']) ?>', <?= $product['supplier_price'] ?: 'null' ?>, <?= $product['min_order_qty'] ?>, <?= $product['lead_time_days'] ?: 'null' ?>, <?= $product['is_preferred'] ?>)"
+                                   onclick="openEditProductModal(<?= $product['id'] ?>, {
+                                       name: '<?= esc(addslashes($productName)) ?>',
+                                       sku: '<?= esc(addslashes($product['sku'] ?? '')) ?>',
+                                       category: '<?= esc(addslashes($categoryName)) ?>',
+                                       unit: '<?= esc($product['unit'] ?? 'pcs') ?>',
+                                       price: <?= $product['supplier_price'] ?: 0 ?>,
+                                       stock: <?= $product['stock_quantity'] ?? 0 ?>,
+                                       minQty: <?= $product['min_order_qty'] ?? 1 ?>,
+                                       leadTime: <?= $product['lead_time_days'] ?: 'null' ?>
+                                   })"
                                    class="inline-flex items-center justify-center w-8 h-8 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button type="button" 
-                                   onclick="confirmRemoveProduct(<?= $product['id'] ?>, '<?= esc($product['product_name']) ?>')"
+                                   onclick="confirmRemoveProduct(<?= $product['id'] ?>, '<?= esc(addslashes($productName)) ?>')"
                                    class="inline-flex items-center justify-center w-8 h-8 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors" title="Remove">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -123,8 +140,8 @@ $title = isset($is_own_catalog) && $is_own_catalog ? 'My Product Catalog' : 'Sup
                     <td colspan="8" class="px-6 py-12 text-center">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-box-open text-4xl text-gray-300 mb-3"></i>
-                            <p class="text-gray-500 font-medium">No products assigned to this supplier</p>
-                            <p class="text-gray-400 text-sm">Click "Add Product" to assign products</p>
+                            <p class="text-gray-500 font-medium">No products in this supplier's catalog</p>
+                            <p class="text-gray-400 text-sm">Click "Add Product" to add products</p>
                         </div>
                     </td>
                 </tr>
@@ -140,7 +157,7 @@ $title = isset($is_own_catalog) && $is_own_catalog ? 'My Product Catalog' : 'Sup
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeAddProductModal()"></div>
         
         <div class="relative bg-white rounded-xl shadow-xl transform transition-all sm:max-w-lg sm:w-full mx-auto">
-            <form method="post" action="<?= base_url('suppliers/add-product') ?>">
+            <form method="post" action="<?= base_url('suppliers/store-product') ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="supplier_id" value="<?= $supplier['id'] ?>">
                 
@@ -156,37 +173,86 @@ $title = isset($is_own_catalog) && $is_own_catalog ? 'My Product Catalog' : 'Sup
                 <div class="px-6 py-4">
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Select Product <span class="text-red-500">*</span></label>
-                            <select name="product_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-                                <option value="">-- Select Product --</option>
-                                <?php foreach ($available_products as $product): ?>
-                                <option value="<?= $product['id'] ?>" data-price="<?= $product['cost_price'] ?>">
-                                    <?= esc($product['name']) ?> (<?= esc($product['sku']) ?>) - ₱<?= number_format($product['cost_price'], 2) ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <?php if (empty($available_products)): ?>
-                            <p class="text-xs text-amber-600 mt-1"><i class="fas fa-info-circle mr-1"></i>All products are already assigned to this supplier</p>
-                            <?php endif; ?>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Price (₱)</label>
-                            <input type="number" name="supplier_price" step="0.01" min="0"
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Product Name <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" id="addProductName" required
+                                   pattern="^[A-Za-z\s]+$"
+                                   title="Letters and spaces only, no numbers or special characters"
+                                   oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                   placeholder="Leave blank to use default cost price">
+                                   placeholder="Enter product name">
+                            <p class="text-xs text-gray-500 mt-1">Letters and spaces only</p>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                                <input type="text" name="sku" id="addProductSku" readonly
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                                       placeholder="Auto-generated">
+                                <p class="text-xs text-gray-500 mt-1">Auto-generated by system</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                    <option value="">Select Category</option>
+                                    <?php if (!empty($categories)): ?>
+                                    <?php foreach ($categories as $cat): ?>
+                                    <option value="<?= esc($cat['name']) ?>"><?= esc($cat['name']) ?></option>
+                                    <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                                <select name="unit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                    <option value="pcs">Pieces (pcs)</option>
+                                    <option value="kg">Kilogram (kg)</option>
+                                    <option value="g">Gram (g)</option>
+                                    <option value="L">Liter (L)</option>
+                                    <option value="mL">Milliliter (mL)</option>
+                                    <option value="box">Box</option>
+                                    <option value="pack">Pack</option>
+                                    <option value="case">Case</option>
+                                    <option value="dozen">Dozen</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Price (₱) <span class="text-red-500">*</span></label>
+                                <input type="number" name="supplier_price" step="0.01" min="0" max="999999.99" required
+                                       oninput="if(this.value > 999999.99) this.value = 999999.99"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                                <input type="number" name="stock_quantity" min="0" max="999999" value="0"
+                                       oninput="if(this.value > 999999) this.value = 999999"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Min Order Qty</label>
-                                <input type="number" name="min_order_qty" min="1" value="1"
+                                <input type="number" name="min_order_qty" min="1" max="9999" value="1"
+                                       oninput="if(this.value > 9999) this.value = 9999"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Lead Time (days)</label>
-                                <input type="number" name="lead_time_days" min="0"
+                                <input type="number" name="lead_time_days" min="0" max="365"
+                                       oninput="if(this.value > 365) this.value = 365"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                       placeholder="Optional">
+                                       placeholder="Max 365">
                             </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea name="description" rows="2"
+                                      oninput="this.value = this.value.replace(/[^A-Za-z\s,.\-]/g, '')"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                      placeholder="Optional product description"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Letters, spaces, commas, periods only</p>
                         </div>
                     </div>
                 </div>
@@ -196,8 +262,8 @@ $title = isset($is_own_catalog) && $is_own_catalog ? 'My Product Catalog' : 'Sup
                             class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
                         Cancel
                     </button>
-                    <button type="submit" <?= empty($available_products) ? 'disabled' : '' ?>
-                            class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button type="submit"
+                            class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
                         <i class="fas fa-plus mr-2"></i>Add Product
                     </button>
                 </div>
@@ -225,34 +291,73 @@ $title = isset($is_own_catalog) && $is_own_catalog ? 'My Product Catalog' : 'Sup
                 </div>
                 
                 <div class="px-6 py-4">
-                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                        <p class="text-sm text-gray-600">Product: <strong id="editProductName" class="text-gray-800"></strong></p>
-                    </div>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Price (₱)</label>
-                            <input type="number" name="supplier_price" id="editSupplierPrice" step="0.01" min="0"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                   placeholder="Leave blank to use default cost price">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Product Name <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" id="editName" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Min Order Qty</label>
-                                <input type="number" name="min_order_qty" id="editMinOrderQty" min="1" value="1"
+                                <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                                <input type="text" name="sku" id="editSku"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Lead Time (days)</label>
-                                <input type="number" name="lead_time_days" id="editLeadTimeDays" min="0"
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select name="category" id="editCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                    <option value="">Select Category</option>
+                                    <?php if (!empty($categories)): ?>
+                                    <?php foreach ($categories as $cat): ?>
+                                    <option value="<?= esc($cat['name']) ?>"><?= esc($cat['name']) ?></option>
+                                    <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                                <select name="unit" id="editUnit" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                                    <option value="pcs">Pieces (pcs)</option>
+                                    <option value="kg">Kilogram (kg)</option>
+                                    <option value="g">Gram (g)</option>
+                                    <option value="L">Liter (L)</option>
+                                    <option value="mL">Milliliter (mL)</option>
+                                    <option value="box">Box</option>
+                                    <option value="pack">Pack</option>
+                                    <option value="case">Case</option>
+                                    <option value="dozen">Dozen</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Price (₱) <span class="text-red-500">*</span></label>
+                                <input type="number" name="supplier_price" id="editSupplierPrice" step="0.01" min="0" max="999999.99" required
+                                       oninput="if(this.value > 999999.99) this.value = 999999.99"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                             </div>
                         </div>
-                        <div class="flex items-center">
-                            <input type="checkbox" name="is_preferred" id="editIsPreferred" value="1"
-                                   class="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500">
-                            <label for="editIsPreferred" class="ml-2 text-sm text-gray-700">
-                                <i class="fas fa-star text-amber-500 mr-1"></i>Mark as Preferred Supplier for this product
-                            </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                                <input type="number" name="stock_quantity" id="editStockQty" min="0" max="999999"
+                                       oninput="if(this.value > 999999) this.value = 999999"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Min Order Qty</label>
+                                <input type="number" name="min_order_qty" id="editMinOrderQty" min="1" max="9999" value="1"
+                                       oninput="if(this.value > 9999) this.value = 9999"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Lead Time (days)</label>
+                                <input type="number" name="lead_time_days" id="editLeadTimeDays" min="0" max="365"
+                                       oninput="if(this.value > 365) this.value = 365"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -303,21 +408,33 @@ $title = isset($is_own_catalog) && $is_own_catalog ? 'My Product Catalog' : 'Sup
 </div>
 
 <script>
+// Generate unique SKU
+function generateSKU() {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return 'SKU-' + timestamp.slice(-4) + random;
+}
+
 function openAddProductModal() {
     document.getElementById('addProductModal').classList.remove('hidden');
+    // Auto-generate SKU when modal opens
+    document.getElementById('addProductSku').value = generateSKU();
 }
 
 function closeAddProductModal() {
     document.getElementById('addProductModal').classList.add('hidden');
 }
 
-function openEditProductModal(id, name, price, minQty, leadTime, isPreferred) {
+function openEditProductModal(id, productData) {
     document.getElementById('editProductForm').action = '<?= base_url('suppliers/update-product/') ?>' + id;
-    document.getElementById('editProductName').textContent = name;
-    document.getElementById('editSupplierPrice').value = price || '';
-    document.getElementById('editMinOrderQty').value = minQty || 1;
-    document.getElementById('editLeadTimeDays').value = leadTime || '';
-    document.getElementById('editIsPreferred').checked = isPreferred == 1;
+    document.getElementById('editName').value = productData.name || '';
+    document.getElementById('editSku').value = productData.sku || '';
+    document.getElementById('editCategory').value = productData.category || '';
+    document.getElementById('editUnit').value = productData.unit || 'pcs';
+    document.getElementById('editSupplierPrice').value = productData.price || '';
+    document.getElementById('editStockQty').value = productData.stock || 0;
+    document.getElementById('editMinOrderQty').value = productData.minQty || 1;
+    document.getElementById('editLeadTimeDays').value = productData.leadTime || '';
     document.getElementById('editProductModal').classList.remove('hidden');
 }
 
