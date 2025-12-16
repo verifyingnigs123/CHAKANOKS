@@ -47,7 +47,7 @@ $role = session()->get('role');
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Transfer #</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">From Branch</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">To Branch</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Requested By</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Tracking Progress</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
@@ -70,7 +70,68 @@ $role = session()->get('role');
                                 <span class="text-gray-700"><?= esc($transfer['to_branch_name']) ?></span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-gray-600"><?= esc($transfer['requested_by_name']) ?></td>
+                        <td class="px-6 py-4">
+                            <!-- Tracking Progress Stepper -->
+                            <div class="flex items-center gap-1">
+                                <?php
+                                // Define tracking steps
+                                $steps = [
+                                    'pending' => ['icon' => 'clock', 'label' => 'Pending', 'order' => 0],
+                                    'approved' => ['icon' => 'check', 'label' => 'Approved', 'order' => 1],
+                                    'scheduled' => ['icon' => 'calendar', 'label' => 'Scheduled', 'order' => 2],
+                                    'in_transit' => ['icon' => 'truck', 'label' => 'In Transit', 'order' => 3],
+                                    'completed' => ['icon' => 'check-double', 'label' => 'Completed', 'order' => 4],
+                                    'rejected' => ['icon' => 'times', 'label' => 'Rejected', 'order' => -1]
+                                ];
+                                
+                                $currentStatus = $transfer['status'];
+                                $currentOrder = $steps[$currentStatus]['order'] ?? 0;
+                                $isRejected = $currentStatus == 'rejected';
+                                
+                                // Show 5 step indicators
+                                $stepStatuses = ['pending', 'approved', 'scheduled', 'in_transit', 'completed'];
+                                foreach ($stepStatuses as $index => $stepStatus):
+                                    $step = $steps[$stepStatus];
+                                    $stepOrder = $step['order'];
+                                    
+                                    // Determine if this step is completed, current, or pending
+                                    if ($isRejected && $stepStatus == 'pending') {
+                                        $stepClass = 'bg-red-500'; // Rejected at pending
+                                        $iconClass = 'text-white';
+                                        $icon = 'times';
+                                    } elseif ($isRejected) {
+                                        $stepClass = 'bg-gray-300'; // Other steps when rejected
+                                        $iconClass = 'text-gray-500';
+                                        $icon = $step['icon'];
+                                    } elseif ($stepOrder < $currentOrder) {
+                                        $stepClass = 'bg-emerald-500'; // Completed steps
+                                        $iconClass = 'text-white';
+                                        $icon = 'check';
+                                    } elseif ($stepOrder == $currentOrder) {
+                                        $stepClass = 'bg-blue-500 ring-2 ring-blue-200'; // Current step
+                                        $iconClass = 'text-white';
+                                        $icon = $step['icon'];
+                                    } else {
+                                        $stepClass = 'bg-gray-300'; // Pending steps
+                                        $iconClass = 'text-gray-500';
+                                        $icon = $step['icon'];
+                                    }
+                                ?>
+                                <div class="relative group">
+                                    <div class="w-7 h-7 rounded-full <?= $stepClass ?> flex items-center justify-center transition-all">
+                                        <i class="fas fa-<?= $icon ?> text-xs <?= $iconClass ?>"></i>
+                                    </div>
+                                    <!-- Tooltip -->
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                        <?= $step['label'] ?>
+                                    </div>
+                                </div>
+                                <?php if ($index < count($stepStatuses) - 1): ?>
+                                <div class="w-4 h-0.5 <?= ($stepOrder < $currentOrder && !$isRejected) ? 'bg-emerald-500' : 'bg-gray-300' ?>"></div>
+                                <?php endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+                        </td>
                         <td class="px-6 py-4">
                             <?php if ($transfer['status'] == 'completed'): ?>
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"><i class="fas fa-check-circle mr-1"></i> Completed</span>
@@ -598,24 +659,44 @@ function loadRequestBranchProducts(branchId) {
         return;
     }
 
-    fetch(`<?= base_url('inventory/get-branch-products/') ?>${branchId}`)
+    // Show loading state
+    const selects = document.querySelectorAll('#requestProductsContainer select[name="products[]"]');
+    selects.forEach(select => {
+        select.innerHTML = '<option value="">Loading products...</option>';
+        select.disabled = true;
+    });
+
+    fetch(`<?= base_url('inventory/get-branch-products') ?>?branch_id=${branchId}`)
         .then(response => response.json())
-        .then(products => {
-            const selects = document.querySelectorAll('#requestProductsContainer select[name="products[]"]');
+        .then(data => {
+            const products = data.products || data; // Handle both response formats
             selects.forEach(select => {
                 const currentValue = select.value;
                 select.innerHTML = '<option value="">Select product</option>';
-                products.forEach(product => {
-                    const option = document.createElement('option');
-                    option.value = product.id;
-                    option.textContent = `${product.name} (Available: ${product.quantity})`;
-                    option.dataset.quantity = product.quantity;
-                    if (product.id == currentValue) option.selected = true;
-                    select.appendChild(option);
-                });
+                
+                if (products && products.length > 0) {
+                    products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = `${product.name} (Available: ${product.quantity})`;
+                        option.dataset.quantity = product.quantity;
+                        if (product.id == currentValue) option.selected = true;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">No products available in this branch</option>';
+                }
+                
+                select.disabled = false;
             });
         })
-        .catch(error => console.error('Error loading products:', error));
+        .catch(error => {
+            console.error('Error loading products:', error);
+            selects.forEach(select => {
+                select.innerHTML = '<option value="">Error loading products</option>';
+                select.disabled = false;
+            });
+        });
 }
 
 function addRequestProductRow() {

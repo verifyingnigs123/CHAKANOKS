@@ -512,34 +512,39 @@ class FranchiseController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'franchise_manager') {
+        if (!in_array($role, ['franchise_manager', 'central_admin'])) {
             return redirect()->to('/dashboard')->with('error', 'Unauthorized access');
         }
 
-        // Get only converted franchises (with branch_id)
-        $allFranchises = $this->franchiseModel->where('status', 'converted')->findAll();
-        $data['franchises'] = array_filter($allFranchises, function($f) {
-            return !empty($f['branch_id']);
-        });
+        // Get franchise branches (branches marked as franchise)
+        $franchiseBranches = $this->branchModel->where('is_franchise', 1)
+            ->where('status', 'active')
+            ->findAll();
+        
+        // Format for dropdown - use branch name as business_name
+        $data['franchises'] = array_map(function($branch) {
+            return [
+                'branch_id' => $branch['id'],
+                'business_name' => $branch['name']
+            ];
+        }, $franchiseBranches);
 
         // Get main branch to check inventory
         $mainBranch = $this->branchModel->where('is_franchise', 0)->first();
         $mainBranchId = $mainBranch ? $mainBranch['id'] : 1;
         
-        // Get products from suppliers with inventory from main branch
+        // Get ALL products with inventory from main branch (only products with stock > 0)
         $db = \Config\Database::connect();
         $builder = $db->table('products');
         
-        // Get products that belong to suppliers (have supplier_id)
+        // Get all active products with their inventory (only show products with available stock)
         $products = $builder->select('products.id as product_id,
             products.name, 
             products.sku,
-            COALESCE(inventory.quantity, 0) as available_qty,
-            suppliers.name as supplier_name')
-            ->join('suppliers', 'suppliers.id = products.supplier_id', 'inner')
-            ->join('inventory', 'inventory.product_id = products.id AND inventory.branch_id = ' . $mainBranchId, 'left')
+            inventory.quantity as available_qty')
+            ->join('inventory', 'inventory.product_id = products.id AND inventory.branch_id = ' . $mainBranchId, 'inner')
             ->where('products.status', 'active')
-            ->where('suppliers.status', 'active')
+            ->where('inventory.quantity >', 0)
             ->orderBy('products.name', 'ASC')
             ->get()
             ->getResultArray();
@@ -596,7 +601,7 @@ class FranchiseController extends BaseController
         }
 
         $role = $session->get('role');
-        if ($role !== 'franchise_manager') {
+        if (!in_array($role, ['franchise_manager', 'central_admin'])) {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
 

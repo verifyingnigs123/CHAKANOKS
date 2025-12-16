@@ -266,15 +266,55 @@ class SupplierController extends BaseController
         }
 
         $supplierId = $this->request->getPost('supplier_id');
-        $username = $this->request->getPost('username');
+        $username = trim($this->request->getPost('username'));
         $password = $this->request->getPost('password');
         $email = $this->request->getPost('email');
-        $fullName = $this->request->getPost('full_name');
+        $fullName = trim($this->request->getPost('full_name'));
 
         // Validate supplier exists
         $supplier = $this->supplierModel->find($supplierId);
         if (!$supplier) {
             return redirect()->to('/suppliers')->with('error', 'Supplier not found');
+        }
+
+        // Validate username - only alphanumeric allowed (no special characters including underscore)
+        if (!preg_match('/^[a-zA-Z0-9]+$/', $username)) {
+            return redirect()->to('/suppliers')->with('error', 'Username can only contain letters and numbers. No special characters, spaces, or underscores allowed.');
+        }
+
+        // Validate username length
+        if (strlen($username) < 3 || strlen($username) > 50) {
+            return redirect()->to('/suppliers')->with('error', 'Username must be between 3 and 50 characters.');
+        }
+
+        // Validate password strength
+        if (strlen($password) < 8) {
+            return redirect()->to('/suppliers')->with('error', 'Password must be at least 8 characters long.');
+        }
+
+        // Check password contains at least one uppercase letter
+        if (!preg_match('/[A-Z]/', $password)) {
+            return redirect()->to('/suppliers')->with('error', 'Password must contain at least one uppercase letter.');
+        }
+
+        // Check password contains at least one lowercase letter
+        if (!preg_match('/[a-z]/', $password)) {
+            return redirect()->to('/suppliers')->with('error', 'Password must contain at least one lowercase letter.');
+        }
+
+        // Check password contains at least one number
+        if (!preg_match('/[0-9]/', $password)) {
+            return redirect()->to('/suppliers')->with('error', 'Password must contain at least one number.');
+        }
+
+        // Validate password doesn't contain special characters (only letters and numbers allowed)
+        if (!preg_match('/^[a-zA-Z0-9]+$/', $password)) {
+            return redirect()->to('/suppliers')->with('error', 'Password can only contain letters and numbers. No special characters or spaces allowed.');
+        }
+
+        // Validate full name - only letters, spaces, and basic punctuation
+        if (!empty($fullName) && !preg_match('/^[a-zA-Z\s\.\-\']+$/', $fullName)) {
+            return redirect()->to('/suppliers')->with('error', 'Full name can only contain letters, spaces, periods, hyphens, and apostrophes.');
         }
 
         // Check if supplier already has an account

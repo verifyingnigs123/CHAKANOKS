@@ -104,7 +104,17 @@ $title = 'Purchase Requests';
                                 <form method="post" action="<?= base_url('purchase-requests/' . $request['id'] . '/approve') ?>" class="inline"><?= csrf_field() ?><button type="submit" class="inline-flex items-center px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-check mr-1"></i> Approve</button></form>
                                 <button onclick="showRejectModal(<?= $request['id'] ?>)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-times mr-1"></i> Reject</button>
                                 <?php elseif ($role == 'central_admin' && $request['status'] == 'approved'): ?>
-                                <a href="<?= base_url('purchase-orders/create-from-request/' . $request['id']) ?>" class="inline-flex items-center px-3 py-1.5 bg-purple-500 text-white hover:bg-purple-600 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-shopping-cart mr-1"></i> Create PO</a>
+                                    <?php
+                                    // Check if PO already exists for this request
+                                    $poModel = new \App\Models\PurchaseOrderModel();
+                                    $existingPO = $poModel->where('purchase_request_id', $request['id'])->first();
+                                    if (!$existingPO): ?>
+                                        <a href="<?= base_url('purchase-orders/create-from-request/' . $request['id']) ?>" class="inline-flex items-center px-3 py-1.5 bg-purple-500 text-white hover:bg-purple-600 rounded-lg text-sm font-medium transition-colors"><i class="fas fa-shopping-cart mr-1"></i> Create PO</a>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
+                                            <i class="fas fa-check-circle mr-1"></i> PO Created
+                                        </span>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </div>
                         </td>

@@ -186,10 +186,16 @@ if (!empty($purchase_orders)) {
                                     <?php endif; ?>
                                 <?php elseif ($role === 'logistics_coordinator'): ?>
                                     <?php if ($po['status'] == 'prepared'): ?>
-                                    <!-- Schedule Delivery Button for Logistics -->
-                                    <a href="<?= base_url('deliveries?schedule=' . $po['id']) ?>" class="inline-flex items-center px-2.5 py-1 bg-purple-500 text-white hover:bg-purple-600 rounded text-xs font-medium transition-colors" title="Schedule Delivery">
-                                        <i class="fas fa-truck mr-1"></i>Schedule
-                                    </a>
+                                        <?php
+                                        // Check if delivery already exists for this PO
+                                        $deliveryModel = new \App\Models\DeliveryModel();
+                                        $existingDelivery = $deliveryModel->where('purchase_order_id', $po['id'])->first();
+                                        if (!$existingDelivery): ?>
+                                            <!-- Schedule Delivery Button for Logistics -->
+                                            <a href="<?= base_url('deliveries?schedule=' . $po['id']) ?>" class="inline-flex items-center px-2.5 py-1 bg-purple-500 text-white hover:bg-purple-600 rounded text-xs font-medium transition-colors" title="Schedule Delivery">
+                                                <i class="fas fa-truck mr-1"></i>Schedule
+                                            </a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 <?php elseif ($role === 'central_admin'): ?>
                                     <?php if ($po['status'] == 'draft'): ?>
@@ -201,10 +207,16 @@ if (!empty($purchase_orders)) {
                                         </button>
                                     </form>
                                     <?php elseif ($po['status'] == 'prepared'): ?>
-                                    <!-- Schedule Delivery Button for Admin -->
-                                    <a href="<?= base_url('deliveries?schedule=' . $po['id']) ?>" class="inline-flex items-center px-2.5 py-1 bg-purple-500 text-white hover:bg-purple-600 rounded text-xs font-medium transition-colors" title="Schedule Delivery">
-                                        <i class="fas fa-truck mr-1"></i>Schedule
-                                    </a>
+                                        <?php
+                                        // Check if delivery already exists for this PO
+                                        $deliveryModel = new \App\Models\DeliveryModel();
+                                        $existingDelivery = $deliveryModel->where('purchase_order_id', $po['id'])->first();
+                                        if (!$existingDelivery): ?>
+                                            <!-- Schedule Delivery Button for Admin -->
+                                            <a href="<?= base_url('deliveries?schedule=' . $po['id']) ?>" class="inline-flex items-center px-2.5 py-1 bg-purple-500 text-white hover:bg-purple-600 rounded text-xs font-medium transition-colors" title="Schedule Delivery">
+                                                <i class="fas fa-truck mr-1"></i>Schedule
+                                            </a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </div>

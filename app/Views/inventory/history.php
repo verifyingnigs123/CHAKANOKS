@@ -18,7 +18,7 @@ $title = 'Inventory History';
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
     <div class="p-4">
         <form method="get" action="<?= base_url('inventory/history') ?>" id="filterForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <?php if ($role == 'central_admin'): ?>
+            <?php if (in_array($role, ['central_admin', 'inventory_staff'])): ?>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
                 <select name="branch_id" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all cursor-pointer" onchange="document.getElementById('filterForm').submit();">
@@ -31,7 +31,7 @@ $title = 'Inventory History';
                 </select>
             </div>
             <?php endif; ?>
-            <div class="<?= ($role == 'central_admin') ? '' : 'md:col-span-2' ?>">
+            <div class="<?= (in_array($role, ['central_admin', 'inventory_staff'])) ? '' : 'md:col-span-2' ?>">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
                 <select name="product_id" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all cursor-pointer" onchange="document.getElementById('filterForm').submit();">
                     <option value="">All Products</option>
@@ -53,7 +53,7 @@ $title = 'Inventory History';
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date & Time</th>
-                    <?php if (!$current_branch_id && $role == 'central_admin'): ?>
+                    <?php if (!$current_branch_id && in_array($role, ['central_admin', 'inventory_staff'])): ?>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Branch</th>
                     <?php endif; ?>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
@@ -73,7 +73,7 @@ $title = 'Inventory History';
                             <?= date('M d, Y', strtotime($item['created_at'])) ?><br>
                             <span class="text-xs text-gray-400"><?= date('h:i A', strtotime($item['created_at'])) ?></span>
                         </td>
-                        <?php if (!$current_branch_id && $role == 'central_admin'): ?>
+                        <?php if (!$current_branch_id && in_array($role, ['central_admin', 'inventory_staff'])): ?>
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                                 <?= esc($item['branch_name']) ?>

@@ -43,12 +43,17 @@ class InventoryController extends BaseController
         if ($branchId === '') {
             $branchId = null;
         }
-        // If no branch_id in query and user is not admin, use their branch
-        if ($branchId === null && $session->get('role') !== 'central_admin' && $session->get('role') !== 'central_admin') {
-            $branchId = $session->get('branch_id');
-        }
         
         $role = $session->get('role');
+        
+        // Allow central_admin and inventory_staff to view all branches
+        // Other roles are restricted to their own branch
+        $canViewAllBranches = in_array($role, ['central_admin', 'inventory_staff']);
+        
+        // If no branch_id in query and user cannot view all branches, use their branch
+        if ($branchId === null && !$canViewAllBranches) {
+            $branchId = $session->get('branch_id');
+        }
 
         // Get inventory with product details, include branch name when showing all branches
         if ($branchId === null) {
@@ -56,8 +61,9 @@ class InventoryController extends BaseController
                 ->join('products', 'products.id = inventory.product_id')
                 ->join('branches', 'branches.id = inventory.branch_id', 'left');
         } else {
-            $builder = $this->inventoryModel->select('inventory.*, products.name as product_name, products.sku, products.barcode, products.unit, products.min_stock_level, products.is_perishable')
-                ->join('products', 'products.id = inventory.product_id');
+            $builder = $this->inventoryModel->select('inventory.*, products.name as product_name, products.sku, products.barcode, products.unit, products.min_stock_level, products.is_perishable, branches.name as branch_name')
+                ->join('products', 'products.id = inventory.product_id')
+                ->join('branches', 'branches.id = inventory.branch_id', 'left');
             $builder->where('inventory.branch_id', $branchId);
         }
 
@@ -65,6 +71,7 @@ class InventoryController extends BaseController
         $data['branches'] = $this->branchModel->where('status', 'active')->findAll();
         $data['current_branch_id'] = $branchId;
         $data['role'] = $role;
+        $data['can_view_all_branches'] = $canViewAllBranches;
 
         return view('inventory/index', $data);
     }
@@ -249,8 +256,11 @@ class InventoryController extends BaseController
         $branchId = $this->request->getGet('branch_id');
         $productId = $this->request->getGet('product_id');
 
-        // If no branch_id in query and user is not admin, use their branch
-        if ($branchId === null && $role !== 'central_admin' && $role !== 'central_admin') {
+        // Allow central_admin and inventory_staff to view all branches
+        $canViewAllBranches = in_array($role, ['central_admin', 'inventory_staff']);
+
+        // If no branch_id in query and user cannot view all branches, use their branch
+        if ($branchId === null && !$canViewAllBranches) {
             $branchId = $session->get('branch_id');
         }
 

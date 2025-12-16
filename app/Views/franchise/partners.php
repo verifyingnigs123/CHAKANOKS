@@ -55,10 +55,10 @@
                 </div>
             </div>
             <div class="mt-4 pt-4 border-t border-gray-100 flex gap-2">
-                <a href="<?= base_url('transfers/create?to_branch=' . $partner['id']) ?>" class="flex-1 px-3 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-center text-sm">
+                <a href="<?= base_url('franchise/supply-allocation') ?>" class="flex-1 px-3 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-center text-sm">
                     <i class="fas fa-truck mr-1"></i>Allocate Supplies
                 </a>
-                <a href="<?= base_url('inventory?branch_id=' . $partner['id']) ?>" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+                <a href="<?= base_url('inventory?branch_id=' . $partner['id']) ?>" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm" title="View Inventory">
                     <i class="fas fa-boxes"></i>
                 </a>
             </div>

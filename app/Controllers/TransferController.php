@@ -8,6 +8,7 @@ use App\Models\BranchModel;
 use App\Models\ProductModel;
 use App\Models\InventoryModel;
 use App\Models\ActivityLogModel;
+use App\Models\DriverModel;
 use App\Libraries\NotificationService;
 
 class TransferController extends BaseController
@@ -18,6 +19,7 @@ class TransferController extends BaseController
     protected $productModel;
     protected $inventoryModel;
     protected $activityLogModel;
+    protected $driverModel;
     protected $notificationService;
 
     public function __construct()
@@ -28,6 +30,7 @@ class TransferController extends BaseController
         $this->productModel = new ProductModel();
         $this->inventoryModel = new InventoryModel();
         $this->activityLogModel = new ActivityLogModel();
+        $this->driverModel = new DriverModel();
         $this->notificationService = new NotificationService();
     }
 
@@ -287,6 +290,7 @@ class TransferController extends BaseController
         $data['transfer'] = $transfer;
         $data['items'] = $items;
         $data['role'] = $session->get('role');
+        $data['drivers'] = $this->driverModel->getActiveDrivers();
 
         return view('transfers/view', $data);
     }
@@ -342,6 +346,7 @@ class TransferController extends BaseController
             return redirect()->back()->with('error', 'Invalid transfer request');
         }
 
+        // Update transfer status to approved (logistics will handle schedule/dispatch/receive)
         $this->transferModel->update($id, [
             'status' => 'approved',
             'approved_by' => $session->get('user_id'),
@@ -350,7 +355,7 @@ class TransferController extends BaseController
 
         $this->activityLogModel->logActivity($session->get('user_id'), 'approve', 'transfer', "Approved transfer ID: $id");
 
-        // Send workflow notification to source branch to complete transfer
+        // Send workflow notification to logistics to schedule
         $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
         $toBranch = $this->branchModel->find($transfer['to_branch_id']);
         $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
@@ -367,7 +372,7 @@ class TransferController extends BaseController
         );
         log_message('info', "Transfer approval notifications sent: $notificationCount");
 
-        return redirect()->back()->with('success', 'Transfer approved successfully');
+        return redirect()->back()->with('success', 'Transfer approved successfully. Logistics will schedule the delivery.');
     }
 
     public function reject($id)
@@ -496,6 +501,16 @@ class TransferController extends BaseController
             return redirect()->back()->with('error', 'Transfer must be approved or scheduled first');
         }
 
+        // Get driver information from POST
+        $driverId = $this->request->getPost('driver_id');
+        $driverName = $this->request->getPost('driver_name');
+        $driverPhone = $this->request->getPost('driver_phone');
+        $vehicleInfo = $this->request->getPost('vehicle_info');
+
+        if (!$driverId && !$driverName) {
+            return redirect()->back()->with('error', 'Please select or enter driver information');
+        }
+
         // Deduct inventory from source branch when dispatching
         $items = $this->transferItemModel->where('transfer_id', $id)->findAll();
         foreach ($items as $item) {
@@ -512,10 +527,14 @@ class TransferController extends BaseController
         $this->transferModel->update($id, [
             'status' => 'in_transit',
             'dispatched_by' => $session->get('user_id'),
-            'dispatched_at' => date('Y-m-d H:i:s')
+            'dispatched_at' => date('Y-m-d H:i:s'),
+            'driver_id' => $driverId,
+            'driver_name' => $driverName,
+            'driver_phone' => $driverPhone,
+            'vehicle_info' => $vehicleInfo
         ]);
 
-        $this->activityLogModel->logActivity($session->get('user_id'), 'dispatch', 'transfer', "Dispatched transfer ID: $id");
+        $this->activityLogModel->logActivity($session->get('user_id'), 'dispatch', 'transfer', "Dispatched transfer ID: $id with driver: $driverName");
 
         // Send notifications
         $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
@@ -529,7 +548,7 @@ class TransferController extends BaseController
             'branch_manager',
             'warning',
             '🚚 Transfer In Transit - Prepare to Receive',
-            "Transfer {$transfer['transfer_number']} from {$fromBranchName} is on the way. Click to receive when it arrives.",
+            "Transfer {$transfer['transfer_number']} from {$fromBranchName} is on the way with driver {$driverName}. Click to receive when it arrives.",
             base_url("transfers/view/{$id}")
         );
         
@@ -539,7 +558,7 @@ class TransferController extends BaseController
             'branch_manager',
             'info',
             '🚚 Transfer Dispatched',
-            "Transfer {$transfer['transfer_number']} to {$toBranchName} has been dispatched. Inventory deducted.",
+            "Transfer {$transfer['transfer_number']} to {$toBranchName} has been dispatched with driver {$driverName}. Inventory deducted.",
             base_url("transfers/view/{$id}")
         );
         
@@ -548,11 +567,11 @@ class TransferController extends BaseController
             'central_admin',
             'info',
             '🚚 Transfer Dispatched',
-            "Transfer {$transfer['transfer_number']} from {$fromBranchName} to {$toBranchName} is in transit.",
+            "Transfer {$transfer['transfer_number']} from {$fromBranchName} to {$toBranchName} is in transit with driver {$driverName}.",
             base_url("transfers/view/{$id}")
         );
 
-        return redirect()->back()->with('success', 'Transfer dispatched successfully. Inventory deducted from source branch.');
+        return redirect()->back()->with('success', "Transfer dispatched successfully with driver {$driverName}. Inventory deducted from source branch.");
     }
 
     public function receive($id)
@@ -623,6 +642,103 @@ class TransferController extends BaseController
         log_message('info', "Transfer completion notifications sent: $notificationCount");
 
         return redirect()->to('/transfers')->with('success', 'Transfer received successfully. Inventory updated.');
+    }
+
+    /**
+     * Complete transfer (legacy method for old approved transfers)
+     * This method handles transfers that were approved before the auto-complete feature
+     */
+    public function complete($id)
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to('/login');
+        }
+
+        $role = $session->get('role');
+        $userBranchId = $session->get('branch_id');
+
+        $transfer = $this->transferModel->find($id);
+        if (!$transfer) {
+            return redirect()->back()->with('error', 'Transfer not found');
+        }
+
+        // Only allow completing approved or in_transit transfers
+        if (!in_array($transfer['status'], ['approved', 'in_transit'])) {
+            return redirect()->back()->with('error', 'Transfer must be approved or in transit to complete');
+        }
+
+        // Only source branch manager or central admin can complete
+        if ($role !== 'central_admin' && ($role !== 'branch_manager' || $userBranchId != $transfer['from_branch_id'])) {
+            return redirect()->back()->with('error', 'Only the source branch manager or Central Admin can complete this transfer');
+        }
+
+        $items = $this->transferItemModel->where('transfer_id', $id)->findAll();
+
+        // Step 1: Deduct inventory from source branch
+        foreach ($items as $item) {
+            $fromInventory = $this->inventoryModel->where('branch_id', $transfer['from_branch_id'])
+                ->where('product_id', $item['product_id'])
+                ->first();
+
+            if ($fromInventory) {
+                $newQuantity = $fromInventory['quantity'] - $item['quantity'];
+                log_message('info', "Completing transfer: Deducting {$item['quantity']} from branch {$transfer['from_branch_id']}, product {$item['product_id']}");
+                $this->inventoryModel->updateQuantity($transfer['from_branch_id'], $item['product_id'], $newQuantity, $session->get('user_id'));
+            }
+        }
+
+        // Step 2: Add inventory to destination branch
+        foreach ($items as $item) {
+            $toInventory = $this->inventoryModel->where('branch_id', $transfer['to_branch_id'])
+                ->where('product_id', $item['product_id'])
+                ->first();
+
+            if ($toInventory) {
+                $newQuantity = $toInventory['quantity'] + $item['quantity'];
+                log_message('info', "Completing transfer: Adding {$item['quantity']} to branch {$transfer['to_branch_id']}, product {$item['product_id']}");
+                $this->inventoryModel->updateQuantity($transfer['to_branch_id'], $item['product_id'], $newQuantity, $session->get('user_id'));
+            } else {
+                log_message('info', "Completing transfer: Creating new inventory for branch {$transfer['to_branch_id']}, product {$item['product_id']}");
+                $this->inventoryModel->updateQuantity($transfer['to_branch_id'], $item['product_id'], $item['quantity'], $session->get('user_id'));
+            }
+
+            // Update received quantity
+            $this->transferItemModel->update($item['id'], [
+                'quantity_received' => $item['quantity']
+            ]);
+        }
+
+        // Update transfer status to completed
+        $this->transferModel->update($id, [
+            'status' => 'completed',
+            'dispatched_by' => $session->get('user_id'),
+            'dispatched_at' => date('Y-m-d H:i:s'),
+            'received_by' => $session->get('user_id'),
+            'received_at' => date('Y-m-d H:i:s'),
+            'completed_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $this->activityLogModel->logActivity($session->get('user_id'), 'complete', 'transfer', "Completed transfer ID: $id");
+
+        // Send completion notifications to all parties
+        $fromBranch = $this->branchModel->find($transfer['from_branch_id']);
+        $toBranch = $this->branchModel->find($transfer['to_branch_id']);
+        $fromBranchName = $fromBranch ? $fromBranch['name'] : 'Unknown Branch';
+        $toBranchName = $toBranch ? $toBranch['name'] : 'Unknown Branch';
+        
+        log_message('info', "Transfer {$transfer['transfer_number']} completed manually");
+        $notificationCount = $this->notificationService->notifyTransferCompletedWorkflow(
+            $id, 
+            $transfer['transfer_number'], 
+            $transfer['from_branch_id'], 
+            $fromBranchName, 
+            $transfer['to_branch_id'], 
+            $toBranchName
+        );
+        log_message('info', "Transfer completion notifications sent: $notificationCount");
+
+        return redirect()->to('/transfers')->with('success', 'Transfer completed successfully. Inventory updated for both branches.');
     }
 
 }

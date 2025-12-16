@@ -22,8 +22,8 @@ $title = 'Inventory';
                     <option value="out_of_stock">Out of Stock</option>
                 </select>
             </div>
-            <?php if ($role == 'central_admin'): ?>
-            <div class="w-full md:w-40">
+            <?php if ($can_view_all_branches ?? false): ?>
+            <div class="w-full md:w-48">
                 <select class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all cursor-pointer"
                         onchange="window.location.href='?branch_id='+this.value">
                     <option value="">All Branches</option>
@@ -53,7 +53,7 @@ $title = 'Inventory';
         <table class="w-full">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
-                    <?php if ($current_branch_id === null && $role == 'central_admin'): ?>
+                    <?php if ($current_branch_id === null && ($can_view_all_branches ?? false)): ?>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Branch</th>
                     <?php endif; ?>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
@@ -73,7 +73,7 @@ $title = 'Inventory';
                         elseif ($item['quantity'] <= $item['min_stock_level']) $stockStatus = 'low_stock';
                     ?>
                     <tr class="hover:bg-gray-50 transition-colors data-row" data-product="<?= esc(strtolower($item['product_name'])) ?>" data-sku="<?= esc(strtolower($item['sku'])) ?>" data-barcode="<?= esc(strtolower($item['barcode'] ?? '')) ?>" data-branch="<?= esc(strtolower($item['branch_name'] ?? '')) ?>" data-stock="<?= $stockStatus ?>">
-                        <?php if ($current_branch_id === null && $role == 'central_admin'): ?>
+                        <?php if ($current_branch_id === null && ($can_view_all_branches ?? false)): ?>
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                                 <?= esc($item['branch_name'] ?? 'N/A') ?>

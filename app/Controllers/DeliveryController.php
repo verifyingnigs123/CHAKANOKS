@@ -68,8 +68,8 @@ class DeliveryController extends BaseController
             ->join('branches', 'branches.id = deliveries.branch_id')
             ->orderBy('deliveries.created_at', 'DESC');
 
-        // Filter by branch for non-admin roles (except logistics_coordinator who sees all)
-        if ($branchId && !in_array($role, ['central_admin', 'logistics_coordinator', 'supplier'])) {
+        // Filter by branch for non-admin roles (except logistics_coordinator and inventory_staff who see all)
+        if ($branchId && !in_array($role, ['central_admin', 'logistics_coordinator', 'supplier', 'inventory_staff'])) {
             $builder->where('deliveries.branch_id', $branchId);
         }
 
@@ -106,19 +106,19 @@ class DeliveryController extends BaseController
                 ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id', 'left')
                 ->join('branches', 'branches.id = purchase_orders.branch_id', 'left')
                 ->where('purchase_orders.status', 'prepared')
-                ->where("purchase_orders.id NOT IN (SELECT purchase_order_id FROM deliveries WHERE status IN ('scheduled', 'in_transit'))", null, false)
+                ->where("purchase_orders.id NOT IN (SELECT purchase_order_id FROM deliveries)", null, false)
                 ->orderBy('purchase_orders.created_at', 'DESC')
                 ->findAll();
         }
 
         $data['prepared_pos'] = $preparedPOs;
 
-        // Data for Schedule Delivery Modal - exclude POs that already have active deliveries
+        // Data for Schedule Delivery Modal - exclude POs that already have any delivery
         $data['purchase_orders_for_modal'] = $this->purchaseOrderModel->select('purchase_orders.*, suppliers.name as supplier_name, branches.name as branch_name')
             ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
             ->join('branches', 'branches.id = purchase_orders.branch_id')
             ->whereIn('purchase_orders.status', ['prepared', 'sent', 'confirmed'])
-            ->where("purchase_orders.id NOT IN (SELECT purchase_order_id FROM deliveries WHERE status IN ('scheduled', 'in_transit'))", null, false)
+            ->where("purchase_orders.id NOT IN (SELECT purchase_order_id FROM deliveries)", null, false)
             ->findAll();
         $data['drivers'] = $this->driverModel->getActiveDrivers();
 

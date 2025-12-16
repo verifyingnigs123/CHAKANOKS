@@ -113,16 +113,20 @@ class DashboardController extends BaseController
                 break;
 
             case 'inventory_staff':
-                $data['branch_inventory'] = (new InventoryModel())->where('branch_id', $branchId)->countAllResults();
-                $lowStockItems = $this->getLowStockItems($branchId);
+                // Inventory staff can see all branches
+                $data['branch_inventory'] = (new InventoryModel())->countAllResults();
+                
+                // Get low stock items from all branches
+                $lowStockItems = $this->getAllLowStockItems();
                 $data['low_stock_items'] = count($lowStockItems);
                 $data['low_stock_count'] = count($lowStockItems);
                 $data['low_stock_list'] = $lowStockItems;
-                $data['active_alerts'] = (new StockAlertModel())->where('branch_id', $branchId)->where('status', 'active')->countAllResults();
-                $data['pending_transfers'] = (new TransferModel())->where('to_branch_id', $branchId)->where('status', 'pending')->countAllResults();
                 
-                // Send low stock notifications to branch staff
-                $this->sendLowStockNotifications($branchId, $lowStockItems);
+                // Active alerts across all branches
+                $data['active_alerts'] = (new StockAlertModel())->where('status', 'active')->countAllResults();
+                
+                // Pending transfers across all branches
+                $data['pending_transfers'] = (new TransferModel())->where('status', 'pending')->countAllResults();
                 break;
 
             case 'supplier':
@@ -221,8 +225,8 @@ class DashboardController extends BaseController
                 // Total locations (franchise branches across the region)
                 $data['total_locations'] = $branchModel->where('is_franchise', 1)->where('status', 'active')->countAllResults();
                 
-                // Recent applications
-                $data['recent_applications'] = $franchiseApplicationModel->orderBy('created_at', 'DESC')->limit(10)->findAll();
+                // Recent applications (only pending)
+                $data['recent_applications'] = $franchiseApplicationModel->where('status', 'pending')->orderBy('created_at', 'DESC')->limit(10)->findAll();
                 
                 // Franchise partners (approved applications)
                 $data['franchise_partners'] = $franchiseApplicationModel->where('status', 'approved')->orderBy('approved_at', 'DESC')->findAll();

@@ -146,6 +146,7 @@ $routes->group('transfers', ['filter' => 'auth'], function($routes) {
     $routes->post('(:num)/schedule', 'TransferController::schedule/$1');
     $routes->post('(:num)/dispatch', 'TransferController::dispatch/$1');
     $routes->post('(:num)/receive', 'TransferController::receive/$1');
+    $routes->post('(:num)/complete', 'TransferController::complete/$1'); // Legacy route for old transfers
 });
 
 // Users
